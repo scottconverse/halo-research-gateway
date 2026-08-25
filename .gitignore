@@ -1,0 +1,9 @@
+AGENTS.md
+gate-log.txt
+gate-round*.log*
+gate-verdict.txt
+GATE-FEEDBACK.md
+probe-*
+.venv/
+__pycache__/
+*.pyc
