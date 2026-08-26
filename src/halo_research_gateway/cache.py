@@ -134,46 +134,26 @@ class Cache:
             return gzip.decompress(compressed_value)
     
     def evict(self) -> None:
-        """
-        Remove expired entries and then LRU entries to stay within max_bytes limit.
-        
-        Only removes from cache_entries table, preserves rate_state rows.
-        """
+        now = self.clock().isoformat()
         with closing(sqlite3.connect(self.db_path)) as conn:
             conn.execute("PRAGMA journal_mode=WAL")
-            
-            # First remove expired entries
-            now = self.clock()
-            conn.execute("""
-                DELETE FROM cache_entries 
-                WHERE datetime(expires_at) < ?
-            """, (now.isoformat(),))
-            
-            # Then, if needed, remove LRU entries to stay within max_bytes limit  
+            # 1. expired entries first
+            conn.execute("DELETE FROM cache_entries WHERE expires_at <= ?", (now,))
+            conn.commit()
+            # 2. then least-recently-accessed until the total fits
             while True:
-                cursor = conn.execute("""
-                    SELECT SUM(compressed_bytes) FROM cache_entries
-                """)
-                total_size = cursor.fetchone()[0]
-                
-                if not total_size or total_size <= self.max_bytes:
+                total = conn.execute(
+                    "SELECT COALESCE(SUM(compressed_bytes), 0) FROM cache_entries"
+                ).fetchone()[0]
+                if total <= self.max_bytes:
                     break
-                    
-                # Find the oldest entry and delete it (LRU)
-                cursor = conn.execute("""
-                    SELECT cache_key, compressed_bytes 
-                    FROM cache_entries 
-                    ORDER BY last_accessed_at ASC
-                    LIMIT 1
-                """)
-                row = cursor.fetchone()
-                
-                if not row:
-                    break  # No more entries to remove
-                    
-                key_to_remove, size = row
-                
-                conn.execute("DELETE FROM cache_entries WHERE cache_key = ?", (key_to_remove,))
+                row = conn.execute(
+                    "SELECT cache_key FROM cache_entries "
+                    "ORDER BY last_accessed_at ASC, rowid ASC LIMIT 1"
+                ).fetchone()
+                if row is None:
+                    break                      # nothing left to remove
+                conn.execute("DELETE FROM cache_entries WHERE cache_key = ?", (row[0],))
                 conn.commit()
 
     def stats(self) -> dict[str, int]:
