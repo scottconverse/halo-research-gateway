@@ -39,8 +39,8 @@ browser/profiles/
 browser/downloads/
 imports/
 logs/
-receipts/
-jobs/
+/receipts/
+/jobs/
 *.db
 *.db-shm
 *.db-wal
