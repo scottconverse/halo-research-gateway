@@ -3,7 +3,7 @@
 import os
 import sqlite3
 from contextlib import closing
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -14,7 +14,7 @@ from halo_research_gateway.migrations import migrate
 
 class FakeClock:
     def __init__(self):
-        self.now = datetime(2026, 8, 25, 12, 0, 0, tzinfo=timezone.utc)
+        self.now = datetime(2026, 8, 25, 12, 0, 0, tzinfo=UTC)
 
     def advance(self, seconds):
         self.now += timedelta(seconds=seconds)
@@ -58,8 +58,15 @@ def test_max_age_stricter_than_ttl(tmp_path):
     cache, clock, _ = make_cache(tmp_path)
     cache.put("k", b"v", ttl_seconds=3600)
     clock.advance(120)
-    assert cache.get("k", max_age_seconds=60) is None   # too old for the caller
+    assert cache.get("k", max_age_seconds=60) is None  # too old for the caller
     assert cache.get("k", max_age_seconds=300) == b"v"  # a max_age miss must not delete
+
+
+def test_get_with_age_reports_snapshot_age(tmp_path):
+    cache, clock, _ = make_cache(tmp_path)
+    cache.put("k", b"v", ttl_seconds=3600)
+    clock.advance(125)
+    assert cache.get_with_age("k") == (b"v", 125)
 
 
 def test_oversize_entry_rejected(tmp_path):
@@ -79,7 +86,7 @@ def test_lru_eviction_order(tmp_path):
     clock.advance(10)
     assert cache.get("a") == a  # refreshes a's last_accessed_at
     clock.advance(10)
-    cache.evict()               # ~12.3KB stored, limit 9000 -> exactly one must go
+    cache.evict()  # ~12.3KB stored, limit 9000 -> exactly one must go
     assert cache.get("b") is None  # least recently accessed
     assert cache.get("a") == a
     assert cache.get("c") == c

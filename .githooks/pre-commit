@@ -1,0 +1,2 @@
+#!/bin/sh
+exec pwsh.exe -NoProfile -File scripts/Invoke-QualityGate.ps1 -Scope Commit

@@ -35,8 +35,9 @@ def test_rejects_userinfo():
     assert _code("https://u:p@h.example.com/") == "UNSAFE_URL/userinfo"
 
 
-def test_rejects_nonstandard_port():
-    assert _code("https://example.com:8080/") == "UNSAFE_URL/port"
+def test_accepts_all_valid_public_http_ports():
+    assert validate_url("https://example.com:8080/").port == 8080
+    assert validate_url("http://example.com:65535/").port == 65535
 
 
 def test_rejects_overlong_url():
@@ -51,9 +52,15 @@ def test_rejects_bad_hosts():
 
 def test_rejects_nonpublic_ip_literals():
     for url in [
-        "http://127.0.0.1/", "http://10.1.2.3/", "http://169.254.1.1/",
-        "http://[::1]/", "http://[fe80::1]/", "http://[fc00::1]/",
-        "http://192.168.0.1/", "http://2130706433/", "http://0x7f000001/",
+        "http://127.0.0.1/",
+        "http://10.1.2.3/",
+        "http://169.254.1.1/",
+        "http://[::1]/",
+        "http://[fe80::1]/",
+        "http://[fc00::1]/",
+        "http://192.168.0.1/",
+        "http://2130706433/",
+        "http://0x7f000001/",
         "http://[::ffff:10.0.0.1]/",
     ]:
         assert _code(url) == "UNSAFE_URL/ip", url
@@ -63,8 +70,15 @@ def test_classify_ip():
     assert classify_ip("2606:4700::1") is True
     assert classify_ip("93.184.216.34") is True
     for ip in [
-        "127.0.0.1", "10.0.0.1", "169.254.1.1", "::1", "fe80::1",
-        "fc00::1", "224.0.0.1", "0.0.0.0", "::ffff:10.0.0.1",
+        "127.0.0.1",
+        "10.0.0.1",
+        "169.254.1.1",
+        "::1",
+        "fe80::1",
+        "fc00::1",
+        "224.0.0.1",
+        "0.0.0.0",
+        "::ffff:10.0.0.1",
     ]:
         assert classify_ip(ip) is False, ip
 

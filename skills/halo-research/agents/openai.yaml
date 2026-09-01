@@ -1,0 +1,4 @@
+interface:
+  display_name: Halo Research
+  short_description: Source-backed local research through the Halo gateway
+  default_prompt: Use the local Halo Research Gateway to research this request and return source-linked evidence with honest coverage limits.

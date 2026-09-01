@@ -65,5 +65,5 @@ def test_backup_created_and_capped(tmp_path):
         c.commit()
     migrate(str(db), str(backups))
     remaining = sorted(f.name for f in backups.glob("*.db"))
-    assert len(remaining) == 3      # 3 stale + 1 new, pruned to the 3 newest
+    assert len(remaining) == 3  # 3 stale + 1 new, pruned to the 3 newest
     assert "a.db" not in remaining  # the oldest was pruned

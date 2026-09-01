@@ -1,10 +1,18 @@
-from dataclasses import dataclass
-from ipaddress import ip_address, IPv4Address, IPv6Address
+"""Public URL validation and sensitive URL handling.
+
+Public tools accept HTTP(S) on every valid TCP port, but only after the whole
+resolved address set is proven public. Local/private access is deliberately a
+different tool contract and never calls these helpers.
+"""
+
+from __future__ import annotations
+
 import re
 import urllib.parse
+from dataclasses import dataclass
+from ipaddress import IPv4Address, IPv6Address, ip_address
 
-# Error codes for different validation failures
-UNSAFE_URL = "unsafe_url"
+UNSAFE_URL = "UNSAFE_URL"
 SCHEME = f"{UNSAFE_URL}/scheme"
 USERINFO = f"{UNSAFE_URL}/userinfo"
 PORT = f"{UNSAFE_URL}/port"
@@ -13,174 +21,136 @@ HOST = f"{UNSAFE_URL}/host"
 IP = f"{UNSAFE_URL}/ip"
 DNS = f"{UNSAFE_URL}/dns"
 
-@dataclass
+_SENSITIVE_NAME = re.compile(
+    r"(?:^|[_-])(token|key|secret|signature|sig|credential|auth|code|session|jwt)(?:$|[_-])",
+    re.IGNORECASE,
+)
+
+
+@dataclass(frozen=True, slots=True)
 class ParsedTarget:
     scheme: str
     host: str
-    port: int | None
+    port: int
     path_query: str
 
-class UrlPolicyError(Exception):
-    def __init__(self, code: str, message: str = ""):
+    @property
+    def origin(self) -> str:
+        default = 443 if self.scheme == "https" else 80
+        suffix = "" if self.port == default else f":{self.port}"
+        return f"{self.scheme}://{self.host}{suffix}"
+
+
+class UrlPolicyError(ValueError):
+    def __init__(self, code: str, message: str = "") -> None:
         self.code = code
         super().__init__(message)
 
-def validate_url(url: str) -> ParsedTarget:
-    if len(url) > 2000:
-        raise UrlPolicyError(LENGTH, "URL exceeds maximum length of 2000 characters")
-    
-    parsed = urllib.parse.urlparse(url)
-    
-    # Only allow http/https schemes
-    if parsed.scheme not in ('http', 'https'):
-        raise UrlPolicyError(SCHEME, f"Invalid scheme: {parsed.scheme}")
-        
-    # Reject userinfo (username/password) in URLs
-    if parsed.username or parsed.password:
-        raise UrlPolicyError(USERINFO, "URL contains userinfo")
-    
-    # Check port - only allow 80/443 explicitly or no port
-    if parsed.port is not None and parsed.port not in (80, 443):
-        raise UrlPolicyError(PORT, f"Invalid port: {parsed.port}")
-        
-    # Missing host check 
-    if not parsed.hostname:
-        raise UrlPolicyError(HOST, "URL missing hostname")
-    
-    # Reject localhost and .local domains
-    if parsed.hostname == 'localhost' or parsed.hostname.endswith('.local'):
-        raise UrlPolicyError(HOST, f"Invalid hostname: {parsed.hostname}")
-        
-    # Handle special IP address encodings that should be rejected 
-    # Check for decimal IPv4 encoding (2130706433 = 0x7f000001 = 127.0.0.1)
+
+def _parse_ip_literal(host: str):
+    """Return an IP for strict literals, rejecting browser-style encodings."""
     try:
-        if parsed.hostname.replace('.', '').isdigit() and len(parsed.hostname.split('.')) == 1:
-            # This might be a decimal encoded IP address
-            decimal_val = int(parsed.hostname)
-            # Check for common loopback/invalid encodings
-            if decimal_val in (2130706433, 0x7f000001, 0o17700000001):  # 127.0.0.1
-                raise UrlPolicyError(IP, f"Invalid IP address: {parsed.hostname}")
+        return ip_address(host)
     except ValueError:
         pass
-    
-    # Check for octal/hex encodings that could represent invalid IPs  
-    if parsed.hostname.startswith('0') and len(parsed.hostname) > 1:
+    lowered = host.lower()
+    if lowered.startswith("0x") or (host.isdigit() and "." not in host):
         try:
-            # Try to parse as octal or hex
-            if parsed.hostname.startswith('0x'):
-                val = int(parsed.hostname, 16)
-            elif parsed.hostname.startswith('0') and all(c in '01234567' for c in parsed.hostname[1:]):
-                val = int(parsed.hostname, 8) 
-            else:
-                # Try decimal
-                val = int(parsed.hostname)
-            
-            if val in (2130706433, 0x7f000001, 0o17700000001):  # 127.0.0.1  
-                raise UrlPolicyError(IP, f"Invalid IP address: {parsed.hostname}")
-        except ValueError:
-            pass
-    
-    is_ip_literal = False
-    if parsed.hostname.startswith('[') and parsed.hostname.endswith(']'):
-        # IPv6 address - remove brackets for validation
-        ip_str = parsed.hostname[1:-1]
+            value = int(host, 16 if lowered.startswith("0x") else 10)
+            return ip_address(value)
+        except (ValueError, OverflowError):
+            raise UrlPolicyError(IP, "Ambiguous numeric IP literal") from None
+    if re.fullmatch(r"0[0-7]+", host):
         try:
-            addr = ip_address(ip_str)
-            if not classify_ip(addr):
-                raise UrlPolicyError(IP, f"Invalid IP address: {ip_str}")
-            is_ip_literal = True
-        except ValueError:
-            raise UrlPolicyError(HOST, "Invalid IPv6 address")
-    elif parsed.hostname.replace('.', '').isdigit():
-        # IPv4 address
-        try:
-            addr = ip_address(parsed.hostname)
-            if not classify_ip(addr):
-                raise UrlPolicyError(IP, f"Invalid IP address: {parsed.hostname}")
-            is_ip_literal = True
-        except ValueError:
-            raise UrlPolicyError(HOST, "Invalid IPv4 address")
-    
-    # For non-IP literal hostnames, check for single-label hostnames (no dots) and reject them 
-    if not is_ip_literal and '.' not in parsed.hostname:
-        raise UrlPolicyError(HOST, "Single-label hostname not allowed")
-    
-    return ParsedTarget(
-        scheme=parsed.scheme,
-        host=parsed.hostname,
-        port=parsed.port,
-        path_query=urllib.parse.urlunparse(('', '', parsed.path, parsed.params, parsed.query, parsed.fragment))
-    )
+            return ip_address(int(host, 8))
+        except (ValueError, OverflowError):
+            raise UrlPolicyError(IP, "Ambiguous numeric IP literal") from None
+    return None
 
-def classify_ip(ip) -> bool:
-    """Classify IP addresses as public or not. Only allow public IPs."""
+
+def validate_url(url: str) -> ParsedTarget:
+    if not isinstance(url, str) or not url or len(url) > 2000:
+        raise UrlPolicyError(LENGTH, "URL is empty or exceeds 2,000 characters")
     try:
-        addr = ip_address(ip)
-        # Reject loopback, private, link-local, multicast, unspecified, reserved
-        if isinstance(addr, IPv4Address):
-            return (
-                not addr.is_loopback and 
-                not addr.is_private and 
-                not addr.is_link_local and 
-                not addr.is_multicast and 
-                not addr.is_unspecified and 
-                not addr.is_reserved
-            )
-        elif isinstance(addr, IPv6Address):
-            return (
-                not addr.is_loopback and 
-                not addr.is_private and 
-                not addr.is_link_local and 
-                not addr.is_multicast and 
-                not addr.is_unspecified and 
-                not addr.is_reserved and
-                not addr.is_unique_local  # Unique local addresses (fc00::/7)
-            )
+        parsed = urllib.parse.urlsplit(url)
+        port = parsed.port
+    except ValueError as exc:
+        raise UrlPolicyError(PORT, "Invalid TCP port") from exc
+    scheme = parsed.scheme.lower()
+    if scheme not in {"http", "https"}:
+        raise UrlPolicyError(SCHEME, "Only HTTP and HTTPS are supported")
+    if parsed.username is not None or parsed.password is not None:
+        raise UrlPolicyError(USERINFO, "Embedded credentials are forbidden")
+    host = (parsed.hostname or "").rstrip(".").lower()
+    if not host:
+        raise UrlPolicyError(HOST, "URL has no hostname")
+    if host == "localhost" or host.endswith(".localhost") or host.endswith(".local"):
+        raise UrlPolicyError(HOST, "Local hostname is not public")
+    literal = _parse_ip_literal(host)
+    if literal is not None:
+        if not classify_ip(literal):
+            raise UrlPolicyError(IP, "IP address is not public")
+    elif "." not in host:
+        raise UrlPolicyError(HOST, "Single-label hostname is not public")
+    effective_port = port if port is not None else (443 if scheme == "https" else 80)
+    if not 1 <= effective_port <= 65535:
+        raise UrlPolicyError(PORT, "TCP port must be 1..65535")
+    path = parsed.path or "/"
+    path_query = urllib.parse.urlunsplit(("", "", path, parsed.query, ""))
+    return ParsedTarget(scheme, host, effective_port, path_query)
+
+
+def classify_ip(value: object) -> bool:
+    """Return True only for globally routable unicast addresses."""
+    try:
+        addr = value if isinstance(value, (IPv4Address, IPv6Address)) else ip_address(value)
     except ValueError:
         return False
+    if isinstance(addr, IPv6Address) and addr.ipv4_mapped is not None:
+        return classify_ip(addr.ipv4_mapped)
+    return bool(addr.is_global and not addr.is_multicast)
 
-def validate_resolved(target: ParsedTarget, addresses) -> str:
-    """Validate resolved IP addresses"""
+
+def validate_resolved(target: ParsedTarget, addresses: list[str] | tuple[str, ...]) -> str:
+    """Reject the complete DNS answer when *any* address is not public."""
+    del target
     if not addresses:
-        raise UrlPolicyError(DNS, "No DNS resolution")
-        
-    for addr in addresses:
-        # Check if address is public
-        if classify_ip(addr):
-            return str(addr)
-    
-    raise UrlPolicyError(DNS, "All resolved addresses are non-public")
+        raise UrlPolicyError(DNS, "DNS returned no addresses")
+    normalized: list[str] = []
+    for value in addresses:
+        try:
+            addr = ip_address(value)
+        except ValueError as exc:
+            raise UrlPolicyError(DNS, "DNS returned an invalid address") from exc
+        if not classify_ip(addr):
+            raise UrlPolicyError(DNS, "DNS answer contains a non-public address")
+        normalized.append(str(addr))
+    return normalized[0]
+
 
 def validate_redirect(current: ParsedTarget, location: str) -> ParsedTarget:
-    """Validate redirect URL by resolving relative paths"""
-    # Parse the current URL for base
-    base_url = f"{current.scheme}://{current.host}"
-    if current.port is not None and current.port not in (80, 443):
-        base_url += f":{current.port}"
-    
-    # Resolve the redirect location against the current URL
-    absolute_url = urllib.parse.urljoin(base_url, location)
-    
-    return validate_url(absolute_url)
+    return validate_url(urllib.parse.urljoin(current.origin + current.path_query, location))
+
 
 def is_sensitive_url(url: str) -> bool:
-    """Check if URL contains sensitive parameters"""
-    parsed = urllib.parse.urlparse(url)
-    
-    # Check for userinfo in URL
-    if parsed.username or parsed.password:
+    try:
+        parsed = urllib.parse.urlsplit(url)
+    except ValueError:
         return True
-        
-    # Check query parameters for sensitive names (case-insensitive)
-    query_params = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
-    
-    sensitive_names = [
-        'token', 'key', 'secret', 'signature', 'sig', 
-        'credential', 'auth', 'code', 'session', 'jwt'
-    ]
-    
-    for param_name in query_params:
-        if any(sens.lower() in param_name.lower() for sens in sensitive_names):
-            return True
-    
-    return False
+    if parsed.username is not None or parsed.password is not None:
+        return True
+    return any(_SENSITIVE_NAME.search(name) for name, _ in urllib.parse.parse_qsl(parsed.query, keep_blank_values=True))
+
+
+def redact_url(url: str) -> str:
+    """Remove userinfo, fragment, and every query value before logging."""
+    try:
+        parsed = urllib.parse.urlsplit(url)
+        host = parsed.hostname or ""
+        port = f":{parsed.port}" if parsed.port else ""
+        query = urllib.parse.urlencode(
+            [(name, "[REDACTED]") for name, _ in urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)]
+        )
+        return urllib.parse.urlunsplit((parsed.scheme, host + port, parsed.path, query, ""))
+    except (ValueError, TypeError):
+        return "[REDACTED_URL]"

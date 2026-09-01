@@ -15,7 +15,14 @@ dependencies = [
     "platformdirs",
     "tldextract",
     "pydantic-settings",
+    "ddgs>=9,<10",
+    "selectolax>=0.3,<1",
+    "cryptography>=45,<47",
 ]
+
+[project.optional-dependencies]
+crawl = ["crawl4ai>=0.9,<1"]
+documents = ["pymupdf>=1.26,<2"]
 
 [dependency-groups]
 dev = [
@@ -23,11 +30,25 @@ dev = [
     "pytest-asyncio",
     "respx",
     "ruff",
+    "mypy",
+    "coverage",
 ]
 
 [project.urls]
-Homepage = ""
-Repository = ""
+Homepage = "https://github.com/scottconverse/halo-research-gateway"
+Repository = "https://github.com/scottconverse/halo-research-gateway"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
 
 [tool.hatch.build.targets.sdist]
 packages = ["src/halo_research_gateway"]
