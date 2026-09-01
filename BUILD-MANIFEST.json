@@ -1,476 +1,861 @@
-﻿{
-    "schema":  1,
-    "generated_at":  "2026-09-01T08:28:02.8555367Z",
-    "project":  "halo-research-gateway",
-    "version":  "0.1.0",
-    "specification":  "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.5.md",
-    "result_schema":  "1.5",
-    "python":  "3.12",
-    "files":  [
-                  {
-                      "path":  ".githooks/pre-commit",
-                      "sha256":  "181434e9909cf2a30d1ab3871da05f2f1059ccfcd17cee2e3f8584d3de57976b",
-                      "bytes":  86
-                  },
-                  {
-                      "path":  ".github/workflows/quality-gate.yml",
-                      "sha256":  "dddfd6fb0fc93de68f7aaaf32f9afb86cec95e817f53d9a46cb4c676d2f8d6bd",
-                      "bytes":  424
-                  },
-                  {
-                      "path":  ".gitignore",
-                      "sha256":  "86be8a8d30490e8ef343f32f0e1539594cafab18705a3292126fe30f98387ea7",
-                      "bytes":  716
-                  },
-                  {
-                      "path":  ".python-version",
-                      "sha256":  "7b55f8e67b5623c4bef3fa691288da9437d79d3aba156de48d481db32ac7d16d",
-                      "bytes":  5
-                  },
-                  {
-                      "path":  "config/config.example.toml",
-                      "sha256":  "cf2464535c4a7b40a1831f15036b3930b761e4d934ff12aed1dbea0d2ba8727a",
-                      "bytes":  2151
-                  },
-                  {
-                      "path":  "debug_cache.py",
-                      "sha256":  "e051dc142889d73ee73aa12d820ef7ec4218c9bfe09dedc3448c9330d4386f45",
-                      "bytes":  1695
-                  },
-                  {
-                      "path":  "debug_redaction.py",
-                      "sha256":  "70272d97bc0e390d8d1c1ffab19e6fcaeb1947898cebfde51d822af3fc17db8f",
-                      "bytes":  541
-                  },
-                  {
-                      "path":  "docs/EVIDENCE-2026-09-01.md",
-                      "sha256":  "7469d3fd1c112066643a5bf3ffd7c09b466dc11d9c3f8bb25512bba33b27f6a2",
-                      "bytes":  5649
-                  },
-                  {
-                      "path":  "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
-                      "sha256":  "f9e0c1b950bfba0d1b32b6d2e296fd2b38d1e71a1493c303250e3e51c99e6045",
-                      "bytes":  155620
-                  },
-                  {
-                      "path":  "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.5.md",
-                      "sha256":  "94bf056c5ce65e5711b3ba27254d15c7c480ac943076d164cfbe2014228173fd",
-                      "bytes":  192986
-                  },
-                  {
-                      "path":  "docs/host-integration.md",
-                      "sha256":  "7b536996db51eeaba8d19e0e211b6fe6db15e366da6f4ec2423562d70c6a0474",
-                      "bytes":  1784
-                  },
-                  {
-                      "path":  "docs/implementation-status.md",
-                      "sha256":  "d69b24251e4e95479305483f0a9cf5a8a191e2bf9786fda57395064dab39408c",
-                      "bytes":  5318
-                  },
-                  {
-                      "path":  "docs/operations.md",
-                      "sha256":  "2e3f4d6db0a82d7c23ee1787b6bc0c266994cf211cd7aaf6d0ef73d1d1a98dfb",
-                      "bytes":  1804
-                  },
-                  {
-                      "path":  "docs/quality-gate.md",
-                      "sha256":  "0ae6b23fd5eab38865ece2e0e4e09e60ae8a82a704b792a00d52d68eea5876b1",
-                      "bytes":  1250
-                  },
-                  {
-                      "path":  "docs/security.md",
-                      "sha256":  "55d6b57f9772ed78afad789703a9c7f6042b2e53ff136dc30482f23cdbc0aa3e",
-                      "bytes":  2221
-                  },
-                  {
-                      "path":  "pyproject.toml",
-                      "sha256":  "1376f8dbd5d47256c80701d9f466ca219f78c68cd15da6fe9fdf75f26ea6fad5",
-                      "bytes":  1062
-                  },
-                  {
-                      "path":  "README.md",
-                      "sha256":  "b4e8d6e88e1d7cb1f564287e47e070fecbb3a7ed7fc239c5feffcc299e68b5fb",
-                      "bytes":  3931
-                  },
-                  {
-                      "path":  "scripts/Install-HaloResearch.ps1",
-                      "sha256":  "99b43d30955df33553c9350cccfa162deaf321be76fe997c125bbe7b851f33e0",
-                      "bytes":  2547
-                  },
-                  {
-                      "path":  "scripts/Invoke-QualityGate.ps1",
-                      "sha256":  "aba9fe56977cce60923276790a431fe7a82cb7835a0ac4bd4f4ab27caf7d7591",
-                      "bytes":  1430
-                  },
-                  {
-                      "path":  "scripts/Start-HaloResearch.ps1",
-                      "sha256":  "5b5a5f471f30f4a0802f9c1c5cdf80b6928fa57086b37b69f7c81104f8ed8384",
-                      "bytes":  1964
-                  },
-                  {
-                      "path":  "scripts/Stop-HaloResearch.ps1",
-                      "sha256":  "eed85fe29672f74348098209b03551138f5a92007ea5066ed94b9c6f6e221727",
-                      "bytes":  950
-                  },
-                  {
-                      "path":  "scripts/Test-HaloResearch.ps1",
-                      "sha256":  "1ae212fd9ab0a73cb646e8b037f7cdd6b82f812deb6fedea4fb84e4455325a6f",
-                      "bytes":  899
-                  },
-                  {
-                      "path":  "scripts/Uninstall-HaloResearch.ps1",
-                      "sha256":  "546ddb113002ece3e04e71168252ba95f4de34e62ef030540714f2f00e424a6e",
-                      "bytes":  722
-                  },
-                  {
-                      "path":  "scripts/Update-BuildManifest.ps1",
-                      "sha256":  "4365d3eeede2a53546763d026a6a8147778dd82af929adf16e95665f64dd710e",
-                      "bytes":  1092
-                  },
-                  {
-                      "path":  "scripts/validate_skill.py",
-                      "sha256":  "54b874380bbcafc39342a902b32efe5934a455e5c100e4871a59648ddbba6260",
-                      "bytes":  1357
-                  },
-                  {
-                      "path":  "skills/halo-research/agents/openai.yaml",
-                      "sha256":  "1f1c971b94173aca046cd1262b8c6a69908b205f569d00a1a98f74e1276dcdf2",
-                      "bytes":  258
-                  },
-                  {
-                      "path":  "skills/halo-research/references/citation-contract.md",
-                      "sha256":  "60169e0a038f7537432e475ca9c7c8de97f8e03584c7b9aea42fae7de96ad86e",
-                      "bytes":  951
-                  },
-                  {
-                      "path":  "skills/halo-research/references/HALO-RESEARCH-GATEWAY-SPEC.md",
-                      "sha256":  "94bf056c5ce65e5711b3ba27254d15c7c480ac943076d164cfbe2014228173fd",
-                      "bytes":  192986
-                  },
-                  {
-                      "path":  "skills/halo-research/references/host-tool-mapping.md",
-                      "sha256":  "452a13d1d88a57f485941a31f0ad5c1f54eb1e6d91ed074fab91c2b2ad3b8398",
-                      "bytes":  1345
-                  },
-                  {
-                      "path":  "skills/halo-research/references/limitations.md",
-                      "sha256":  "b3f49c6ca84d68954981194dd39c3859c0e2d6101684f0ce018e976eb5929fbc",
-                      "bytes":  1884
-                  },
-                  {
-                      "path":  "skills/halo-research/references/source-selection.md",
-                      "sha256":  "06ddfab11d5cc7858492e23f23a3bd776289f27a1a18d23b4e2aba0b3ce42c5b",
-                      "bytes":  1467
-                  },
-                  {
-                      "path":  "skills/halo-research/SKILL.md",
-                      "sha256":  "200023403db9f5df4deebd2595ecece059e1015829b0eaf0d678e94805dc8937",
-                      "bytes":  2863
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/__init__.py",
-                      "sha256":  "91447944015cec709e8aa7655f7e9d64e1e4508e7023a57fe3746911c0fc6fed",
-                      "bytes":  22
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/__main__.py",
-                      "sha256":  "79baccba64a4b0cdd8f60a5b24cf8d2de233e94d2bf45a62045362d17022862b",
-                      "bytes":  713
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/actions/__init__.py",
-                      "sha256":  "fa1b55533ff41cb466057c6d1660c7a69e94faebad4726567805bae4d6c37d33",
-                      "bytes":  68
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/actions/store.py",
-                      "sha256":  "297e9235477bad5d2f306135134141c761c3565500e0aa428de62b97767d4434",
-                      "bytes":  5085
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/app.py",
-                      "sha256":  "0d3534ff0688fe447219aaa271e263a2e3d7650558b4b99090190a3abc61f2bf",
-                      "bytes":  21895
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/cache.py",
-                      "sha256":  "ef8a1bb09d55e2b5330c7239a01b4f7dab87d7a2af08d7862b17be6e6356984f",
-                      "bytes":  6826
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/cache_errors.py",
-                      "sha256":  "9f8dfa1914575172d3ae77acb1bb4c970d20dac9b7abe76d45a4dbde854adae7",
-                      "bytes":  304
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/clock.py",
-                      "sha256":  "f780afb87b958dd6095c439105581c88b0d925670afa6fce591fde80ffcd9989",
-                      "bytes":  527
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/config.py",
-                      "sha256":  "0517c3dfefa290791097f2340f442c80b39e56d1958f09773329c4a71c30babe",
-                      "bytes":  7342
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/connections/__init__.py",
-                      "sha256":  "29d41edcfdb8a1bf5aa4d98111312cb7bc601d44882e44afca1e259f5e388d07",
-                      "bytes":  56
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/connections/chrome_import.py",
-                      "sha256":  "0c263ea20b8bd84eab22c2f723803ed97d11e21bf21e3dac15a66adae0373a52",
-                      "bytes":  6326
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/connections/oauth.py",
-                      "sha256":  "f09c6b57cf59c4c509e350fd5a9ea6037bf1491afea8e18184aad9e0d80bb811",
-                      "bytes":  8423
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/connections/store.py",
-                      "sha256":  "1dc91d7a816b3b55b258f2a1d9e700db5c80758ff0be9ae49ac9483a6350cf53",
-                      "bytes":  4569
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/connections/vault.py",
-                      "sha256":  "eefdd94897a84de815573ce146d53fecd728ec31d65478d3ee9216547c533c26",
-                      "bytes":  2105
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/coordinator.py",
-                      "sha256":  "2ee27345f5cbe336df85fdf5c5b32134763866fc43a7f4a0c6b0940e60fbeddf",
-                      "bytes":  3163
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/cursor.py",
-                      "sha256":  "5ad4afb2adedea3f48c5ec1ff87260cf06500a856ce93dd7671bb305eedba79b",
-                      "bytes":  2451
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/envelope.py",
-                      "sha256":  "da0d7eb47070904f0ec30eae2b8bb4283fba1a0f885c383f72dd14e825310f6b",
-                      "bytes":  7316
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/jobs/__init__.py",
-                      "sha256":  "5fe9165c2474c2d2a7b1f81a3d811d361aa166baebc68d431351e06d61bb2182",
-                      "bytes":  37
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/jobs/manager.py",
-                      "sha256":  "24a0af4da9d0f12bb39547069e42bf728f12861ca540891ba3a9c90ab69c711c",
-                      "bytes":  4284
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/logging_config.py",
-                      "sha256":  "32b5145e492c5855050f2df8722a02658df29513e3500e4f8d35a8fe27430d9d",
-                      "bytes":  3246
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/migrations/__init__.py",
-                      "sha256":  "f7a4ef30276a763bdd1e736b3301973c282554648e18f78b62f00e8dd311b8b6",
-                      "bytes":  8205
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/models.py",
-                      "sha256":  "37c8c8f0f38ea6701e5075bf7d7d4332857fc688cf647477f7ed025dc3b8ec64",
-                      "bytes":  1828
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/operator_ui.py",
-                      "sha256":  "d04b3fec2d9c67f65c254f398fb4f95fbd7b21a62eac04d820434b02741e34c4",
-                      "bytes":  7801
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/providers/__init__.py",
-                      "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                      "bytes":  0
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/providers/crawl4ai_provider.py",
-                      "sha256":  "7dea89bf6ba59763bbec8c665b95d898c50ab657d84273c05b52da7fcfa13227",
-                      "bytes":  4309
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/providers/document_extract.py",
-                      "sha256":  "a8063a25e6b3cdb47de32e06067a86bd097fef2d6cec135634f806a14f75de20",
-                      "bytes":  2237
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/providers/exa.py",
-                      "sha256":  "c53eab79c994a3054763e1b543b1bdcb09d3c82d94fb43467ceeba04443b3283",
-                      "bytes":  3399
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/providers/html.py",
-                      "sha256":  "263a5b90c792abcdef07a6c7f6cb1c6e71f41589b18caf97ff7ace22d90d070b",
-                      "bytes":  2012
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/providers/http_fetch.py",
-                      "sha256":  "9b519611fae950d0a83b835b9b0d810ded9d2d12ae878508211e51e08570949c",
-                      "bytes":  8247
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/providers/optional.py",
-                      "sha256":  "a663ce2f4eeb6b69b42ddd4f0684e37c77ca82ce723938e8f24a2bed8ce1698b",
-                      "bytes":  5276
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/providers/reddit_rss.py",
-                      "sha256":  "fbc1b43b1b17be72dda19d75206106ca76effb9c279aaf1cbb2f78f0c9c134ea",
-                      "bytes":  2497
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/providers/search.py",
-                      "sha256":  "bf62785ee136df30c241775793c72f50dfd63b0afaf2d9ac9043718e3b24313e",
-                      "bytes":  2787
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/rate_limit.py",
-                      "sha256":  "cd4b464066d80528720d8baa7f758b5a02be99d53f09616fee03cee9d4065ec0",
-                      "bytes":  3980
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/security.py",
-                      "sha256":  "475d8f6a210336743ce1fb2219ca8ddc4e97f0127bdfdc283a9687bd399969f4",
-                      "bytes":  5844
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/service.py",
-                      "sha256":  "823131267735c102483d0280def477765d479037aec777e2ddce733826b48cc3",
-                      "bytes":  32526
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/tools/__init__.py",
-                      "sha256":  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                      "bytes":  0
-                  },
-                  {
-                      "path":  "src/halo_research_gateway/windows_job.py",
-                      "sha256":  "7e181cb89b66f953b162e5d99eb2591e0d0b84c6db21c6fca70dfdd233cf1759",
-                      "bytes":  3105
-                  },
-                  {
-                      "path":  "test_implementation.py",
-                      "sha256":  "077ffedf8419371a9b37dde32846d7577bb10c671844904d59587aa017416ff2",
-                      "bytes":  1434
-                  },
-                  {
-                      "path":  "test_imports.py",
-                      "sha256":  "9ba7966141f0658e26e09c6d38392e227ed9a0fd03e2bb15c7f37b31644d5cde",
-                      "bytes":  532
-                  },
-                  {
-                      "path":  "tests/acceptance/crawl_canary.py",
-                      "sha256":  "d2559f309ed39531b76a984889d34e6e5439e70486c35794981d926f30f1e7f4",
-                      "bytes":  893
-                  },
-                  {
-                      "path":  "tests/acceptance/live_provider_canary.py",
-                      "sha256":  "7ce384db848c3149b91dc64db3315e2f5e56360406517792e9779303c6bf7be4",
-                      "bytes":  2932
-                  },
-                  {
-                      "path":  "tests/acceptance/mcp_contract.py",
-                      "sha256":  "7f66e8228d6ac01f3b3ed582a579305e4f2131dba8bc670d0e5e7bd3bc4bf2eb",
-                      "bytes":  2693
-                  },
-                  {
-                      "path":  "tests/acceptance/mcp_smoke.py",
-                      "sha256":  "5fa66a136b7a65c57119bed25ce7e4daf048c7d55c163ce73075f3134a79b71d",
-                      "bytes":  2193
-                  },
-                  {
-                      "path":  "tests/unit/test_browser_policy.py",
-                      "sha256":  "fb50c5997fa8f4844ba9fbed5532ddebfd380642fb5ce9d814a0a4158f9d2186",
-                      "bytes":  738
-                  },
-                  {
-                      "path":  "tests/unit/test_cache.py",
-                      "sha256":  "ae1837cdd0b3388a46ec7ee5da290e8de00f444d0ae0e28802810b62339c2861",
-                      "bytes":  3876
-                  },
-                  {
-                      "path":  "tests/unit/test_chrome_import.py",
-                      "sha256":  "97f082d7ee54854990fcb2f4c38b9f34c401485a66a6abfa7391c93730259e52",
-                      "bytes":  3064
-                  },
-                  {
-                      "path":  "tests/unit/test_config.py",
-                      "sha256":  "c8c1268f5b8d3c422d079ac808c2d6ff29a330fdf25f7a1f62f0f702cb58754d",
-                      "bytes":  5483
-                  },
-                  {
-                      "path":  "tests/unit/test_cursor.py",
-                      "sha256":  "bfc607a7e27ae55f512a10cb0a34d98dda6324d2dc38cc1bb79bcd94f68651a4",
-                      "bytes":  756
-                  },
-                  {
-                      "path":  "tests/unit/test_envelope.py",
-                      "sha256":  "0589ea0f86e96036e7bca01b61debf10de283f023460bb272d51572c2779af2e",
-                      "bytes":  7048
-                  },
-                  {
-                      "path":  "tests/unit/test_exa.py",
-                      "sha256":  "184ff02062c6d40729bc4abb4f672a09e7671cbf11872c572fa9190998318fc1",
-                      "bytes":  339
-                  },
-                  {
-                      "path":  "tests/unit/test_local_target_config.py",
-                      "sha256":  "488e0561421a6598fecfaae234ef1da1dff8c470d9b67fc88366772b350b51f6",
-                      "bytes":  434
-                  },
-                  {
-                      "path":  "tests/unit/test_migrations.py",
-                      "sha256":  "3b3932d2a80b2da603dea4b54efbc83fd4e93b0176a231b0dc704a563f67a994",
-                      "bytes":  2704
-                  },
-                  {
-                      "path":  "tests/unit/test_oauth.py",
-                      "sha256":  "0298fa5db78e3bc3652abeff70c951b207630a5b85f8a0632cdfe470b473720e",
-                      "bytes":  4356
-                  },
-                  {
-                      "path":  "tests/unit/test_optional_providers.py",
-                      "sha256":  "e0ff87b514fbc291700b474d74e134d8b48ca1865910ce674bce0b8f12278d0e",
-                      "bytes":  2348
-                  },
-                  {
-                      "path":  "tests/unit/test_redaction.py",
-                      "sha256":  "be9a582a75c2654dd9a37bde01cb01e544ddbd5350c09bf543012e932eb82ec5",
-                      "bytes":  2568
-                  },
-                  {
-                      "path":  "tests/unit/test_scaffold.py",
-                      "sha256":  "1008661c7342304d05eaa035e3490da432e3f096d25c94c089a424a6f3fac400",
-                      "bytes":  1177
-                  },
-                  {
-                      "path":  "tests/unit/test_security.py",
-                      "sha256":  "1b76fd415b3ecc2356f0656c16a78251d924d3fc72b39d47456670a89bfa6ac7",
-                      "bytes":  3448
-                  },
-                  {
-                      "path":  "tests/unit/test_v15_state.py",
-                      "sha256":  "e5365e28a10ba3799962ba472211a2e1773a0c0d6a592950bd741a17803bd952",
-                      "bytes":  8644
-                  },
-                  {
-                      "path":  "uv.lock",
-                      "sha256":  "c24ce8681f33f8cf43c3843e329065279e30ea8d22048443336d9fd41a67a3a9",
-                      "bytes":  265851
-                  },
-                  {
-                      "path":  "verify_implementation.py",
-                      "sha256":  "2c92ac695cd64bcb83a036dd04119081bacb705cdb7cd48d85de0a614e788ae8",
-                      "bytes":  1324
-                  },
-                  {
-                      "path":  "verify_toml.py",
-                      "sha256":  "94fcf7fc4d652f434ad9bdbb797a73ef75fbcbe14b13eee191cba4ae6fc8f616",
-                      "bytes":  422
-                  }
-              ]
+{
+  "schema": 1,
+  "generated_at": "2026-09-01T08:51:50.1643333Z",
+  "project": "halo-research-gateway",
+  "version": "0.1.0",
+  "specification": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.5.md",
+  "result_schema": "1.5",
+  "python": "3.12",
+  "files": [
+    {
+      "path": ".githooks/pre-commit",
+      "sha256": "181434e9909cf2a30d1ab3871da05f2f1059ccfcd17cee2e3f8584d3de57976b",
+      "bytes": 86
+    },
+    {
+      "path": ".github/workflows/quality-gate.yml",
+      "sha256": "dddfd6fb0fc93de68f7aaaf32f9afb86cec95e817f53d9a46cb4c676d2f8d6bd",
+      "bytes": 424
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "86be8a8d30490e8ef343f32f0e1539594cafab18705a3292126fe30f98387ea7",
+      "bytes": 716
+    },
+    {
+      "path": ".python-version",
+      "sha256": "7b55f8e67b5623c4bef3fa691288da9437d79d3aba156de48d481db32ac7d16d",
+      "bytes": 5
+    },
+    {
+      "path": "config/config.example.toml",
+      "sha256": "cf2464535c4a7b40a1831f15036b3930b761e4d934ff12aed1dbea0d2ba8727a",
+      "bytes": 2151
+    },
+    {
+      "path": "debug_cache.py",
+      "sha256": "e051dc142889d73ee73aa12d820ef7ec4218c9bfe09dedc3448c9330d4386f45",
+      "bytes": 1695
+    },
+    {
+      "path": "debug_redaction.py",
+      "sha256": "70272d97bc0e390d8d1c1ffab19e6fcaeb1947898cebfde51d822af3fc17db8f",
+      "bytes": 541
+    },
+    {
+      "path": "docs/EVIDENCE-2026-09-01.md",
+      "sha256": "7469d3fd1c112066643a5bf3ffd7c09b466dc11d9c3f8bb25512bba33b27f6a2",
+      "bytes": 5649
+    },
+    {
+      "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
+      "sha256": "f9e0c1b950bfba0d1b32b6d2e296fd2b38d1e71a1493c303250e3e51c99e6045",
+      "bytes": 155620
+    },
+    {
+      "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.5.md",
+      "sha256": "94bf056c5ce65e5711b3ba27254d15c7c480ac943076d164cfbe2014228173fd",
+      "bytes": 192986
+    },
+    {
+      "path": "docs/host-integration.md",
+      "sha256": "7b536996db51eeaba8d19e0e211b6fe6db15e366da6f4ec2423562d70c6a0474",
+      "bytes": 1784
+    },
+    {
+      "path": "docs/implementation-status.md",
+      "sha256": "d69b24251e4e95479305483f0a9cf5a8a191e2bf9786fda57395064dab39408c",
+      "bytes": 5318
+    },
+    {
+      "path": "docs/operations.md",
+      "sha256": "2e3f4d6db0a82d7c23ee1787b6bc0c266994cf211cd7aaf6d0ef73d1d1a98dfb",
+      "bytes": 1804
+    },
+    {
+      "path": "docs/quality-gate.md",
+      "sha256": "0ae6b23fd5eab38865ece2e0e4e09e60ae8a82a704b792a00d52d68eea5876b1",
+      "bytes": 1250
+    },
+    {
+      "path": "docs/security.md",
+      "sha256": "55d6b57f9772ed78afad789703a9c7f6042b2e53ff136dc30482f23cdbc0aa3e",
+      "bytes": 2221
+    },
+    {
+      "path": "docs/USER-MANUAL.md",
+      "sha256": "4a780b41f8fc176d0efe59361ffb071d0e968a2dc6151933035d0fd32e7e48b4",
+      "bytes": 13842
+    },
+    {
+      "path": "pyproject.toml",
+      "sha256": "1376f8dbd5d47256c80701d9f466ca219f78c68cd15da6fe9fdf75f26ea6fad5",
+      "bytes": 1062
+    },
+    {
+      "path": "README.md",
+      "sha256": "92ea8d1dfc5d1fc63b2ec82fb5e3f8b6a485acb85e1645b2b568eb5b023977d5",
+      "bytes": 8931
+    },
+    {
+      "path": "scripts/Install-HaloResearch.ps1",
+      "sha256": "99b43d30955df33553c9350cccfa162deaf321be76fe997c125bbe7b851f33e0",
+      "bytes": 2547
+    },
+    {
+      "path": "scripts/Invoke-QualityGate.ps1",
+      "sha256": "aba9fe56977cce60923276790a431fe7a82cb7835a0ac4bd4f4ab27caf7d7591",
+      "bytes": 1430
+    },
+    {
+      "path": "scripts/Start-HaloResearch.ps1",
+      "sha256": "5b5a5f471f30f4a0802f9c1c5cdf80b6928fa57086b37b69f7c81104f8ed8384",
+      "bytes": 1964
+    },
+    {
+      "path": "scripts/Stop-HaloResearch.ps1",
+      "sha256": "eed85fe29672f74348098209b03551138f5a92007ea5066ed94b9c6f6e221727",
+      "bytes": 950
+    },
+    {
+      "path": "scripts/Test-HaloResearch.ps1",
+      "sha256": "1ae212fd9ab0a73cb646e8b037f7cdd6b82f812deb6fedea4fb84e4455325a6f",
+      "bytes": 899
+    },
+    {
+      "path": "scripts/Uninstall-HaloResearch.ps1",
+      "sha256": "546ddb113002ece3e04e71168252ba95f4de34e62ef030540714f2f00e424a6e",
+      "bytes": 722
+    },
+    {
+      "path": "scripts/Update-BuildManifest.ps1",
+      "sha256": "4365d3eeede2a53546763d026a6a8147778dd82af929adf16e95665f64dd710e",
+      "bytes": 1092
+    },
+    {
+      "path": "scripts/validate_skill.py",
+      "sha256": "54b874380bbcafc39342a902b32efe5934a455e5c100e4871a59648ddbba6260",
+      "bytes": 1357
+    },
+    {
+      "path": "skills/halo-research/agents/openai.yaml",
+      "sha256": "1f1c971b94173aca046cd1262b8c6a69908b205f569d00a1a98f74e1276dcdf2",
+      "bytes": 258
+    },
+    {
+      "path": "skills/halo-research/references/citation-contract.md",
+      "sha256": "60169e0a038f7537432e475ca9c7c8de97f8e03584c7b9aea42fae7de96ad86e",
+      "bytes": 951
+    },
+    {
+      "path": "skills/halo-research/references/HALO-RESEARCH-GATEWAY-SPEC.md",
+      "sha256": "94bf056c5ce65e5711b3ba27254d15c7c480ac943076d164cfbe2014228173fd",
+      "bytes": 192986
+    },
+    {
+      "path": "skills/halo-research/references/host-tool-mapping.md",
+      "sha256": "452a13d1d88a57f485941a31f0ad5c1f54eb1e6d91ed074fab91c2b2ad3b8398",
+      "bytes": 1345
+    },
+    {
+      "path": "skills/halo-research/references/limitations.md",
+      "sha256": "b3f49c6ca84d68954981194dd39c3859c0e2d6101684f0ce018e976eb5929fbc",
+      "bytes": 1884
+    },
+    {
+      "path": "skills/halo-research/references/source-selection.md",
+      "sha256": "06ddfab11d5cc7858492e23f23a3bd776289f27a1a18d23b4e2aba0b3ce42c5b",
+      "bytes": 1467
+    },
+    {
+      "path": "skills/halo-research/SKILL.md",
+      "sha256": "200023403db9f5df4deebd2595ecece059e1015829b0eaf0d678e94805dc8937",
+      "bytes": 2863
+    },
+    {
+      "path": "src/halo_research_gateway/__init__.py",
+      "sha256": "91447944015cec709e8aa7655f7e9d64e1e4508e7023a57fe3746911c0fc6fed",
+      "bytes": 22
+    },
+    {
+      "path": "src/halo_research_gateway/__main__.py",
+      "sha256": "79baccba64a4b0cdd8f60a5b24cf8d2de233e94d2bf45a62045362d17022862b",
+      "bytes": 713
+    },
+    {
+      "path": "src/halo_research_gateway/actions/__init__.py",
+      "sha256": "fa1b55533ff41cb466057c6d1660c7a69e94faebad4726567805bae4d6c37d33",
+      "bytes": 68
+    },
+    {
+      "path": "src/halo_research_gateway/actions/store.py",
+      "sha256": "297e9235477bad5d2f306135134141c761c3565500e0aa428de62b97767d4434",
+      "bytes": 5085
+    },
+    {
+      "path": "src/halo_research_gateway/app.py",
+      "sha256": "0d3534ff0688fe447219aaa271e263a2e3d7650558b4b99090190a3abc61f2bf",
+      "bytes": 21895
+    },
+    {
+      "path": "src/halo_research_gateway/cache_errors.py",
+      "sha256": "9f8dfa1914575172d3ae77acb1bb4c970d20dac9b7abe76d45a4dbde854adae7",
+      "bytes": 304
+    },
+    {
+      "path": "src/halo_research_gateway/cache.py",
+      "sha256": "ef8a1bb09d55e2b5330c7239a01b4f7dab87d7a2af08d7862b17be6e6356984f",
+      "bytes": 6826
+    },
+    {
+      "path": "src/halo_research_gateway/clock.py",
+      "sha256": "f780afb87b958dd6095c439105581c88b0d925670afa6fce591fde80ffcd9989",
+      "bytes": 527
+    },
+    {
+      "path": "src/halo_research_gateway/config.py",
+      "sha256": "0517c3dfefa290791097f2340f442c80b39e56d1958f09773329c4a71c30babe",
+      "bytes": 7342
+    },
+    {
+      "path": "src/halo_research_gateway/connections/__init__.py",
+      "sha256": "29d41edcfdb8a1bf5aa4d98111312cb7bc601d44882e44afca1e259f5e388d07",
+      "bytes": 56
+    },
+    {
+      "path": "src/halo_research_gateway/connections/chrome_import.py",
+      "sha256": "0c263ea20b8bd84eab22c2f723803ed97d11e21bf21e3dac15a66adae0373a52",
+      "bytes": 6326
+    },
+    {
+      "path": "src/halo_research_gateway/connections/oauth.py",
+      "sha256": "f09c6b57cf59c4c509e350fd5a9ea6037bf1491afea8e18184aad9e0d80bb811",
+      "bytes": 8423
+    },
+    {
+      "path": "src/halo_research_gateway/connections/store.py",
+      "sha256": "1dc91d7a816b3b55b258f2a1d9e700db5c80758ff0be9ae49ac9483a6350cf53",
+      "bytes": 4569
+    },
+    {
+      "path": "src/halo_research_gateway/connections/vault.py",
+      "sha256": "eefdd94897a84de815573ce146d53fecd728ec31d65478d3ee9216547c533c26",
+      "bytes": 2105
+    },
+    {
+      "path": "src/halo_research_gateway/coordinator.py",
+      "sha256": "2ee27345f5cbe336df85fdf5c5b32134763866fc43a7f4a0c6b0940e60fbeddf",
+      "bytes": 3163
+    },
+    {
+      "path": "src/halo_research_gateway/cursor.py",
+      "sha256": "5ad4afb2adedea3f48c5ec1ff87260cf06500a856ce93dd7671bb305eedba79b",
+      "bytes": 2451
+    },
+    {
+      "path": "src/halo_research_gateway/envelope.py",
+      "sha256": "da0d7eb47070904f0ec30eae2b8bb4283fba1a0f885c383f72dd14e825310f6b",
+      "bytes": 7316
+    },
+    {
+      "path": "src/halo_research_gateway/jobs/__init__.py",
+      "sha256": "5fe9165c2474c2d2a7b1f81a3d811d361aa166baebc68d431351e06d61bb2182",
+      "bytes": 37
+    },
+    {
+      "path": "src/halo_research_gateway/jobs/manager.py",
+      "sha256": "24a0af4da9d0f12bb39547069e42bf728f12861ca540891ba3a9c90ab69c711c",
+      "bytes": 4284
+    },
+    {
+      "path": "src/halo_research_gateway/logging_config.py",
+      "sha256": "32b5145e492c5855050f2df8722a02658df29513e3500e4f8d35a8fe27430d9d",
+      "bytes": 3246
+    },
+    {
+      "path": "src/halo_research_gateway/migrations/__init__.py",
+      "sha256": "f7a4ef30276a763bdd1e736b3301973c282554648e18f78b62f00e8dd311b8b6",
+      "bytes": 8205
+    },
+    {
+      "path": "src/halo_research_gateway/models.py",
+      "sha256": "37c8c8f0f38ea6701e5075bf7d7d4332857fc688cf647477f7ed025dc3b8ec64",
+      "bytes": 1828
+    },
+    {
+      "path": "src/halo_research_gateway/operator_ui.py",
+      "sha256": "d04b3fec2d9c67f65c254f398fb4f95fbd7b21a62eac04d820434b02741e34c4",
+      "bytes": 7801
+    },
+    {
+      "path": "src/halo_research_gateway/providers/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "src/halo_research_gateway/providers/crawl4ai_provider.py",
+      "sha256": "7dea89bf6ba59763bbec8c665b95d898c50ab657d84273c05b52da7fcfa13227",
+      "bytes": 4309
+    },
+    {
+      "path": "src/halo_research_gateway/providers/document_extract.py",
+      "sha256": "a8063a25e6b3cdb47de32e06067a86bd097fef2d6cec135634f806a14f75de20",
+      "bytes": 2237
+    },
+    {
+      "path": "src/halo_research_gateway/providers/exa.py",
+      "sha256": "c53eab79c994a3054763e1b543b1bdcb09d3c82d94fb43467ceeba04443b3283",
+      "bytes": 3399
+    },
+    {
+      "path": "src/halo_research_gateway/providers/html.py",
+      "sha256": "263a5b90c792abcdef07a6c7f6cb1c6e71f41589b18caf97ff7ace22d90d070b",
+      "bytes": 2012
+    },
+    {
+      "path": "src/halo_research_gateway/providers/http_fetch.py",
+      "sha256": "9b519611fae950d0a83b835b9b0d810ded9d2d12ae878508211e51e08570949c",
+      "bytes": 8247
+    },
+    {
+      "path": "src/halo_research_gateway/providers/optional.py",
+      "sha256": "a663ce2f4eeb6b69b42ddd4f0684e37c77ca82ce723938e8f24a2bed8ce1698b",
+      "bytes": 5276
+    },
+    {
+      "path": "src/halo_research_gateway/providers/reddit_rss.py",
+      "sha256": "fbc1b43b1b17be72dda19d75206106ca76effb9c279aaf1cbb2f78f0c9c134ea",
+      "bytes": 2497
+    },
+    {
+      "path": "src/halo_research_gateway/providers/search.py",
+      "sha256": "bf62785ee136df30c241775793c72f50dfd63b0afaf2d9ac9043718e3b24313e",
+      "bytes": 2787
+    },
+    {
+      "path": "src/halo_research_gateway/rate_limit.py",
+      "sha256": "cd4b464066d80528720d8baa7f758b5a02be99d53f09616fee03cee9d4065ec0",
+      "bytes": 3980
+    },
+    {
+      "path": "src/halo_research_gateway/security.py",
+      "sha256": "475d8f6a210336743ce1fb2219ca8ddc4e97f0127bdfdc283a9687bd399969f4",
+      "bytes": 5844
+    },
+    {
+      "path": "src/halo_research_gateway/service.py",
+      "sha256": "823131267735c102483d0280def477765d479037aec777e2ddce733826b48cc3",
+      "bytes": 32526
+    },
+    {
+      "path": "src/halo_research_gateway/tools/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "src/halo_research_gateway/windows_job.py",
+      "sha256": "7e181cb89b66f953b162e5d99eb2591e0d0b84c6db21c6fca70dfdd233cf1759",
+      "bytes": 3105
+    },
+    {
+      "path": "test_implementation.py",
+      "sha256": "077ffedf8419371a9b37dde32846d7577bb10c671844904d59587aa017416ff2",
+      "bytes": 1434
+    },
+    {
+      "path": "test_imports.py",
+      "sha256": "9ba7966141f0658e26e09c6d38392e227ed9a0fd03e2bb15c7f37b31644d5cde",
+      "bytes": 532
+    },
+    {
+      "path": "tests/acceptance/crawl_canary.py",
+      "sha256": "d2559f309ed39531b76a984889d34e6e5439e70486c35794981d926f30f1e7f4",
+      "bytes": 893
+    },
+    {
+      "path": "tests/acceptance/live_provider_canary.py",
+      "sha256": "7ce384db848c3149b91dc64db3315e2f5e56360406517792e9779303c6bf7be4",
+      "bytes": 2932
+    },
+    {
+      "path": "tests/acceptance/mcp_contract.py",
+      "sha256": "7f66e8228d6ac01f3b3ed582a579305e4f2131dba8bc670d0e5e7bd3bc4bf2eb",
+      "bytes": 2693
+    },
+    {
+      "path": "tests/acceptance/mcp_smoke.py",
+      "sha256": "5fa66a136b7a65c57119bed25ce7e4daf048c7d55c163ce73075f3134a79b71d",
+      "bytes": 2193
+    },
+    {
+      "path": "tests/unit/test_browser_policy.py",
+      "sha256": "fb50c5997fa8f4844ba9fbed5532ddebfd380642fb5ce9d814a0a4158f9d2186",
+      "bytes": 738
+    },
+    {
+      "path": "tests/unit/test_cache.py",
+      "sha256": "ae1837cdd0b3388a46ec7ee5da290e8de00f444d0ae0e28802810b62339c2861",
+      "bytes": 3876
+    },
+    {
+      "path": "tests/unit/test_chrome_import.py",
+      "sha256": "97f082d7ee54854990fcb2f4c38b9f34c401485a66a6abfa7391c93730259e52",
+      "bytes": 3064
+    },
+    {
+      "path": "tests/unit/test_config.py",
+      "sha256": "c8c1268f5b8d3c422d079ac808c2d6ff29a330fdf25f7a1f62f0f702cb58754d",
+      "bytes": 5483
+    },
+    {
+      "path": "tests/unit/test_cursor.py",
+      "sha256": "bfc607a7e27ae55f512a10cb0a34d98dda6324d2dc38cc1bb79bcd94f68651a4",
+      "bytes": 756
+    },
+    {
+      "path": "tests/unit/test_envelope.py",
+      "sha256": "0589ea0f86e96036e7bca01b61debf10de283f023460bb272d51572c2779af2e",
+      "bytes": 7048
+    },
+    {
+      "path": "tests/unit/test_exa.py",
+      "sha256": "184ff02062c6d40729bc4abb4f672a09e7671cbf11872c572fa9190998318fc1",
+      "bytes": 339
+    },
+    {
+      "path": "tests/unit/test_local_target_config.py",
+      "sha256": "488e0561421a6598fecfaae234ef1da1dff8c470d9b67fc88366772b350b51f6",
+      "bytes": 434
+    },
+    {
+      "path": "tests/unit/test_migrations.py",
+      "sha256": "3b3932d2a80b2da603dea4b54efbc83fd4e93b0176a231b0dc704a563f67a994",
+      "bytes": 2704
+    },
+    {
+      "path": "tests/unit/test_oauth.py",
+      "sha256": "0298fa5db78e3bc3652abeff70c951b207630a5b85f8a0632cdfe470b473720e",
+      "bytes": 4356
+    },
+    {
+      "path": "tests/unit/test_optional_providers.py",
+      "sha256": "e0ff87b514fbc291700b474d74e134d8b48ca1865910ce674bce0b8f12278d0e",
+      "bytes": 2348
+    },
+    {
+      "path": "tests/unit/test_redaction.py",
+      "sha256": "be9a582a75c2654dd9a37bde01cb01e544ddbd5350c09bf543012e932eb82ec5",
+      "bytes": 2568
+    },
+    {
+      "path": "tests/unit/test_scaffold.py",
+      "sha256": "1008661c7342304d05eaa035e3490da432e3f096d25c94c089a424a6f3fac400",
+      "bytes": 1177
+    },
+    {
+      "path": "tests/unit/test_security.py",
+      "sha256": "1b76fd415b3ecc2356f0656c16a78251d924d3fc72b39d47456670a89bfa6ac7",
+      "bytes": 3448
+    },
+    {
+      "path": "tests/unit/test_v15_state.py",
+      "sha256": "e5365e28a10ba3799962ba472211a2e1773a0c0d6a592950bd741a17803bd952",
+      "bytes": 8644
+    },
+    {
+      "path": "uv.lock",
+      "sha256": "c24ce8681f33f8cf43c3843e329065279e30ea8d22048443336d9fd41a67a3a9",
+      "bytes": 265851
+    },
+    {
+      "path": "verify_implementation.py",
+      "sha256": "2c92ac695cd64bcb83a036dd04119081bacb705cdb7cd48d85de0a614e788ae8",
+      "bytes": 1324
+    },
+    {
+      "path": "verify_toml.py",
+      "sha256": "94fcf7fc4d652f434ad9bdbb797a73ef75fbcbe14b13eee191cba4ae6fc8f616",
+      "bytes": 422
+    },
+    {
+      "path": "website/.gitignore",
+      "sha256": "14c2d4b7781dcd266e563c4f08880637ae620c7e8a182246a23b138e5f791e8e",
+      "bytes": 384
+    },
+    {
+      "path": "website/.openai/hosting.json",
+      "sha256": "a02f7cbe8d3bdecb6c1dfc8ca553dd2af5aa355268f695668f623e3bc6aa2e20",
+      "bytes": 91
+    },
+    {
+      "path": "website/.oxfmtrc.json",
+      "sha256": "0962fdddb1840a06b5afb918ff3f2ff56bce346082651ec5c3567c01dd809f17",
+      "bytes": 260
+    },
+    {
+      "path": "website/.oxlintrc.json",
+      "sha256": "1a7aa1c7d83b05939e4e697eed9316224caea8958c4ad12837f8be740c13a47d",
+      "bytes": 1370
+    },
+    {
+      "path": "website/app/globals.css",
+      "sha256": "ba1521fd2ee691d204163f74bd5ba27c01c54bedab020a4e0417b07448a81a97",
+      "bytes": 5735
+    },
+    {
+      "path": "website/app/layout.tsx",
+      "sha256": "fe81c7d090aaf5e24e7805adb84643bbd6da6cb13d067ec073b9ef56f4ed35d6",
+      "bytes": 1208
+    },
+    {
+      "path": "website/app/page.tsx",
+      "sha256": "f637df3e0f21846f8fe691238e3a6a62e43a5544b4155e4a919fc7015e97a5d9",
+      "bytes": 21453
+    },
+    {
+      "path": "website/components.json",
+      "sha256": "9928283696d86836422959a2c520df83a718d31ffbcab533a14ca8dca2c8d475",
+      "bytes": 516
+    },
+    {
+      "path": "website/components/ui/accordion.tsx",
+      "sha256": "33e1c60ba503f4eb36f9a8b1f68b236174b11656d8efea6bac65abddda2f9019",
+      "bytes": 2664
+    },
+    {
+      "path": "website/components/ui/alert-dialog.tsx",
+      "sha256": "ed0f1fc432bca4c72f9dd8741ae2268a00d2d3429ff1149bf463c4271b13d8e9",
+      "bytes": 5301
+    },
+    {
+      "path": "website/components/ui/alert.tsx",
+      "sha256": "e760c470414c9e617d7292094146d906352fee3b1526b790a611d4a118e79196",
+      "bytes": 2060
+    },
+    {
+      "path": "website/components/ui/aspect-ratio.tsx",
+      "sha256": "b7fb499905e441a0602392ce118828425ad059079060109694d01f9fac00ad20",
+      "bytes": 406
+    },
+    {
+      "path": "website/components/ui/attachment.tsx",
+      "sha256": "dcb9e899f1322158f016d75c400fa8cce9b797ea49bec65528bac686cee2ec5c",
+      "bytes": 6132
+    },
+    {
+      "path": "website/components/ui/avatar.tsx",
+      "sha256": "342f32b683937b826cdff2999d5e3057836d459aa43eadb0c3538b818d195b9a",
+      "bytes": 3056
+    },
+    {
+      "path": "website/components/ui/badge.tsx",
+      "sha256": "5706189b86e8670499fb33f37147dd6f65c39d59eef5211e34157f2952c35e32",
+      "bytes": 1934
+    },
+    {
+      "path": "website/components/ui/breadcrumb.tsx",
+      "sha256": "b28b76d6f8d0feafbbeff2220cf83f9a6b03d8c81f0145b3af4c7d19933ab2c0",
+      "bytes": 2602
+    },
+    {
+      "path": "website/components/ui/bubble.tsx",
+      "sha256": "dfb9f52ae3b89e4a419b336c3893ab6fb658fc324fb402759d878d54e3b2db5a",
+      "bytes": 4828
+    },
+    {
+      "path": "website/components/ui/button-group.tsx",
+      "sha256": "79ad8fb6644a775cc49131c1aa737ca26cae6a563beec0fa52ef6e8d85202fab",
+      "bytes": 2494
+    },
+    {
+      "path": "website/components/ui/button.tsx",
+      "sha256": "081d2a1cb4f3aec636a6894d9eff4e90d476d5db85b82d0399c1f4d18517112e",
+      "bytes": 3247
+    },
+    {
+      "path": "website/components/ui/calendar.tsx",
+      "sha256": "e7bc682eff8f2215e6b0aab40d1afb7ee927c5f5bef348ccff207631b9261658",
+      "bytes": 8503
+    },
+    {
+      "path": "website/components/ui/card.tsx",
+      "sha256": "625fce5e16577a45108a86d7afcd70b8931cb2032abe0d6a3faf1010f666d672",
+      "bytes": 2645
+    },
+    {
+      "path": "website/components/ui/carousel.tsx",
+      "sha256": "7444126492d4e0b85b1270f0d83a0955350fa95b3d3fb7b88edc2a5c2b4e5d14",
+      "bytes": 5727
+    },
+    {
+      "path": "website/components/ui/chart.tsx",
+      "sha256": "56ab0e0b41f0cc7902414e046ea4f710bdbf0b756028672ea8c7e5137a278f2b",
+      "bytes": 10581
+    },
+    {
+      "path": "website/components/ui/checkbox.tsx",
+      "sha256": "56b2869e5478f38238e6a3d8aefabfbe8af565b38b2ffad06466487b3eacf154",
+      "bytes": 1538
+    },
+    {
+      "path": "website/components/ui/collapsible.tsx",
+      "sha256": "3fdf7ef1ca89c4d85de5ecbb25813d0f572003a53b021baf43c5f3523e48ec97",
+      "bytes": 664
+    },
+    {
+      "path": "website/components/ui/combobox.tsx",
+      "sha256": "282041e2e8c52cc12e7bbc717bbd3f8c9c5ba18e7fa75b97053bc79687e1181e",
+      "bytes": 9135
+    },
+    {
+      "path": "website/components/ui/command.tsx",
+      "sha256": "9c1eae65aa105935a34c6b736f673b71a2ef939dde53dce29d986221edbf1f9f",
+      "bytes": 5029
+    },
+    {
+      "path": "website/components/ui/context-menu.tsx",
+      "sha256": "05c3646b452f5e3b9eb952eeba3d90657606d2b0875cb77652cdb5eadba0eb5c",
+      "bytes": 8166
+    },
+    {
+      "path": "website/components/ui/dialog.tsx",
+      "sha256": "8bc85def62538b4e62e8530c6b0ba167a192c38519c05f104bf6e10de73b811f",
+      "bytes": 4087
+    },
+    {
+      "path": "website/components/ui/direction.tsx",
+      "sha256": "2dea8a95accb1723db2454ccc858697d5b1f1454568cf4da5e8fcbd0cf7cc1ee",
+      "bytes": 105
+    },
+    {
+      "path": "website/components/ui/drawer.tsx",
+      "sha256": "b7ac53d0e5d1fed25fc3f2ac5f5a36e247ca684c677ac376829fa8a7c039b79e",
+      "bytes": 11396
+    },
+    {
+      "path": "website/components/ui/dropdown-menu.tsx",
+      "sha256": "efc088f3d79f64cf96e222701ae23dcf385b53947b3cd57ffb7be6f5dadcbfe2",
+      "bytes": 8809
+    },
+    {
+      "path": "website/components/ui/empty.tsx",
+      "sha256": "bf54bac4881b79f6a53f55e70c18640f58a058add88aed763c71be35c4f64f59",
+      "bytes": 2415
+    },
+    {
+      "path": "website/components/ui/field.tsx",
+      "sha256": "79023ca89aae39f9cffa83a9483c9c672099b4547cc821486283db61c6ae9327",
+      "bytes": 6303
+    },
+    {
+      "path": "website/components/ui/hover-card.tsx",
+      "sha256": "d8cb7270c5893213fc00b5f270f9bc461e2d7ce5b81f77b8778253a1aeda6a2c",
+      "bytes": 1863
+    },
+    {
+      "path": "website/components/ui/input-group.tsx",
+      "sha256": "2e65ddecb4401220be374cc6cfc42344538266cafeb2e590b3c760c7ed6b490a",
+      "bytes": 5289
+    },
+    {
+      "path": "website/components/ui/input-otp.tsx",
+      "sha256": "867f568259caac95f682d128d72e681b3fe7c31701a396eacc9284401d917a6a",
+      "bytes": 2558
+    },
+    {
+      "path": "website/components/ui/input.tsx",
+      "sha256": "6763c86c34c1c07826386d376f5da8fe2e41585bff3615716d5da88915e088d8",
+      "bytes": 1046
+    },
+    {
+      "path": "website/components/ui/item.tsx",
+      "sha256": "9c5e45e6c4aae5b9c4c1304e1f1208d32681ab616a6e0de9de6e0d6b22690592",
+      "bytes": 4888
+    },
+    {
+      "path": "website/components/ui/kbd.tsx",
+      "sha256": "bdfb38a4f7b9b604e196b5cee0d86f12311dae72946f0dbf5928c8ad0638178f",
+      "bytes": 842
+    },
+    {
+      "path": "website/components/ui/label.tsx",
+      "sha256": "e4a6fb662c44a44c468d16d79d02b3a3e5bf7b77bd50aef1e586c4d9613df0f6",
+      "bytes": 524
+    },
+    {
+      "path": "website/components/ui/marker.tsx",
+      "sha256": "cd1e872384cf5001e48b4dc3cc2bb011eba9700561d41c83a89e872b60baf175",
+      "bytes": 1962
+    },
+    {
+      "path": "website/components/ui/menubar.tsx",
+      "sha256": "a3715f8e8b78261f5784929c532e100759c58e831c91e842438730797bc9a124",
+      "bytes": 8315
+    },
+    {
+      "path": "website/components/ui/message-scroller.tsx",
+      "sha256": "9512c586d1b0885cf3ae4f1c3dd4281cbdfec7428fe98ff48a66b4ba2a7319f4",
+      "bytes": 4070
+    },
+    {
+      "path": "website/components/ui/message.tsx",
+      "sha256": "2fedcc64ed8563a44f6697615e77574d96f819fe6e5e2fa8a555e30f8ed6bbd7",
+      "bytes": 2246
+    },
+    {
+      "path": "website/components/ui/native-select.tsx",
+      "sha256": "3aafb74b98c039dae4eb2c64c47ec6f5d61fdc888c057de47550346f702f434b",
+      "bytes": 2133
+    },
+    {
+      "path": "website/components/ui/navigation-menu.tsx",
+      "sha256": "c8e64bf5241145b512ae18f1062da8275691edf927736496a3860bec76ad6fa1",
+      "bytes": 7436
+    },
+    {
+      "path": "website/components/ui/pagination.tsx",
+      "sha256": "1f3c1713e8824cca7c3c0edacf9da7b0114bfda58640771b8fe0bc6179b370ce",
+      "bytes": 2928
+    },
+    {
+      "path": "website/components/ui/popover.tsx",
+      "sha256": "7376624438588e2d64b6e0c5cdf82cbc5fd4530bbcf1f0235c5f3ee08d12e877",
+      "bytes": 2586
+    },
+    {
+      "path": "website/components/ui/progress.tsx",
+      "sha256": "0d8ddec9731940e104b851cf3ac67d2fa8589b289824317a9e8f326e090ba65a",
+      "bytes": 1751
+    },
+    {
+      "path": "website/components/ui/radio-group.tsx",
+      "sha256": "43f2d6c2f5bdd4a26c57d93e6f141be20472f9bb8777d9a0d61cd8a5e281a999",
+      "bytes": 1843
+    },
+    {
+      "path": "website/components/ui/resizable.tsx",
+      "sha256": "ea7b85817d4dc70866e0bcf15264e7e1bd7e1893eb4404261fbc23a4d6ff9029",
+      "bytes": 1681
+    },
+    {
+      "path": "website/components/ui/scroll-area.tsx",
+      "sha256": "730c4cc49f8f1b705eb1389cd32c774056a0a2a7a48a9b092cbe44c608be3a0b",
+      "bytes": 1632
+    },
+    {
+      "path": "website/components/ui/select.tsx",
+      "sha256": "45489c502a21fdd5271481d64ad8f762181c9653d8d26bdc6f75450b78c3c852",
+      "bytes": 6700
+    },
+    {
+      "path": "website/components/ui/separator.tsx",
+      "sha256": "92ad5065f03d7edc98f367e729f3ec84ece1d99ee8cd0d3a8137f266d4ab3d8a",
+      "bytes": 551
+    },
+    {
+      "path": "website/components/ui/sheet.tsx",
+      "sha256": "adb432b6f9d7a4733caa45ba8bf510a8a7ff0f6d0dd3aa1f013959fb61268234",
+      "bytes": 4446
+    },
+    {
+      "path": "website/components/ui/sidebar.tsx",
+      "sha256": "aa3322ca63f098aa1d2abf750f9d097da07362fce25939357f2cefc9b6a03988",
+      "bytes": 21779
+    },
+    {
+      "path": "website/components/ui/skeleton.tsx",
+      "sha256": "4c342102b2bbf5bd8c04fa151fe5c13c42faee2f9587a3586c27322020ca35d1",
+      "bytes": 278
+    },
+    {
+      "path": "website/components/ui/slider.tsx",
+      "sha256": "af657e73d672f4dd205f19abf151d21a172cf36abfdca49fd7014a20e12367a9",
+      "bytes": 1879
+    },
+    {
+      "path": "website/components/ui/spinner.tsx",
+      "sha256": "8ddbb330e5564a1f53026da36c2322ed4b027687e91a88f63348ab10f26ae0cb",
+      "bytes": 360
+    },
+    {
+      "path": "website/components/ui/switch.tsx",
+      "sha256": "04b085443a1c6a72d408e6eb7dd45df881ca27814415b81b39f614806b52c8fc",
+      "bytes": 1818
+    },
+    {
+      "path": "website/components/ui/table.tsx",
+      "sha256": "88f2ba7877eea7f34a5da18b7fa096eb2c7bed602677ce54f5494b494c5afc2e",
+      "bytes": 2418
+    },
+    {
+      "path": "website/components/ui/tabs.tsx",
+      "sha256": "dd914d769bc223b5d5ea56839a7752e534eb475f8d2897d5675606c368bbca1f",
+      "bytes": 3510
+    },
+    {
+      "path": "website/components/ui/textarea.tsx",
+      "sha256": "7ae7f0f5d907be24658652c771fee1685193102bf3200aafbf578d144d379fbf",
+      "bytes": 847
+    },
+    {
+      "path": "website/components/ui/toast.tsx",
+      "sha256": "9126b09f47f0b117bf748cf19aaa4987a1f72d0813d10bfc4b4b0128e6439e48",
+      "bytes": 7353
+    },
+    {
+      "path": "website/components/ui/toggle-group.tsx",
+      "sha256": "9b006523be0fe3230cd75f7adf78a501829d594fd3506c56c55bb38211ff1850",
+      "bytes": 3201
+    },
+    {
+      "path": "website/components/ui/toggle.tsx",
+      "sha256": "6bf41d6f6ffe602c3e28274a82ac029e6ee1331ba3c670a6d814048e1823cc28",
+      "bytes": 1770
+    },
+    {
+      "path": "website/components/ui/tooltip.tsx",
+      "sha256": "b86e51969931c3d62e88d0bdacd1cd8219105dc6d6b6a588a80011bf92e987cd",
+      "bytes": 2855
+    },
+    {
+      "path": "website/hooks/use-mobile.ts",
+      "sha256": "82bff42ff087bd5dc90a5d17609cc428b8688de92d1333073a839af5ad3c9cbd",
+      "bytes": 585
+    },
+    {
+      "path": "website/lib/utils.ts",
+      "sha256": "9304a861c8673bee09e0f12de31773abbde503b02e59dfd74763ddec2e37cf05",
+      "bytes": 169
+    },
+    {
+      "path": "website/next.config.ts",
+      "sha256": "d063bebef3a4878ae82f9f9547c2c9675b8b6945ab23702932dcb63a011a9fc9",
+      "bytes": 104
+    },
+    {
+      "path": "website/package-lock.json",
+      "sha256": "19554750c8d0f14a82f53230e6c8392c0a05374c3d43ac0c3fc556cb74a49d1f",
+      "bytes": 348093
+    },
+    {
+      "path": "website/package.json",
+      "sha256": "26bb2364e5e16567a19cc22c2408f135f2794160f332f15428164009d6143903",
+      "bytes": 1504
+    },
+    {
+      "path": "website/public/favicon.svg",
+      "sha256": "e6d2e59b7b5bbb0342e0fb496dfc262decbfe4426bbb7b047aec8d467d1dc6f7",
+      "bytes": 712
+    },
+    {
+      "path": "website/tsconfig.json",
+      "sha256": "81aca06cd76be09d9b65c7dff6a031c38664263b506ea792a28f36b17be25f2a",
+      "bytes": 671
+    },
+    {
+      "path": "website/vite.config.ts",
+      "sha256": "7183c338ee9f0f2820097551f9690f9f5ea3e3ce86da86ffd89430c1b9df12a6",
+      "bytes": 1829
+    }
+  ]
 }
