@@ -4,6 +4,8 @@
 
 Halo Research Gateway is a persistent, localhost-only MCP service that gives DSH, Codex, Claude Code, OpenCode, and LM Studio Bionic the same source-backed research surface. DSH is the primary consumer; frontier hosts are secondary or fallback clients.
 
+**Landing page:** https://halo-research-gateway.sconverse.chatgpt.site (owner-only Sites publication)
+
 - MCP: `http://127.0.0.1:8765/mcp`
 - health: `http://127.0.0.1:8765/health`
 - redacted statistics: `http://127.0.0.1:8765/stats`

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-01T08:51:50.1643333Z",
+  "generated_at": "2026-09-01T08:55:18.9109276Z",
   "project": "halo-research-gateway",
   "version": "0.1.0",
   "specification": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.5.md",
@@ -84,8 +84,8 @@
     },
     {
       "path": "docs/USER-MANUAL.md",
-      "sha256": "4a780b41f8fc176d0efe59361ffb071d0e968a2dc6151933035d0fd32e7e48b4",
-      "bytes": 13842
+      "sha256": "c1e723bdae7c6bedb25854753e5e19f874469e5274795e61a048ff8e6897a3ce",
+      "bytes": 13929
     },
     {
       "path": "pyproject.toml",
@@ -94,8 +94,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "92ea8d1dfc5d1fc63b2ec82fb5e3f8b6a485acb85e1645b2b568eb5b023977d5",
-      "bytes": 8931
+      "sha256": "671a52b79f9c372056b9c2ffa67738aaf08a672a4ff53da994f8a0c2c786ec39",
+      "bytes": 9034
     },
     {
       "path": "scripts/Install-HaloResearch.ps1",

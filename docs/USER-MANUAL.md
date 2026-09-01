@@ -7,6 +7,7 @@ This is the operator guide for installing, using, maintaining, and recovering Ha
 | Item | Value |
 | --- | --- |
 | Product version | `0.1.0` |
+| Landing page | `https://halo-research-gateway.sconverse.chatgpt.site` (owner-only) |
 | Result schema | `1.5` |
 | Database schema | `3` |
 | Bind address | `127.0.0.1` only |
