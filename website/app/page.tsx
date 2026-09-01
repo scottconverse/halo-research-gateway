@@ -23,32 +23,32 @@ const capabilities = [
   {
     icon: Search,
     title: 'Discovery that keeps going',
-    body: 'Anonymous Exa with DDGS fallback, source filters, freshness controls, and one shared budget across every host.',
+    body: 'Anonymous Exa with DDGS fallback, bounded deep research, read-only GitHub App results, public captions, and structured community threads.',
   },
   {
     icon: Globe2,
     title: 'Fetch and real browser crawl',
-    body: 'DNS-pinned direct HTTP for ordinary pages. Crawl4AI and gateway-owned Chrome for JavaScript and authenticated profiles.',
+    body: 'DNS-pinned direct HTTP for ordinary pages. Crawl4AI and gateway-owned Chrome add JavaScript, imported profiles, and policy-checked WebSockets.',
   },
   {
     icon: Database,
     title: 'Evidence that survives the turn',
-    body: 'Persistent cache, durable jobs, bounded queues, signed continuation pages, canonical URLs, and citable evidence.',
+    body: 'Persistent cache, durable jobs, fair client queues, signed continuation pages, canonical URLs, deduplication, and citable evidence.',
   },
   {
     icon: KeyRound,
     title: 'Operator-owned identity',
-    body: 'DPAPI-encrypted connections, OAuth Authorization Code + PKCE, and explicit selected or complete Chrome-profile import.',
+    body: 'DPAPI-encrypted connections, OAuth PKCE, narrow Gmail compose, separate GitHub research/action Apps, and explicit Chrome import.',
   },
   {
     icon: Workflow,
     title: 'Actions without hidden authority',
-    body: 'Prepare, preview, approve, execute, and receipt. Changed plans invalidate approval; duplicate execution stays idempotent.',
+    body: 'Prepare, preview, approve, execute, and receipt. Plans reserve durably before upstream calls; ambiguous outcomes never auto-retry.',
   },
   {
     icon: ShieldCheck,
     title: 'Powerful by design',
-    body: 'All public ports, exact local targets, visible CAPTCHA/proxy budgets, and no silent public-to-private pivots.',
+    body: 'All public ports, exact local targets, and disabled-by-default CapSolver/Bright Data adapters with domain and spend limits.',
   },
 ];
 
@@ -82,7 +82,7 @@ export default function Home() {
             </span>
             <span>Halo Research Gateway</span>
             <span className="hidden rounded-full border border-emerald-300/20 bg-emerald-300/8 px-2 py-0.5 font-mono text-[10px] text-emerald-200 sm:inline">
-              v0.1.0
+              v0.2.0
             </span>
           </a>
           <div className="hidden items-center gap-7 text-sm text-slate-400 md:flex">
@@ -144,7 +144,7 @@ export default function Home() {
             <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-400">
               {[
                 '16 semantic tools',
-                '83 deterministic tests',
+                '128 deterministic tests',
                 '5 host integrations',
               ].map((item) => (
                 <span key={item} className="flex items-center gap-2">
@@ -268,7 +268,8 @@ export default function Home() {
                 </div>
                 <div className="mt-5 space-y-2 font-mono text-[10px] text-slate-400">
                   {[
-                    'search + fetch + Crawl4AI',
+                    'search + deep research + Crawl4AI',
+                    'GitHub + transcripts + communities',
                     'cache + queues + signed cursors',
                     'DPAPI vault + OAuth PKCE',
                     'jobs + approval + receipts',
@@ -363,7 +364,7 @@ export default function Home() {
               availability into a fake deterministic promise.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <span className="proof-pill">83 / 83 tests</span>
+              <span className="proof-pill">128 / 128 tests</span>
               <span className="proof-pill">Windows CI green</span>
               <span className="proof-pill">Schema 1.5</span>
               <span className="proof-pill">DB schema 3</span>
@@ -384,7 +385,7 @@ export default function Home() {
               'Cursor-only continuation — 1,729 chars',
               'Exa · DDGS · Crawl4AI · Reddit · PyMuPDF',
               'Windows Job Object containment',
-              'Real DSH Qwen planner selection',
+              'Real DSH planner tool selection',
             ].map((line) => (
               <div
                 key={line}
@@ -436,7 +437,7 @@ export default function Home() {
 
       <section id="start" className="py-24">
         <div className="mx-auto max-w-5xl px-5 text-center lg:px-8">
-          <p className="section-kicker">Version 0.1.0</p>
+          <p className="section-kicker">Version 0.2.0</p>
           <h2 className="mx-auto max-w-3xl text-balance text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
             From install to source-backed DSH research in one command.
           </h2>
@@ -476,7 +477,7 @@ export default function Home() {
             <span className="grid size-8 place-items-center rounded-lg border border-cyan-300/20 bg-cyan-300/7 text-cyan-200">
               <Braces className="size-4" />
             </span>
-            <span>Halo Research Gateway · v0.1.0</span>
+            <span>Halo Research Gateway · v0.2.0</span>
           </div>
           <p>DSH-first. Local by default. Evidence all the way down.</p>
         </div>

@@ -20,7 +20,7 @@ try:
     data = json.loads(result.stdout.strip())
     print("✓ Main module executes and outputs correct JSON")
     assert data["service"] == "halo-research-gateway"
-    assert data["version"] == "0.1.0" 
+    assert data["version"] == "0.2.0"
     assert data["status"] == "scaffold"
     print("✓ Main module JSON content is correct")
 except Exception as e:

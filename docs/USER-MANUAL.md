@@ -1,4 +1,4 @@
-# Halo Research Gateway 0.1.0 — Complete User Manual
+# Halo Research Gateway 0.2.0 — Complete User Manual
 
 This is the operator guide for installing, using, maintaining, and recovering Halo Research Gateway on the HALO Windows workstation. [Specification v1.5](HALO-RESEARCH-GATEWAY-SPEC-v1.5.md) remains the governing design and acceptance contract.
 
@@ -6,7 +6,7 @@ This is the operator guide for installing, using, maintaining, and recovering Ha
 
 | Item | Value |
 | --- | --- |
-| Product version | `0.1.0` |
+| Product version | `0.2.0` |
 | Landing page | `https://halo-research-gateway.sconverse.chatgpt.site` (owner-only) |
 | Result schema | `1.5` |
 | Database schema | `3` |
@@ -34,7 +34,7 @@ From the repository root:
 
 The installer restores locked Python 3.12 dependencies, preserves operator configuration, runs the quality gate, installs the canonical skill, merges supported host registrations, registers the task when requested, and starts the service. It must not rewrite DSH model settings.
 
-Open `http://127.0.0.1:8765/operator`. Healthy means `status: ok`, version `0.1.0`, result schema `1.5`, database schema `3`, and ordinary providers ready or honestly degraded.
+Open `http://127.0.0.1:8765/operator`. Healthy means `status: ok`, version `0.2.0`, result schema `1.5`, database schema `3`, and ordinary providers ready or honestly degraded.
 
 ## 3. Start, stop, and inspect
 
@@ -187,7 +187,7 @@ Research is read-only. Consequential work follows:
 
 Changing destination, recipients, fields, account, action, or price invalidates approval. Ambiguous outcomes are never retried automatically.
 
-Version 0.1.0 releases generic approved form submission, narrow Gmail compose actions, and GitHub issue/comment actions through a separate write App. Purchases, account/security changes, deletion, authenticated Reddit, and arbitrary sites remain preview-only or unsupported.
+Version 0.2.0 releases generic approved form submission, narrow Gmail compose actions, and GitHub issue/comment actions through a separate write App. Purchases, account/security changes, deletion, authenticated Reddit, and arbitrary sites remain preview-only or unsupported.
 
 ## 11. Optional CAPTCHA/proxy providers
 
@@ -290,7 +290,7 @@ uv run python tests\acceptance\live_provider_canary.py
 uv run python tests\acceptance\crawl_canary.py
 ```
 
-Read [implementation status](implementation-status.md), [evidence](EVIDENCE-2026-09-01.md), [security](security.md), [operations](operations.md), [host integration](host-integration.md), and [quality gate](quality-gate.md).
+Read [0.2.0 release notes](RELEASE-NOTES-v0.2.0.md), [0.2.0 evidence](EVIDENCE-v0.2.0-2026-09-01.md), [implementation status](implementation-status.md), [security](security.md), [operations](operations.md), [host integration](host-integration.md), and [quality gate](quality-gate.md).
 
 ## 17. Trust boundary
 

@@ -13,20 +13,30 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Halo Research Gateway — One research plane for every agent',
+  metadataBase: new URL('https://halo-research-gateway.sconverse.chatgpt.site'),
+  title: 'Halo Research Gateway 0.2.0 — One research plane for every agent',
   description:
-    'A DSH-first local MCP gateway for search, crawling, evidence, authenticated research, durable jobs, and operator-authorized web actions.',
+    'A DSH-first local MCP gateway for deep research, crawling, GitHub, transcripts, communities, authenticated identity, durable jobs, and operator-authorized web actions.',
   openGraph: {
-    title: 'Halo Research Gateway',
+    title: 'Halo Research Gateway 0.2.0',
     description:
       'One local, source-backed research plane for every agent in the Halo stack.',
     type: 'website',
+    images: [
+      {
+        url: '/og.png',
+        width: 1200,
+        height: 630,
+        alt: 'Halo Research Gateway 0.2.0 — One research plane. Every agent.',
+      },
+    ],
   },
   twitter: {
-    card: 'summary',
-    title: 'Halo Research Gateway',
+    card: 'summary_large_image',
+    title: 'Halo Research Gateway 0.2.0',
     description:
       'DSH-first research, crawling, evidence, identity, and operator-authorized actions.',
+    images: ['/og.png'],
   },
 };
 

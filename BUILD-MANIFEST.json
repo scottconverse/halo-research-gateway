@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-01T23:18:23.9015892Z",
+  "generated_at": "2026-09-01T23:56:30.8449286Z",
   "project": "halo-research-gateway",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "specification": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.5.md",
   "result_schema": "1.5",
   "python": "3.12",
@@ -28,6 +28,11 @@
       "bytes": 5
     },
     {
+      "path": "CHANGELOG.md",
+      "sha256": "e901c3fa2d12d2f8e4142dd3d9925626d2ec90c0525787f67ffb86aa61abe201",
+      "bytes": 2014
+    },
+    {
       "path": "config/config.example.toml",
       "sha256": "04d68e27abba9781d290f8252e98adfd00481b1524e5ad770a8f3544a003dbe3",
       "bytes": 2628
@@ -48,6 +53,11 @@
       "bytes": 7472
     },
     {
+      "path": "docs/EVIDENCE-v0.2.0-2026-09-01.md",
+      "sha256": "a6673f3894e262156b28a7b29dff06a608dfd7aeb5743c43f4a7232102727132",
+      "bytes": 1320
+    },
+    {
       "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
       "sha256": "f9e0c1b950bfba0d1b32b6d2e296fd2b38d1e71a1493c303250e3e51c99e6045",
       "bytes": 155620
@@ -64,8 +74,8 @@
     },
     {
       "path": "docs/implementation-status.md",
-      "sha256": "2de808e171e885fa83a64a8dec965b0af87d14ea0335bc49a992e199b3a59fef",
-      "bytes": 7001
+      "sha256": "7bed553a70a71366fbb80bbd8e3ce325b29bf418e35684c03103a6900104adfc",
+      "bytes": 7006
     },
     {
       "path": "docs/operations.md",
@@ -78,24 +88,29 @@
       "bytes": 1250
     },
     {
+      "path": "docs/RELEASE-NOTES-v0.2.0.md",
+      "sha256": "f4dc704c1bbe54604c3edd74da8464ad93ad62b9c55de6b5d3620e04eb5deb50",
+      "bytes": 2375
+    },
+    {
       "path": "docs/security.md",
       "sha256": "28f4f6abcb886e1a814543fc701c5968feb8607f723ef81915e1349359ba4118",
       "bytes": 2699
     },
     {
       "path": "docs/USER-MANUAL.md",
-      "sha256": "75256c6ad0953803946326973e65d412d265a4316424d20b551653a8322351d4",
-      "bytes": 15420
+      "sha256": "d4ef0dfd8a17519286abaa4102b24f19036c70ab8143335b6aa5e52f1b458c60",
+      "bytes": 15481
     },
     {
       "path": "pyproject.toml",
-      "sha256": "1376f8dbd5d47256c80701d9f466ca219f78c68cd15da6fe9fdf75f26ea6fad5",
+      "sha256": "4b0cbef6b8ef05e23be6bccc1d6a37b1221cc692e42f9e740e49cc046658c462",
       "bytes": 1062
     },
     {
       "path": "README.md",
-      "sha256": "e4e90da4b73d82e6e7a8c5ca957c4a2ffbe9429a8e3013d8ccfdf38ced002764",
-      "bytes": 9632
+      "sha256": "de7f7495a5bfc09bc8d208a38bd43315aa484f32b649b341ca75b4e8ae76d817",
+      "bytes": 9749
     },
     {
       "path": "scripts/Install-HaloResearch.ps1",
@@ -129,7 +144,7 @@
     },
     {
       "path": "scripts/Update-BuildManifest.ps1",
-      "sha256": "4365d3eeede2a53546763d026a6a8147778dd82af929adf16e95665f64dd710e",
+      "sha256": "07b49f9e751281002fda4cc27cc1cfbc8ddb2e4926d34aaeae7221c3de4bcca2",
       "bytes": 1092
     },
     {
@@ -174,7 +189,7 @@
     },
     {
       "path": "src/halo_research_gateway/__init__.py",
-      "sha256": "91447944015cec709e8aa7655f7e9d64e1e4508e7023a57fe3746911c0fc6fed",
+      "sha256": "667d4a15b970b851e20d17510224670c14646cfb6d5a1e388ca6b9cc6da8bf41",
       "bytes": 22
     },
     {
@@ -204,8 +219,8 @@
     },
     {
       "path": "src/halo_research_gateway/app.py",
-      "sha256": "d08a1a4e19d2de0da9f3b7f6e2d281a402a9900d1886d42339d7e96896d23df5",
-      "bytes": 22831
+      "sha256": "da6b211ad09e48b78ed8b5127732566da0d38f2d9b9233447190fd1f7cd798d3",
+      "bytes": 22861
     },
     {
       "path": "src/halo_research_gateway/cache_errors.py",
@@ -379,8 +394,8 @@
     },
     {
       "path": "src/halo_research_gateway/service.py",
-      "sha256": "fb7bd94fe6358b9e981bbab802bd4c44315d09b1478d2f94552feafd5a7838bc",
-      "bytes": 50134
+      "sha256": "272e13ad132871bfb6c357000d66a3226d8fa096e6ca90c94c2e33a27fee8cb3",
+      "bytes": 50164
     },
     {
       "path": "src/halo_research_gateway/tools/__init__.py",
@@ -394,8 +409,8 @@
     },
     {
       "path": "test_implementation.py",
-      "sha256": "077ffedf8419371a9b37dde32846d7577bb10c671844904d59587aa017416ff2",
-      "bytes": 1434
+      "sha256": "8e4d12eb6d86663ee1cc6335c0a12b6b7c151f49dbc73f039f61b7b91befbd36",
+      "bytes": 1433
     },
     {
       "path": "test_imports.py",
@@ -519,7 +534,7 @@
     },
     {
       "path": "tests/unit/test_scaffold.py",
-      "sha256": "4a983409db1590fc6b9a922fca231706e80e8645b7c04a46ff89b6e95abf46b6",
+      "sha256": "6b0b9c20bc0e0be99c784599f76cfb6cc9866d415a5e5d370b9926b0d1578f88",
       "bytes": 2698
     },
     {
@@ -539,7 +554,7 @@
     },
     {
       "path": "uv.lock",
-      "sha256": "c24ce8681f33f8cf43c3843e329065279e30ea8d22048443336d9fd41a67a3a9",
+      "sha256": "84c5ffc7293bd97cd37e5304d06cd0d257b1d1f1ee9aca920e6f4f98b07c0c7d",
       "bytes": 265851
     },
     {
@@ -579,13 +594,13 @@
     },
     {
       "path": "website/app/layout.tsx",
-      "sha256": "fe81c7d090aaf5e24e7805adb84643bbd6da6cb13d067ec073b9ef56f4ed35d6",
-      "bytes": 1208
+      "sha256": "c5e432d57c943ccab001d47428b1dd40bda6795d7bb0d8c19e4b0b2c10ea3c7a",
+      "bytes": 1560
     },
     {
       "path": "website/app/page.tsx",
-      "sha256": "f637df3e0f21846f8fe691238e3a6a62e43a5544b4155e4a919fc7015e97a5d9",
-      "bytes": 21453
+      "sha256": "958c0dd321440447a8971776df853a52e92718f73e1628eb8320020a281ec614",
+      "bytes": 21624
     },
     {
       "path": "website/components.json",
@@ -909,18 +924,23 @@
     },
     {
       "path": "website/package-lock.json",
-      "sha256": "19554750c8d0f14a82f53230e6c8392c0a05374c3d43ac0c3fc556cb74a49d1f",
+      "sha256": "028d457e8bd1f0f30223eae4b22d7b5d17265f6c1bff4fe6ebac309e60ad8308",
       "bytes": 348093
     },
     {
       "path": "website/package.json",
-      "sha256": "26bb2364e5e16567a19cc22c2408f135f2794160f332f15428164009d6143903",
+      "sha256": "c5009c9b7124625783a81f3e30b3e8bfca46b5af4430722d4efa0209418e1d68",
       "bytes": 1504
     },
     {
       "path": "website/public/favicon.svg",
       "sha256": "e6d2e59b7b5bbb0342e0fb496dfc262decbfe4426bbb7b047aec8d467d1dc6f7",
       "bytes": 712
+    },
+    {
+      "path": "website/public/og.png",
+      "sha256": "bd36f821f836cc2ca6f22c0b2e1864a386aaec748d77acb08d5ff05d58cf4edc",
+      "bytes": 943041
     },
     {
       "path": "website/tsconfig.json",

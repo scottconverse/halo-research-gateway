@@ -1,6 +1,6 @@
 # Halo Research Gateway
 
-**Version 0.1.0** — one local research and web-operation plane for the Halo agent stack.
+**Version 0.2.0** — one local research and web-operation plane for the Halo agent stack.
 
 Halo Research Gateway is a persistent, localhost-only MCP service that gives DSH, Codex, Claude Code, OpenCode, and LM Studio Bionic the same source-backed research surface. DSH is the primary consumer; frontier hosts are secondary or fallback clients.
 
@@ -108,11 +108,11 @@ uv run python tests\acceptance\crawl_canary.py
 
 The same lock, format, lint, deterministic tests, skill validation, and staleness checks run before commit and in CI. Live internet tests remain explicit canaries rather than making every commit depend on outside services.
 
-Read [current evidence](docs/EVIDENCE-2026-09-01.md), [implementation status](docs/implementation-status.md), [security](docs/security.md), [operations](docs/operations.md), [host integration](docs/host-integration.md), and [quality gate](docs/quality-gate.md).
+Read [0.2.0 release notes](docs/RELEASE-NOTES-v0.2.0.md), [0.2.0 evidence](docs/EVIDENCE-v0.2.0-2026-09-01.md), [implementation status](docs/implementation-status.md), [security](docs/security.md), [operations](docs/operations.md), [host integration](docs/host-integration.md), and [quality gate](docs/quality-gate.md).
 
 ## Honest capability boundary
 
-Version 0.1.0 is an operational DSH-first research release with generic connection, OAuth, Chrome-import, provider-budget, job, and approval mechanisms. It now includes structured public transcripts and communities, bounded deep research, optional read-only GitHub App research, narrow Gmail compose actions, a separate GitHub issue/comment Actions App, WebSocket request interception, and disabled CapSolver/Bright Data adapters. Provider/site-specific live use still requires an operator choice:
+Version 0.2.0 is an operational DSH-first research release with generic connection, OAuth, Chrome-import, provider-budget, job, and approval mechanisms. It includes structured public transcripts and communities, bounded deep research, optional read-only GitHub App research, narrow Gmail compose actions, a separate GitHub issue/comment Actions App, WebSocket request interception, strict cross-client fairness, at-most-once action reservation, and disabled CapSolver/Bright Data adapters. Provider/site-specific live use still requires an operator choice:
 
 - no personal Chrome data is imported automatically;
 - no OAuth or GitHub App is connected until the operator supplies its client/App identity and exact scopes;

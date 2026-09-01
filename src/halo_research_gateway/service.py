@@ -12,6 +12,7 @@ from pathlib import Path
 
 import httpx
 
+from . import __version__
 from .actions.github import GitHubIssueActionAdapter, github_target
 from .actions.gmail import GmailComposeAdapter, freeze_mime
 from .actions.store import ActionStore
@@ -1125,7 +1126,7 @@ class HaloService:
     def health(self) -> dict:
         return {
             "status": "ok",
-            "version": "0.1.0",
+            "version": __version__,
             "result_schema_version": "1.5",
             "database_schema_version": DATABASE_SCHEMA_VERSION,
             "database": "ok",

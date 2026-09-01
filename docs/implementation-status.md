@@ -55,4 +55,4 @@ Provider/site-specific credential and consequential-action work requires Scott t
 
 ## Release meaning
 
-The DSH-first research service is operational and its current deterministic gate and Windows recovery drill are green. Provider adapters and authority seams are implemented without enabling credentials or spend. Full v1.5 remains open on Scott-owned live grants/imports, authenticated Reddit, paid-provider canaries, the visible human-challenge proof, browser-level DNS pinning, and remaining cross-host/current-CI evidence.
+Halo Research Gateway 0.2.0 is the DSH-first release of the expanded research and operator-authorized action surface. Provider adapters and authority seams are implemented without enabling credentials or spend. Full specification v1.5 remains open on Scott-owned live grants/imports, authenticated Reddit, paid-provider canaries, the visible human-challenge proof, browser-level DNS pinning, and remaining fallback-host evidence.
