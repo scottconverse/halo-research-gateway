@@ -69,6 +69,15 @@ absolute_timeout_seconds = 21600
 absolute_pages = 5000
 lease_seconds = 30
 
+# Optional paid providers are inert until every field below is deliberately
+# configured. Credentials are stored in the encrypted connection vault; never
+# put a token in this file. Add a vendor-specific adapter/ADR before enabling.
+[captcha]
+enabled = false
+
+[proxy]
+enabled = false
+
 [local_targets.mission_control]
 scheme = "http"
 host = "127.0.0.1"

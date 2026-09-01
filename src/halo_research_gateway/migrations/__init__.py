@@ -7,7 +7,7 @@ from contextlib import closing
 
 from halo_research_gateway.cache_errors import SchemaTooNewError
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def migrate(db_path: str, backup_dir: str) -> None:
@@ -46,6 +46,8 @@ def migrate(db_path: str, backup_dir: str) -> None:
             _migrate_to_v1(conn)
         if current_version < 2:
             _migrate_to_v2(conn)
+        if current_version < 3:
+            _migrate_to_v3(conn)
 
 
 def _create_backup(db_path: str, backup_dir: str) -> None:
@@ -207,5 +209,25 @@ def _migrate_to_v2(conn: sqlite3.Connection) -> None:
     conn.execute("PRAGMA user_version = 2")
     conn.execute(
         "INSERT OR REPLACE INTO schema_meta(component, version, updated_at) VALUES ('gateway', 2, datetime('now'))"
+    )
+    conn.commit()
+
+
+def _migrate_to_v3(conn: sqlite3.Connection) -> None:
+    """Add durable daily attempt/spend accounting for optional providers."""
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS provider_spend (
+            provider_kind TEXT NOT NULL,
+            provider_name TEXT NOT NULL,
+            usage_day TEXT NOT NULL,
+            attempts INTEGER NOT NULL DEFAULT 0,
+            spend_microusd INTEGER NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY(provider_kind, provider_name, usage_day)
+        );
+    """)
+    conn.execute("PRAGMA user_version = 3")
+    conn.execute(
+        "INSERT OR REPLACE INTO schema_meta(component, version, updated_at) VALUES ('providers', 3, datetime('now'))"
     )
     conn.commit()

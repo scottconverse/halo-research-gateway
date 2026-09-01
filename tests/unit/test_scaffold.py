@@ -19,7 +19,15 @@ def test_application_has_mcp_and_operator_routes(tmp_path):
     config.storage.content_directory = str(tmp_path / "content")
     app = create_application(config)
     paths = {getattr(route, "path", None) for route in app.routes}
-    assert {"/mcp", "/health", "/stats", "/operator"} <= paths
+    assert {
+        "/mcp",
+        "/health",
+        "/stats",
+        "/operator",
+        "/operator/api/oauth",
+        "/operator/api/imports/chrome",
+        "/operator/api/imports/chrome/{plan_id:str}/execute",
+    } <= paths
 
 
 def test_version_matches_pyproject():

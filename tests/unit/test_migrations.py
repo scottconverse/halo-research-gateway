@@ -21,7 +21,8 @@ def test_migrate_creates_schema(tmp_path):
     migrate(str(db), str(tmp_path / "backups"))
     assert {"schema_meta", "cache_entries", "rate_state", "request_log"} <= _tables(db)
     with closing(sqlite3.connect(db)) as c:
-        assert c.execute("PRAGMA user_version").fetchone()[0] >= 1
+        assert c.execute("PRAGMA user_version").fetchone()[0] == 3
+    assert "provider_spend" in _tables(db)
 
 
 def test_migrate_second_run_noop(tmp_path):

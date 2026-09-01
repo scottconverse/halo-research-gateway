@@ -78,6 +78,26 @@ class ConnectionStore:
             raise KeyError("CONNECTION_NOT_FOUND_OR_REVOKED")
         return self.get(connection_id)
 
+    def replace_secret(self, connection_id: str, secret: dict[str, str]) -> None:
+        with sqlite3.connect(self.db_path) as db:
+            row = db.execute(
+                "SELECT vault_ref,revoked_at FROM connections WHERE connection_id=?", (connection_id,)
+            ).fetchone()
+            if row is None:
+                raise KeyError("CONNECTION_NOT_FOUND")
+            if row[1] is not None:
+                raise PermissionError("CONNECTION_REVOKED")
+            new_ref = self.vault.put({str(k): str(v) for k, v in secret.items()})
+            try:
+                db.execute(
+                    "UPDATE connections SET vault_ref=?,verified_at=? WHERE connection_id=?",
+                    (new_ref, rfc3339(self.clock.utcnow()), connection_id),
+                )
+            except Exception:
+                self.vault.delete(new_ref)
+                raise
+        self.vault.delete(row[0])
+
     @staticmethod
     def _public(row) -> dict:
         capability = json.loads(row[3])

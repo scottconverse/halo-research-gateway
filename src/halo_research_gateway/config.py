@@ -138,6 +138,32 @@ class JobConfig(StrictModel):
     lease_seconds: int = 30
 
 
+class OptionalProviderConfig(StrictModel):
+    """Operator-owned paid-provider policy; disabled until explicitly configured."""
+
+    enabled: bool = False
+    provider: str | None = None
+    connection_id: str | None = None
+    allowed_domains: list[str] = Field(default_factory=list)
+    daily_attempt_limit: int = Field(0, ge=0, le=10000)
+    daily_spend_limit_usd: float = Field(0, ge=0, le=10000)
+
+    @model_validator(mode="after")
+    def enabled_provider_is_complete(self):
+        if self.enabled and (
+            not self.provider
+            or not self.connection_id
+            or not self.allowed_domains
+            or self.daily_attempt_limit < 1
+            or self.daily_spend_limit_usd <= 0
+        ):
+            raise ValueError(
+                "enabled optional provider requires provider, connection_id, allowed_domains, "
+                "daily_attempt_limit, and daily_spend_limit_usd"
+            )
+        return self
+
+
 class GatewayConfig(StrictModel):
     server: ServerConfig = ServerConfig()
     storage: StorageConfig = StorageConfig()
@@ -150,6 +176,8 @@ class GatewayConfig(StrictModel):
     local_targets: dict[str, LocalTargetConfig] = {}
     actions: ActionConfig = ActionConfig()
     jobs: JobConfig = JobConfig()
+    captcha: OptionalProviderConfig = OptionalProviderConfig()
+    proxy: OptionalProviderConfig = OptionalProviderConfig()
 
     @classmethod
     def load(cls, path: str | Path | None = None) -> GatewayConfig:

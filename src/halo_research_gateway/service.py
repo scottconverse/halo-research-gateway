@@ -16,17 +16,21 @@ from .actions.store import ActionStore
 from .cache import Cache
 from .clock import SystemClock, rfc3339
 from .config import GatewayConfig
+from .connections.chrome_import import ChromeImporter
+from .connections.oauth import OAuthManager
 from .connections.store import ConnectionStore
 from .coordinator import Coordinator, QueuePolicy
 from .cursor import CursorCodec, CursorError
 from .envelope import build_envelope, error_envelope
 from .jobs.manager import JobManager
+from .migrations import SCHEMA_VERSION as DATABASE_SCHEMA_VERSION
 from .migrations import migrate
 from .models import LocalTarget, ProviderResult
 from .providers.crawl4ai_provider import Crawl4AIProvider
 from .providers.document_extract import DocumentProvider
 from .providers.exa import ExaProvider, ExaRateLimited
 from .providers.http_fetch import HttpFetchProvider, PinnedTransport, resolve_public
+from .providers.optional import OptionalProviderRegistry
 from .providers.reddit_rss import parse_atom, search_url, thread_rss_url
 from .providers.search import DdgsSearchProvider
 from .rate_limit import RateLedger
@@ -72,20 +76,59 @@ class HaloService:
         self.rate = RateLedger(config.storage.database, self.clock)
         runtime_root = Path(config.storage.database).parent.parent
         self.connections = ConnectionStore(config.storage.database, runtime_root / "vault", self.clock)
+        self.optional_providers = OptionalProviderRegistry(
+            config.storage.database, self.connections, config.captcha, config.proxy
+        )
+        self.oauth = OAuthManager(self.connections)
+        self.chrome_importer = ChromeImporter(runtime_root / "browser" / "profiles")
         self.cursors = CursorCodec(
             Path(config.storage.database).parent / "cursor-hmac.key", config.output.cursor_ttl_seconds
         )
         self._snapshots: dict[str, ProviderResult] = {}
         self.started_at = rfc3339(self.clock.utcnow())
         self._job_tasks: dict[str, asyncio.Task] = {}
+        self._oauth_tasks: dict[str, asyncio.Task] = {}
         self.jobs.recover_expired()
 
     async def close(self) -> None:
         for task in self._job_tasks.values():
             task.cancel()
+        for task in self._oauth_tasks.values():
+            task.cancel()
         if self._job_tasks:
             await asyncio.gather(*self._job_tasks.values(), return_exceptions=True)
+        if self._oauth_tasks:
+            await asyncio.gather(*self._oauth_tasks.values(), return_exceptions=True)
         await self.crawler.close()
+
+    async def oauth_begin(self, **values) -> dict:
+        begun = await self.oauth.begin(**values)
+        self._oauth_tasks[begun["flow_id"]] = asyncio.create_task(self.oauth.complete(begun["flow_id"]))
+        return begun
+
+    def oauth_status(self, flow_id: str) -> dict:
+        task = self._oauth_tasks.get(flow_id)
+        if task is None:
+            return {"flow_id": flow_id, "state": "unavailable"}
+        if not task.done():
+            return {"flow_id": flow_id, "state": "waiting_for_operator"}
+        self._oauth_tasks.pop(flow_id, None)
+        try:
+            return {"flow_id": flow_id, "state": "complete", "connection": task.result()}
+        except Exception as exc:
+            return {"flow_id": flow_id, "state": "failed", "error": str(exc).split("/", 1)[0]}
+
+    def chrome_import_preview(self, **values) -> dict:
+        preview = self.chrome_importer.preview(**values)
+        return self.actions.prepare({"action": "chrome_import", "import": preview})
+
+    async def chrome_import_execute(self, plan_id: str, approval_token: str, idempotency_key: str) -> dict:
+        async def executor(plan):
+            if plan.get("action") != "chrome_import":
+                raise ValueError("CHROME_IMPORT_PLAN_REQUIRED")
+            return await asyncio.to_thread(self.chrome_importer.execute, plan["import"])
+
+        return await self.actions.execute(plan_id, approval_token, idempotency_key, executor)
 
     def _budget(self, max_chars: int | None) -> int:
         return min(
@@ -704,7 +747,7 @@ class HaloService:
             "status": "ok",
             "version": "0.1.0",
             "result_schema_version": "1.5",
-            "database_schema_version": 2,
+            "database_schema_version": DATABASE_SCHEMA_VERSION,
             "database": "ok",
             "exa": "unknown",
             "search_fallback": "ready",
@@ -718,6 +761,7 @@ class HaloService:
             },
             "actions": "ready" if self.config.actions.enabled else "disabled",
             "jobs": self._job_counts(),
+            "optional_providers": self.optional_providers.status(),
             "cache_entries": self.cache.stats()["entries"],
             "started_at": self.started_at,
         }
@@ -735,6 +779,7 @@ class HaloService:
                 }
             },
             "providers": self.rate.status(),
+            "optional_providers": self.optional_providers.status(),
         }
 
     def _job_counts(self) -> dict:

@@ -8,6 +8,7 @@ from urllib.parse import urlsplit
 from ..clock import SystemClock, rfc3339
 from ..models import EvidenceItem, ProviderResult
 from ..security import validate_url
+from .http_fetch import resolve_public
 
 
 class CrawlUnavailable(RuntimeError):
@@ -20,6 +21,7 @@ class Crawl4AIProvider:
         self.clock = clock or SystemClock()
         self._crawler = None
         self._lock = asyncio.Lock()
+        self._public_navigation = True
 
     async def start(self) -> None:
         if self._crawler is not None:
@@ -38,8 +40,21 @@ class Crawl4AIProvider:
             chrome_channel="chrome",
             channel="chrome",
             accept_downloads=False,
+            extra_args=["--disable-features=ServiceWorker"],
         )
         self._crawler = AsyncWebCrawler(config=browser, base_directory=self.base_directory)
+
+        async def guard_page(_, *, context, **__):
+            async def guard_route(route, request):
+                try:
+                    await self._validate_browser_request(request.url, self._public_navigation)
+                    await route.continue_()
+                except Exception:
+                    await route.abort("blockedbyclient")
+
+            await context.route("**/*", guard_route)
+
+        self._crawler.crawler_strategy.set_hook("on_page_context_created", guard_page)
         await self._crawler.start()
 
     async def close(self) -> None:
@@ -71,7 +86,11 @@ class Crawl4AIProvider:
                 exclude_external_links=True,
                 scan_full_page=max_pages > 1,
             )
-            result = await self._crawler.arun(url=url, config=config)
+            self._public_navigation = public
+            try:
+                result = await self._crawler.arun(url=url, config=config)
+            finally:
+                self._public_navigation = True
             if not result.success:
                 raise RuntimeError(result.error_message or "browser crawl failed")
             markdown = (
@@ -86,3 +105,13 @@ class Crawl4AIProvider:
                 metadata={"mode": mode, "profile": profile, "status_code": getattr(result, "status_code", None)},
             )
             return ProviderResult("crawl4ai", [item], [], 1)
+
+    @staticmethod
+    async def _validate_browser_request(url: str, public: bool) -> None:
+        if not public:
+            return
+        scheme = urlsplit(url).scheme.lower()
+        if scheme in {"data", "blob", "about"}:
+            return
+        target = validate_url(url)
+        await resolve_public(target)

@@ -27,6 +27,26 @@ def test_defaults():
 
     assert config.exa.min_interval_seconds == 1.0
     assert config.exa.daily_soft_limit == 45
+    assert not config.captcha.enabled
+    assert not config.proxy.enabled
+
+
+def test_optional_provider_config_has_no_secret_field(tmp_path):
+    path = tmp_path / "config.toml"
+    path.write_text(
+        """[captcha]
+enabled = true
+provider = "fixture"
+connection_id = "opaque-id"
+allowed_domains = ["example.com"]
+daily_attempt_limit = 2
+daily_spend_limit_usd = 1.5
+""",
+        encoding="utf-8",
+    )
+    config = GatewayConfig.load(path)
+    assert config.captcha.enabled
+    assert config.captcha.connection_id == "opaque-id"
 
 
 def test_toml_override():

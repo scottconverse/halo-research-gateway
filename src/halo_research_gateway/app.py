@@ -13,6 +13,7 @@ from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Route
 
 from .config import GatewayConfig
+from .operator_ui import render_operator
 from .service import HaloService
 
 
@@ -286,7 +287,7 @@ def create_application(config: GatewayConfig | None = None):
         return JSONResponse(service.stats())
 
     async def operator(_: Request):
-        return HTMLResponse(_operator_html(csrf_token, service))
+        return HTMLResponse(render_operator(csrf_token, service.health()))
 
     async def approve(request: Request):
         if request.headers.get("origin") not in {None, f"http://127.0.0.1:{config.server.port}"}:
@@ -333,9 +334,65 @@ def create_application(config: GatewayConfig | None = None):
         except Exception:
             return JSONResponse({"error": "connection unavailable"}, status_code=404)
 
+    async def oauth_begin(request: Request):
+        if not mutation_allowed(request):
+            return JSONResponse({"error": "csrf denied"}, status_code=403)
+        try:
+            body = await request.json()
+            result = await service.oauth_begin(
+                provider=body["provider"],
+                label=body["label"],
+                authorization_endpoint=body["authorization_endpoint"],
+                token_endpoint=body["token_endpoint"],
+                client_id=body["client_id"],
+                client_secret=body.get("client_secret"),
+                scopes=body.get("scopes", []),
+                extra_authorize=body.get("extra_authorize"),
+            )
+            return JSONResponse(result, status_code=201)
+        except Exception:
+            return JSONResponse({"error": "invalid OAuth configuration"}, status_code=400)
+
+    async def oauth_status(request: Request):
+        return JSONResponse(service.oauth_status(request.path_params["flow_id"]))
+
+    async def chrome_import_preview(request: Request):
+        if not mutation_allowed(request):
+            return JSONResponse({"error": "csrf denied"}, status_code=403)
+        try:
+            body = await request.json()
+            return JSONResponse(
+                service.chrome_import_preview(
+                    source_profile=body["source_profile"],
+                    destination_name=body["destination_name"],
+                    categories=body.get("categories"),
+                    complete=bool(body.get("complete", False)),
+                    behavior=body.get("behavior", "replace"),
+                ),
+                status_code=201,
+            )
+        except Exception:
+            return JSONResponse({"error": "invalid Chrome import request"}, status_code=400)
+
+    async def chrome_import_execute(request: Request):
+        if not mutation_allowed(request):
+            return JSONResponse({"error": "csrf denied"}, status_code=403)
+        try:
+            body = await request.json()
+            return JSONResponse(
+                await service.chrome_import_execute(
+                    request.path_params["plan_id"], body["approval_token"], body["idempotency_key"]
+                )
+            )
+        except PermissionError as exc:
+            return JSONResponse({"error": str(exc)}, status_code=403)
+        except Exception:
+            return JSONResponse({"error": "Chrome import failed"}, status_code=400)
+
     async def operator_state(_: Request):
         return JSONResponse(
             {
+                "health": service.health(),
                 "connections": service.connections.list(),
                 "jobs": service.jobs.list(),
                 "actions": service.actions.list_plans(),
@@ -354,6 +411,10 @@ def create_application(config: GatewayConfig | None = None):
             Route("/operator", operator, methods=["GET"]),
             Route("/operator/api/connections", connections, methods=["GET", "POST"]),
             Route("/operator/api/connections/{connection_id:str}/revoke", revoke_connection, methods=["POST"]),
+            Route("/operator/api/oauth", oauth_begin, methods=["POST"]),
+            Route("/operator/api/oauth/{flow_id:str}", oauth_status, methods=["GET"]),
+            Route("/operator/api/imports/chrome", chrome_import_preview, methods=["POST"]),
+            Route("/operator/api/imports/chrome/{plan_id:str}/execute", chrome_import_execute, methods=["POST"]),
             Route("/operator/api/state", operator_state, methods=["GET"]),
             Route("/operator/api/actions/{plan_id:str}/approve", approve, methods=["POST"]),
         ]

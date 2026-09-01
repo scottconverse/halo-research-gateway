@@ -13,7 +13,7 @@ The server exposes sixteen semantic tools:
 - durable bounded work: `research_job`;
 - consequential operations: `web_action_prepare` and `web_action_execute`.
 
-The shared service supplies DNS-pinned direct HTTP, no inherited proxy environment, Crawl4AI rendering, anonymous Exa with DDGS fallback, Reddit RSS pacing, PDF extraction, bounded queues, singleflight, persistent cache/rate state, HMAC-signed cursor pages, DPAPI-encrypted generic connections, Windows Job Object containment, finite durable jobs, exact action approval, idempotent receipts, and a local operator console.
+The shared service supplies DNS-pinned direct HTTP, no inherited proxy environment, Crawl4AI rendering, anonymous Exa with DDGS fallback, Reddit RSS pacing, PDF extraction, bounded queues, singleflight, persistent cache/rate state, HMAC-signed cursor pages, DPAPI-encrypted connections, OAuth Authorization Code + PKCE, explicit selected/full Chrome-profile import, Windows Job Object containment, finite durable jobs, exact action approval, idempotent receipts, disabled-by-default budgeted CAPTCHA/proxy provider seams, and a local operator console.
 
 Read [implementation status](docs/implementation-status.md) before assuming every semantic tool has a deep site-specific adapter. The full intended architecture and acceptance contract is [specification v1.5](docs/HALO-RESEARCH-GATEWAY-SPEC-v1.5.md).
 
