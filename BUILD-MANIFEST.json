@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-01T07:55:12.8470728Z",
+  "generated_at": "2026-09-01T07:57:31.9687153Z",
   "project": "halo-research-gateway",
   "version": "0.1.0",
   "specification": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.5.md",
@@ -44,8 +44,8 @@
     },
     {
       "path": "docs/EVIDENCE-2026-09-01.md",
-      "sha256": "6fab072534ddc1ea44cf37db537c2dca595074f56428a2f66b93b09a447780b2",
-      "bytes": 3094
+      "sha256": "30f42b4e69f4b71359a3e0f8671c461869f038ef0e0a13815a64b514c913b74e",
+      "bytes": 3435
     },
     {
       "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
@@ -259,8 +259,8 @@
     },
     {
       "path": "src/halo_research_gateway/migrations/__init__.py",
-      "sha256": "515985e0823cca964e218be927cb7e912f3cb3a031c3e18aeab1cbfdd5ba5de0",
-      "bytes": 7303
+      "sha256": "7f036641707d2607eda9b6f5712a59669df2bb8b4cf969577163031b7694409a",
+      "bytes": 7378
     },
     {
       "path": "src/halo_research_gateway/models.py",

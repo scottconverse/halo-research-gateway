@@ -32,12 +32,13 @@ def migrate(db_path: str, backup_dir: str) -> None:
                 f"Database schema version {current_version} is newer than supported version {SCHEMA_VERSION}"
             )
 
-    # Ensure backup directory exists AFTER the version check but before any writes
-    os.makedirs(backup_dir, exist_ok=True)
-
-    # Create backup of existing db (if it exists and has content or is an empty DB with version 0)
-    if os.path.exists(db_path) and current_version >= 0:
-        _create_backup(db_path, backup_dir)
+    # A current database is a true no-op. Back up only immediately before an
+    # upgrade that can write schema state; ordinary service restarts must not
+    # create misleading migration backups or prune useful recovery points.
+    if current_version < SCHEMA_VERSION:
+        os.makedirs(backup_dir, exist_ok=True)
+        if os.path.exists(db_path):
+            _create_backup(db_path, backup_dir)
 
     # Apply migrations as needed
     with closing(sqlite3.connect(db_path)) as conn:
