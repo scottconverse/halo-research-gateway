@@ -19,10 +19,14 @@ Invoke-GateStep 'skill package' {
 
 $scan = @('README.md','src','scripts','config','skills')
 if (Test-Path -LiteralPath 'adapters') { $scan += 'adapters' }
-$forbidden = rg -n 'DSH-Strix-Halo-Spec-v(2\.|3\.[0-4])|stack\\worker\.patch\.yml' @scan 2>$null
-if ($LASTEXITCODE -eq 0) {
-    $bad = $forbidden | Where-Object { $_ -notmatch 'historical|supersed|deleted|must not|prohibition' }
-    if ($bad) { $bad | Write-Error; throw 'staleness guard failed' }
+$scanFiles = foreach ($item in $scan) {
+    if (Test-Path -LiteralPath $item -PathType Leaf) { Get-Item -LiteralPath $item }
+    elseif (Test-Path -LiteralPath $item -PathType Container) {
+        Get-ChildItem -LiteralPath $item -Recurse -File
+    }
 }
+$forbidden = $scanFiles | Select-String -Pattern 'DSH-Strix-Halo-Spec-v(2\.|3\.[0-4])|stack\\worker\.patch\.yml'
+$bad = $forbidden | Where-Object { $_.Line -notmatch 'historical|supersed|deleted|must not|prohibition' }
+if ($bad) { $bad | Write-Error; throw 'staleness guard failed' }
 
 Write-Host "[GATE] PASS ($Scope)"

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-01T07:57:31.9687153Z",
+  "generated_at": "2026-09-01T07:59:30.4595422Z",
   "project": "halo-research-gateway",
   "version": "0.1.0",
   "specification": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.5.md",
@@ -44,8 +44,8 @@
     },
     {
       "path": "docs/EVIDENCE-2026-09-01.md",
-      "sha256": "30f42b4e69f4b71359a3e0f8671c461869f038ef0e0a13815a64b514c913b74e",
-      "bytes": 3435
+      "sha256": "8083ceb20fb90d8c8e11ed2fb69d62b4af9a2e332f835257b687313f33aee1e5",
+      "bytes": 3769
     },
     {
       "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
@@ -99,8 +99,8 @@
     },
     {
       "path": "scripts/Invoke-QualityGate.ps1",
-      "sha256": "9ad40afb921b4299d69f68d15e06d2e75cc3fc7f471bc570a787a3010ec2ac5c",
-      "bytes": 1193
+      "sha256": "aba9fe56977cce60923276790a431fe7a82cb7835a0ac4bd4f4ab27caf7d7591",
+      "bytes": 1430
     },
     {
       "path": "scripts/Start-HaloResearch.ps1",
