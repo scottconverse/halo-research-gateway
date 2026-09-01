@@ -7,3 +7,47 @@ probe-*
 .venv/
 __pycache__/
 *.pyc
+
+# Test, lint, coverage, and build output
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Local configuration and secret material
+.env
+.env.*
+!.env.example
+config/config.toml
+config/*.local.toml
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Halo Research Gateway runtime state must never enter Git
+runtime/
+state/
+vault/
+browser_profiles/*/
+browser/profiles/
+browser/downloads/
+imports/
+logs/
+receipts/
+jobs/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Local acceptance evidence may contain URLs or authenticated metadata
+evidence/local/
+evidence/private/
+evidence/live/
