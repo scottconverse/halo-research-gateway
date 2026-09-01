@@ -19,28 +19,35 @@ This file distinguishes operational code from registered configuration and defer
 - Action preparation, local operator approval, immutable plan binding, idempotent receipts, and generic form POST execution without automatic retry.
 - Windows Job Object containment with kill-on-close inheritance proof.
 - Browser request routing validates public top-level, redirect, frame, and ordinary subresource HTTP(S) destinations; service workers and downloads are disabled for the gateway-owned Chrome process.
-- Disabled-by-default CAPTCHA/proxy provider seams enforce exact domains and durable daily attempt/spend ceilings. A missing adapter cannot consume budget, and credentials remain opaque DPAPI-vault references.
+- Browser WebSocket handshakes are intercepted and checked by the same public/local destination policy. Gateway-owned imported profiles are now used as persistent Crawl4AI contexts rather than merely labeled in results; switching back to standard mode recreates an isolated context.
+- Strict per-provider round-robin scheduling across configured `X-Halo-Client` buckets, FIFO within a client, singleflight before admission, per-client/global bounds, pacing, and queued cancellation. Unknown identities collapse to `unidentified`; the header grants no authority.
+- `deep_research` honors pages/depth/sources/domain/freshness bounds, expands exact-host links breadth-first, canonicalizes URLs, deduplicates near-identical bodies, and preserves partial failures.
+- Optional read-only GitHub App research uses short-lived installation tokens, current REST version headers, structured repository/path/SHA/issue metadata, single-mint locking, and public discovery fallback when no App is configured.
+- Public transcript adapters normalize YouTube/HTML5 VTT, TTML/XML, and JSON3 captions without downloading media. Stack Exchange/Stack Overflow and Hacker News have bounded structured search/thread adapters; forums retain a Crawl4AI fallback.
+- Gmail compose actions freeze exact MIME bytes/hashes and preserve distinct draft, draft-message, sent-message, and thread IDs. A separate GitHub Actions App supports reviewed issue/comment operations; edit/state changes are limited to Halo-receipted objects.
+- Action execution reserves a plan durably before the upstream call. Concurrent different-key submissions run at most once; timeout/cancellation produces a secret-safe ambiguous receipt and is never automatically retried.
+- Disabled-by-default CapSolver and Bright Data adapters enforce exact domains through the durable daily attempt/spend policy. No provider is enabled or charged by default.
 - DSH planner integration and a real local-model call through `mcp__halo_research__web_search`.
 - Claude Code and OpenCode registration; Codex config installed for the next process; LM Studio Bionic registration packaged by the installer.
 
-## Present but intentionally shallow
+## Present but intentionally partial
 
-- `github_research` uses public web discovery constrained to GitHub, not the authenticated GitHub API.
-- `transcript_fetch` can retrieve the page but has no universal media-caption adapter and reports `TRANSCRIPT_UNAVAILABLE` when appropriate.
-- Community tools are source-routing wrappers, not authenticated community APIs.
-- `deep_research` builds a bounded evidence packet; it does not return an uncited synthesized answer.
-- Browser mode/profile fields are recorded, but stealth, undetected, managed-profile login, challenge handoff, screenshots, and PDFs are not all distinct proven execution paths.
-- The operator console supports encrypted generic connections, OAuth/PKCE connection flow, Chrome import previews and separately approved execution, state, jobs, plans, receipts, and exact action approval.
+- GitHub discussions currently hand off to the authenticated adapter but disclose `GITHUB_KIND_UNSUPPORTED`; GraphQL discussion retrieval and exact non-default-ref code search remain partial.
+- Caption support is public-caption only. It intentionally returns `TRANSCRIPT_UNAVAILABLE` rather than downloading audio/video for local speech-to-text.
+- `deep_research` returns evidence, coverage, and warnings; the calling model still synthesizes the cited conclusion.
+- Managed profile use is source- and fixture-proven. Scott has not selected/imported a personal Chrome profile or completed a live authenticated crawl in this release pass.
+- WebSocket interception is implemented, but browser-level address pinning across Chromium's own DNS resolution remains an explicit hardening gap.
+- CapSolver and Bright Data adapters are implemented behind disabled policy. Automatic challenge extraction/injection and the visible 120-second human challenge handoff are not yet acceptance-proven.
 
 ## Not implemented or not released
 
-- Vendor-specific OAuth discovery presets and external-provider revocation calls. The generic standards-based flow, refresh, and local revocation boundary are implemented.
+- Provider-side OAuth revocation calls. Generic PKCE/refresh/local revocation and a narrow Gmail compose preset are implemented.
 - Live Chrome-profile import from Scott's personal profile. The mechanism is fixture-proven, but no personal data was copied without a separate operator choice.
-- Vendor-specific paid CAPTCHA-solver and proxy adapters. Their disabled configuration seams, exact-domain policy, encrypted connection reference, durable budgets, and visible usage state are implemented; no vendor or spend was selected.
-- Site-specific post, message, purchase, account-change, and delete execution adapters.
-- Complete Chromium WebSocket and DNS-rebinding pinning. Playwright routing now covers top-level, redirects, frames, and ordinary subresources, and service workers/downloads are disabled; WebSocket handshake interception and browser-level address pinning remain disclosed hardening gaps.
+- Live paid CAPTCHA/proxy credentials or calls. CapSolver and Bright Data adapters are code/test-proven only; no vendor, domain, or budget was selected.
+- Authenticated Reddit actions. Reddit's current external-app path requires Scott's account/application choice; the release does not invent or bypass that grant.
+- Purchase, account-security, deletion, and arbitrary site adapters beyond generic form submission, Gmail compose, and GitHub issue/comment operations.
+- Complete browser-level DNS-rebinding pinning and a proven visible human challenge window.
 - Hybrid content-addressed filesystem storage for large cache bodies; current payloads are compressed in SQLite.
-- Strict fair round-robin scheduling; queues are bounded per provider/client but are not a formal fairness scheduler.
 - Universal structured request logging and negotiated-protocol telemetry.
 - Live proof from LM Studio Bionic and a newly restarted Codex process.
 
@@ -48,4 +55,4 @@ Provider/site-specific credential and consequential-action work requires Scott t
 
 ## Release meaning
 
-The DSH-first public research release is operational. Full provider-specific v1.5 is not yet complete because Scott has not selected actual OAuth services, a personal Chrome import, CAPTCHA/proxy vendors, or site-specific consequential-action adapters. The generic mechanisms and authority seams are implemented, so those choices do not require redesigning DSH or the core service.
+The DSH-first research service is operational and its current deterministic gate and Windows recovery drill are green. Provider adapters and authority seams are implemented without enabling credentials or spend. Full v1.5 remains open on Scott-owned live grants/imports, authenticated Reddit, paid-provider canaries, the visible human-challenge proof, browser-level DNS pinning, and remaining cross-host/current-CI evidence.

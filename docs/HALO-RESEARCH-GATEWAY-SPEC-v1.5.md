@@ -2,7 +2,7 @@
 
 **Specification version:** 1.5
 
-**Status:** Governing implementation specification; partially implemented, not deployed
+**Status:** Governing implementation specification; DSH-first service deployed. Current implementation/evidence and remaining operator/live gates are tracked separately in `implementation-status.md` and `EVIDENCE-2026-09-01.md`.
 
 **Prepared:** 2026-08-31 (America/Denver)
 

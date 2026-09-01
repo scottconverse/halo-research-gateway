@@ -14,7 +14,7 @@ body{{font-family:system-ui;background:#071018;color:#dbeafe;margin:0}}main{{max
 h1{{color:#67e8f9}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px}}
 section{{background:#0d1b2a;border:1px solid #1e3a5f;border-radius:14px;padding:18px}}pre{{color:#a7f3d0;white-space:pre-wrap;overflow:auto;max-height:420px}}
 .ok{{color:#6ee7b7}}button{{background:#0e7490;color:white;border:0;border-radius:8px;padding:9px 13px;margin:4px}}
-input,select{{box-sizing:border-box;width:100%;margin:5px 0;padding:9px;background:#071018;color:#dbeafe;border:1px solid #315477;border-radius:7px}}
+input,select,textarea{{box-sizing:border-box;width:100%;margin:5px 0;padding:9px;background:#071018;color:#dbeafe;border:1px solid #315477;border-radius:7px}}
 label{{display:block;margin-top:7px}}small{{color:#93c5fd}}details{{margin:10px 0}}.plan{{border-top:1px solid #315477;padding-top:10px;margin-top:10px}}
 </style></head><body><main><h1>Halo Research Gateway</h1>
 <p class="ok">Loopback service is running. Models never receive vault secrets, CSRF state, OAuth verifiers, or approval authority.</p>
@@ -25,7 +25,20 @@ label{{display:block;margin-top:7px}}small{{color:#93c5fd}}details{{margin:10px 
 <input name="provider" placeholder="Provider" required><input name="label" placeholder="Account label" required>
 <select name="type"><option>api_key</option><option>token</option><option>password</option></select>
 <input name="secret" type="password" placeholder="Secret value" required><button>Save encrypted connection</button></form></details>
+<details><summary>GitHub App (read-only research)</summary><form id="githubApp">
+<input name="label" placeholder="Account label" required><input name="app_id" placeholder="GitHub App ID" required>
+<input name="installation_id" placeholder="Installation ID" required>
+<textarea name="private_key_pem" rows="7" placeholder="Paste the GitHub App private key PEM" required></textarea>
+<small>Use a separate read-only Research App. The key is DPAPI-encrypted and installation tokens stay inside the Gateway.</small>
+<button>Save encrypted GitHub App</button></form></details>
+<details><summary>GitHub Actions App (issues only)</summary><form id="githubActionsApp">
+<input name="label" placeholder="Account label" required><input name="app_id" placeholder="GitHub App ID" required>
+<input name="installation_id" placeholder="Installation ID" required>
+<textarea name="private_key_pem" rows="7" placeholder="Paste the separate Actions App private key PEM" required></textarea>
+<small>Use a separate App with Metadata read and Issues write. Edits/state changes remain limited to Halo-created objects.</small>
+<button>Save encrypted GitHub Actions App</button></form></details>
 <details><summary>OAuth Authorization Code + PKCE</summary><form id="oauth">
+<button type="button" id="gmailPreset">Use narrow Gmail compose preset</button>
 <input name="provider" placeholder="Provider" required><input name="label" placeholder="Account label" required>
 <input name="authorization_endpoint" placeholder="https://provider.example/authorize" required>
 <input name="token_endpoint" placeholder="https://provider.example/token" required><input name="client_id" placeholder="Client ID" required>
@@ -49,7 +62,10 @@ async function executeImport(id){{if(!approvals[id])return alert('Approve this e
 function renderPlans(plans){{return plans.length?plans.map(p=>'<div class="plan"><pre>'+esc(JSON.stringify(p,null,2))+'</pre>'+(p.status==='awaiting_approval'?'<button onclick="approvePlan(\''+esc(p.plan_id)+'\')">Approve exact plan</button>':'')+(p.preview&&p.preview.action==='chrome_import'&&p.status!=='executed'?'<button onclick="executeImport(\''+esc(p.plan_id)+'\')">Execute approved import</button>':'')+'</div>').join(''):'No prepared plans.'}}
 async function loadState(){{let s=await (await fetch('/operator/api/state')).json();health.textContent=JSON.stringify(s.health,null,2);connections.textContent=JSON.stringify(s.connections,null,2);actionPlans.innerHTML=renderPlans(s.actions);receipts.textContent=JSON.stringify(s.receipts,null,2);jobs.textContent=JSON.stringify({{jobs:s.jobs,providers:s.stats.providers,optional_providers:s.stats.optional_providers}},null,2)}}
 connection.onsubmit=async e=>{{e.preventDefault();let f=new FormData(connection);let r=await fetch('/operator/api/connections',{{method:'POST',headers:{{'content-type':'application/json','x-halo-csrf':HALO_CSRF}},body:JSON.stringify({{provider:f.get('provider'),label:f.get('label'),type:f.get('type'),secret:{{value:f.get('secret')}}}})}});if(!r.ok)alert('Connection was not saved');connection.reset();loadState()}};
+githubApp.onsubmit=async e=>{{e.preventDefault();let f=new FormData(githubApp);let body={{provider:'GitHub App',label:f.get('label'),type:'api_key',scopes:['metadata:read','contents:read','issues:read','pull_requests:read','discussions:read','actions:read','checks:read','commit_statuses:read'],secret:{{app_id:f.get('app_id'),installation_id:f.get('installation_id'),private_key_pem:f.get('private_key_pem')}}}};let r=await fetch('/operator/api/connections',{{method:'POST',headers:{{'content-type':'application/json','x-halo-csrf':HALO_CSRF}},body:JSON.stringify(body)}});if(!r.ok)return alert('GitHub App connection was not saved');githubApp.reset();loadState()}};
+githubActionsApp.onsubmit=async e=>{{e.preventDefault();let f=new FormData(githubActionsApp);let body={{provider:'GitHub Actions App',label:f.get('label'),type:'api_key',scopes:['metadata:read','issues:write'],secret:{{app_id:f.get('app_id'),installation_id:f.get('installation_id'),private_key_pem:f.get('private_key_pem')}}}};let r=await fetch('/operator/api/connections',{{method:'POST',headers:{{'content-type':'application/json','x-halo-csrf':HALO_CSRF}},body:JSON.stringify(body)}});if(!r.ok)return alert('GitHub Actions App connection was not saved');githubActionsApp.reset();loadState()}};
 oauth.onsubmit=async e=>{{e.preventDefault();let f=new FormData(oauth);let body={{provider:f.get('provider'),label:f.get('label'),authorization_endpoint:f.get('authorization_endpoint'),token_endpoint:f.get('token_endpoint'),client_id:f.get('client_id'),client_secret:f.get('client_secret')||null,scopes:String(f.get('scopes')||'').split(/\s+/).filter(Boolean)}};let r=await fetch('/operator/api/oauth',{{method:'POST',headers:{{'content-type':'application/json','x-halo-csrf':HALO_CSRF}},body:JSON.stringify(body)}});let v=await r.json();if(!r.ok)return alert(v.error||'OAuth flow was not started');window.open(v.authorization_url,'_blank','noopener');oauthState.textContent='Waiting for provider consent: '+v.flow_id;let timer=setInterval(async()=>{{let s=await (await fetch('/operator/api/oauth/'+v.flow_id)).json();oauthState.textContent=JSON.stringify(s,null,2);if(s.state==='complete'||s.state==='failed'||s.state==='unavailable'){{clearInterval(timer);loadState()}}}},1500)}};
+gmailPreset.onclick=()=>{{oauth.elements.provider.value='Gmail';oauth.elements.authorization_endpoint.value='https://accounts.google.com/o/oauth2/v2/auth';oauth.elements.token_endpoint.value='https://oauth2.googleapis.com/token';oauth.elements.scopes.value='https://www.googleapis.com/auth/gmail.compose';}};
 chromeImport.onsubmit=async e=>{{e.preventDefault();let f=new FormData(chromeImport);let body={{source_profile:f.get('source_profile'),destination_name:f.get('destination_name'),categories:String(f.get('categories')||'').split(/\s+/).filter(Boolean),complete:f.get('complete')==='on',behavior:f.get('behavior')}};let r=await fetch('/operator/api/imports/chrome',{{method:'POST',headers:{{'content-type':'application/json','x-halo-csrf':HALO_CSRF}},body:JSON.stringify(body)}});let v=await r.json();if(!r.ok)alert(v.error||'Import preview failed');else alert('Preview created. Review and approve it in Actions.');loadState()}};
 loadState();setInterval(loadState,5000);
 </script></main></body></html>"""

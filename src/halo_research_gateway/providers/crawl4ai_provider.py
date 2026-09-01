@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
-from urllib.parse import urlsplit
+import re
+from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 from ..clock import SystemClock, rfc3339
 from ..models import EvidenceItem, ProviderResult
@@ -20,12 +22,17 @@ class Crawl4AIProvider:
         self.base_directory = base_directory
         self.clock = clock or SystemClock()
         self._crawler = None
+        self._active_profile: str | None = None
         self._lock = asyncio.Lock()
         self._public_navigation = True
 
-    async def start(self) -> None:
-        if self._crawler is not None:
+    async def start(self, profile: str | None = None) -> None:
+        if self._crawler is not None and self._active_profile == profile:
             return
+        if self._crawler is not None:
+            await self._crawler.close()
+            self._crawler = None
+            self._active_profile = None
         try:
             from crawl4ai import AsyncWebCrawler, BrowserConfig
         except ImportError as exc:
@@ -33,14 +40,22 @@ class Crawl4AIProvider:
         # Playwright's Windows headless-shell build fails its ICU bootstrap on
         # this machine. The installed Chrome channel passes the same isolated
         # profile canary and does not attach to Scott's live Chrome profile.
+        browser_values = {
+            "headless": True,
+            "text_mode": True,
+            "browser_type": "chromium",
+            "chrome_channel": "chrome",
+            "channel": "chrome",
+            "accept_downloads": False,
+            "extra_args": ["--disable-features=ServiceWorker"],
+        }
+        if profile is not None:
+            browser_values.update(
+                use_persistent_context=True,
+                user_data_dir=str(self._profile_directory(profile)),
+            )
         browser = BrowserConfig(
-            headless=True,
-            text_mode=True,
-            browser_type="chromium",
-            chrome_channel="chrome",
-            channel="chrome",
-            accept_downloads=False,
-            extra_args=["--disable-features=ServiceWorker"],
+            **browser_values,
         )
         self._crawler = AsyncWebCrawler(config=browser, base_directory=self.base_directory)
 
@@ -54,13 +69,23 @@ class Crawl4AIProvider:
 
             await context.route("**/*", guard_route)
 
+            async def guard_websocket(websocket):
+                await self._handle_websocket(websocket, self._public_navigation)
+
+            route_websocket = getattr(context, "route_web_socket", None)
+            if route_websocket is None:
+                raise CrawlUnavailable("Playwright WebSocket routing is required")
+            await route_websocket("**/*", guard_websocket)
+
         self._crawler.crawler_strategy.set_hook("on_page_context_created", guard_page)
         await self._crawler.start()
+        self._active_profile = profile
 
     async def close(self) -> None:
         if self._crawler is not None:
             await self._crawler.close()
             self._crawler = None
+            self._active_profile = None
 
     async def crawl(
         self,
@@ -75,7 +100,8 @@ class Crawl4AIProvider:
         if public:
             validate_url(url)
         async with self._lock:
-            await self.start()
+            selected_profile = profile if mode == "managed_profile" else None
+            await self.start(selected_profile)
             from crawl4ai import CacheMode, CrawlerRunConfig
 
             config = CrawlerRunConfig(
@@ -106,6 +132,15 @@ class Crawl4AIProvider:
             )
             return ProviderResult("crawl4ai", [item], [], 1)
 
+    def _profile_directory(self, profile: str) -> Path:
+        if not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", profile) or profile in {".", ".."}:
+            raise ValueError("BROWSER_PROFILE_INVALID")
+        profile_root = (Path(self.base_directory) / "profiles").resolve()
+        candidate = (profile_root / profile).resolve()
+        if candidate.parent != profile_root or not candidate.is_dir():
+            raise ValueError("BROWSER_PROFILE_NOT_FOUND")
+        return candidate
+
     @staticmethod
     async def _validate_browser_request(url: str, public: bool) -> None:
         if not public:
@@ -113,5 +148,16 @@ class Crawl4AIProvider:
         scheme = urlsplit(url).scheme.lower()
         if scheme in {"data", "blob", "about"}:
             return
+        if scheme in {"ws", "wss"}:
+            parts = urlsplit(url)
+            url = urlunsplit(("https" if scheme == "wss" else "http", parts.netloc, parts.path, parts.query, ""))
         target = validate_url(url)
         await resolve_public(target)
+
+    @classmethod
+    async def _handle_websocket(cls, websocket, public: bool) -> None:
+        try:
+            await cls._validate_browser_request(websocket.url, public)
+            websocket.connect_to_server()
+        except Exception:
+            websocket.close(code=1008, reason="Blocked by Halo egress policy")

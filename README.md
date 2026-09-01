@@ -57,6 +57,8 @@ Codex          ├── Streamable HTTP MCP ── Halo Research Gateway :8765
 Claude Code    │                              ├── Exa + DDGS search
 OpenCode       │                              ├── DNS-pinned direct HTTP
 LM Studio      ┘                              ├── Crawl4AI + owned Chrome
+                                               ├── GitHub + deep research
+                                               ├── transcripts + communities
                                                ├── Reddit RSS + documents
                                                ├── cache / queues / budgets
                                                ├── encrypted connection vault
@@ -110,14 +112,14 @@ Read [current evidence](docs/EVIDENCE-2026-09-01.md), [implementation status](do
 
 ## Honest capability boundary
 
-Version 0.1.0 is an operational DSH-first public research release with generic connection, OAuth, Chrome-import, provider-budget, job, and approval mechanisms. Provider/site-specific work still requires an operator choice:
+Version 0.1.0 is an operational DSH-first research release with generic connection, OAuth, Chrome-import, provider-budget, job, and approval mechanisms. It now includes structured public transcripts and communities, bounded deep research, optional read-only GitHub App research, narrow Gmail compose actions, a separate GitHub issue/comment Actions App, WebSocket request interception, and disabled CapSolver/Bright Data adapters. Provider/site-specific live use still requires an operator choice:
 
 - no personal Chrome data is imported automatically;
-- no OAuth provider is connected until endpoints, client, and scopes are supplied;
+- no OAuth or GitHub App is connected until the operator supplies its client/App identity and exact scopes;
 - no CAPTCHA solver or proxy is selected, enabled, or charged by default;
-- posting, messaging, purchasing, account changes, and deletion need site-specific execution adapters;
-- generic approved form submission is the only released consequential-action adapter;
-- universal transcript extraction, authenticated GitHub API use, and browser WebSocket/DNS-level pinning remain extension work.
+- generic form submission, Gmail compose, and narrowly owned GitHub issue/comment operations are the released consequential-action adapters; purchases, account/security changes, deletion, and authenticated Reddit remain outside the release;
+- public caption extraction does not download media or run speech-to-text;
+- browser WebSocket handshakes are policy-checked, but Chromium-level DNS pinning and the visible human-challenge flow remain unproven.
 
 ## Repository map
 

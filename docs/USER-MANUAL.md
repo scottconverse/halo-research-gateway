@@ -107,6 +107,12 @@ The gateway uses an ephemeral loopback callback, PKCE S256, exact state validati
 
 Local revocation prevents further gateway use. Provider-side token revocation may still require the provider's security page until a provider-specific revocation adapter exists.
 
+### Narrow provider presets
+
+- **Gmail compose:** use the operator preset and exact `https://www.googleapis.com/auth/gmail.compose` scope. Draft and send receipts keep the draft ID, draft-message ID, sent-message ID, thread ID, and frozen MIME hash distinct. `accepted_by_gmail` is not a claim of delivery.
+- **GitHub research:** create a read-only GitHub App with Metadata, Contents, Issues, Pull requests, Discussions, Actions, Checks, and Commit statuses set to read. The gateway mints short-lived installation tokens and never exposes them to models.
+- **GitHub actions:** use a different App with Metadata read and Issues write. Issue/comment creation is approval-bound; editing or state mutation is restricted to objects previously created through Halo receipts. Pull requests are not treated as issues for state mutation.
+
 ## 6. Chrome-profile import
 
 The gateway never silently reads or attaches to a live personal Chrome profile. Import copies explicitly selected data into a gateway-owned profile.
@@ -138,7 +144,7 @@ Implemented boundaries:
 - one owned browser slot;
 - owned process containment and cleanup.
 
-Remaining hardening work includes browser-level DNS pinning and complete WebSocket interception. These gaps do not make fetched content trusted and do not authorize actions.
+WebSocket handshakes are intercepted and passed through the same destination policy. Remaining hardening work includes Chromium-level DNS pinning and acceptance proof for a visible 120-second human-challenge handoff. These gaps do not make fetched content trusted and do not authorize actions.
 
 ## 8. Exact local/private targets
 
@@ -181,13 +187,13 @@ Research is read-only. Consequential work follows:
 
 Changing destination, recipients, fields, account, action, or price invalidates approval. Ambiguous outcomes are never retried automatically.
 
-Version 0.1.0 releases generic approved form submission. Post, message, purchase, account-change, and delete plans can be previewed, but execution requires site-specific adapters.
+Version 0.1.0 releases generic approved form submission, narrow Gmail compose actions, and GitHub issue/comment actions through a separate write App. Purchases, account/security changes, deletion, authenticated Reddit, and arbitrary sites remain preview-only or unsupported.
 
 ## 11. Optional CAPTCHA/proxy providers
 
-The release includes provider-neutral policy seams, not a selected paid vendor. Both are disabled by default.
+The release includes tested CapSolver and Bright Data Web Unlocker adapters behind the durable provider-budget policy. Both are disabled by default.
 
-Enabling requires provider adapter, encrypted connection ID, exact allowed domains, daily attempt ceiling, and daily spend ceiling. The gateway refuses disabled, incomplete, unknown-adapter, wrong-domain, attempt-exhausted, and spend-exhausted calls. Status reveals aggregate usage, never secrets. Operator-assisted challenges remain available without a paid provider.
+Enabling requires an encrypted connection ID, exact allowed domains, daily attempt ceiling, and daily spend ceiling. CapSolver is limited to exact-domain tasks with no callback and at most 40 polls/120 seconds. Bright Data is limited to the fixed Unlocker API and exact-domain requests. The gateway refuses disabled, incomplete, unknown-adapter, wrong-domain, attempt-exhausted, and spend-exhausted calls. Status reveals aggregate usage, never secrets. The visible operator-assisted challenge flow is not yet acceptance-proven.
 
 ## 12. Configuration reference
 
@@ -218,6 +224,7 @@ Unsafe global switches are not representable. Unknown and legacy banned keys fai
 - Cursor continuation reuses the cached snapshot.
 - Sensitive URLs are not cached.
 - Bounded queues return visible saturation errors instead of growing forever.
+- Provider queues use round-robin scheduling across declared client profiles and FIFO within each profile. Missing or unknown `X-Halo-Client` values become `unidentified`; the value is scheduling metadata, never authentication or action authority.
 
 A healthy gateway can still report an upstream outage honestly.
 

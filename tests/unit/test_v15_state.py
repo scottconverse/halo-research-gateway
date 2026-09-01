@@ -29,6 +29,16 @@ class FakeClock:
         self.now += timedelta(seconds=seconds)
 
 
+class RecordingClock(FakeClock):
+    def __init__(self):
+        super().__init__()
+        self.sleeps = []
+
+    async def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        await super().sleep(seconds)
+
+
 def database(tmp_path):
     path = tmp_path / "gateway.db"
     migrate(str(path), str(tmp_path / "backups"))
@@ -137,7 +147,7 @@ async def test_generic_form_action_executes_once_after_exact_approval(tmp_path):
 
 @pytest.mark.asyncio
 async def test_singleflight_runs_one_upstream_call():
-    coordinator = Coordinator({"http": QueuePolicy(4, 4, 2)})
+    coordinator = Coordinator({"http": QueuePolicy(1, 1, 1)})
     calls = 0
 
     async def operation():
@@ -169,6 +179,70 @@ async def test_queue_rejects_per_client_overflow():
         await coordinator.run("http", "a", "two", blocked)
     release.set()
     await first
+
+
+@pytest.mark.asyncio
+async def test_queue_is_round_robin_across_clients_and_fifo_within_each_client():
+    clock = RecordingClock()
+    coordinator = Coordinator({"http": QueuePolicy(5, 3, 1, 5)}, clock)
+    first_entered = asyncio.Event()
+    release_first = asyncio.Event()
+    started = []
+
+    def operation(name):
+        async def run():
+            started.append(name)
+            if name == "a0":
+                first_entered.set()
+                await release_first.wait()
+            return name
+
+        return run
+
+    first = asyncio.create_task(coordinator.run("http", "a", "a0", operation("a0")))
+    await first_entered.wait()
+    queued = [
+        asyncio.create_task(coordinator.run("http", "a", "a1", operation("a1"))),
+        asyncio.create_task(coordinator.run("http", "a", "a2", operation("a2"))),
+        asyncio.create_task(coordinator.run("http", "b", "b1", operation("b1"))),
+        asyncio.create_task(coordinator.run("http", "b", "b2", operation("b2"))),
+    ]
+    await asyncio.sleep(0)
+    release_first.set()
+
+    assert await asyncio.gather(first, *queued) == ["a0", "a1", "a2", "b1", "b2"]
+    assert started == ["a0", "b1", "a1", "b2", "a2"]
+    assert clock.sleeps == [5, 5, 5, 5]
+
+
+@pytest.mark.asyncio
+async def test_cancelling_a_queued_request_removes_it_before_execution():
+    coordinator = Coordinator({"http": QueuePolicy(3, 3, 1)})
+    first_entered = asyncio.Event()
+    release_first = asyncio.Event()
+    cancelled_started = False
+
+    async def first_operation():
+        first_entered.set()
+        await release_first.wait()
+
+    async def cancelled_operation():
+        nonlocal cancelled_started
+        cancelled_started = True
+
+    first = asyncio.create_task(coordinator.run("http", "a", "first", first_operation))
+    await first_entered.wait()
+    queued = asyncio.create_task(coordinator.run("http", "b", "cancelled", cancelled_operation))
+    await asyncio.sleep(0)
+    queued.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await queued
+    release_first.set()
+    await first
+    await asyncio.sleep(0)
+
+    assert cancelled_started is False
+    assert coordinator.stats()["http"]["pending"] == 0
 
 
 @pytest.mark.asyncio

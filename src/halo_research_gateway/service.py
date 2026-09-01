@@ -12,6 +12,8 @@ from pathlib import Path
 
 import httpx
 
+from .actions.github import GitHubIssueActionAdapter, github_target
+from .actions.gmail import GmailComposeAdapter, freeze_mime
 from .actions.store import ActionStore
 from .cache import Cache
 from .clock import SystemClock, rfc3339
@@ -26,13 +28,18 @@ from .jobs.manager import JobManager
 from .migrations import SCHEMA_VERSION as DATABASE_SCHEMA_VERSION
 from .migrations import migrate
 from .models import LocalTarget, ProviderResult
+from .providers.community import CommunityProvider, community_source_for_url
 from .providers.crawl4ai_provider import Crawl4AIProvider
+from .providers.deep import BodyDeduplicator, canonical_url, domain_allowed, url_host
 from .providers.document_extract import DocumentProvider
 from .providers.exa import ExaProvider, ExaRateLimited
+from .providers.github import GitHubProvider
 from .providers.http_fetch import HttpFetchProvider, PinnedTransport, resolve_public
 from .providers.optional import OptionalProviderRegistry
+from .providers.paid import BrightDataUnlockerAdapter, CapSolverAdapter
 from .providers.reddit_rss import parse_atom, search_url, thread_rss_url
 from .providers.search import DdgsSearchProvider
+from .providers.transcripts import TranscriptProvider
 from .rate_limit import RateLedger
 from .security import UrlPolicyError, validate_url
 
@@ -76,9 +83,16 @@ class HaloService:
         self.rate = RateLedger(config.storage.database, self.clock)
         runtime_root = Path(config.storage.database).parent.parent
         self.connections = ConnectionStore(config.storage.database, runtime_root / "vault", self.clock)
+        self.gmail = GmailComposeAdapter(self.connections)
+        self.github_actions = GitHubIssueActionAdapter(self.connections, config.storage.database)
+        self.github = GitHubProvider(self.connections, self.clock)
+        self.transcripts = TranscriptProvider(self.http, self.clock)
+        self.community = CommunityProvider(self.http, self.github, self.ddgs, self.clock)
         self.optional_providers = OptionalProviderRegistry(
             config.storage.database, self.connections, config.captcha, config.proxy
         )
+        self.optional_providers.register("captcha", "capsolver", CapSolverAdapter(self.clock))
+        self.optional_providers.register("proxy", "brightdata", BrightDataUnlockerAdapter())
         self.oauth = OAuthManager(self.connections)
         self.chrome_importer = ChromeImporter(runtime_root / "browser" / "profiles")
         self.cursors = CursorCodec(
@@ -102,6 +116,26 @@ class HaloService:
         await self.crawler.close()
 
     async def oauth_begin(self, **values) -> dict:
+        if str(values.get("provider", "")).strip().casefold() in {"gmail", "google gmail"}:
+            expected_authorize = "https://accounts.google.com/o/oauth2/v2/auth"
+            expected_token = "https://oauth2.googleapis.com/token"
+            requested_scopes = set(values.get("scopes") or [])
+            if (
+                values.get("authorization_endpoint") != expected_authorize
+                or values.get("token_endpoint") != expected_token
+                or requested_scopes != {"https://www.googleapis.com/auth/gmail.compose"}
+            ):
+                raise ValueError("GMAIL_OAUTH_POLICY_MISMATCH")
+            extra = dict(values.get("extra_authorize") or {})
+            if set(extra) - {"access_type", "include_granted_scopes", "prompt"}:
+                raise ValueError("GMAIL_OAUTH_PARAMETER_NOT_ALLOWED")
+            if extra.get("prompt") not in {None, "consent"}:
+                raise ValueError("GMAIL_OAUTH_PROMPT_INVALID")
+            values["extra_authorize"] = {
+                "access_type": "offline",
+                "include_granted_scopes": "true",
+                **extra,
+            }
         begun = await self.oauth.begin(**values)
         self._oauth_tasks[begun["flow_id"]] = asyncio.create_task(self.oauth.complete(begun["flow_id"]))
         return begun
@@ -528,41 +562,324 @@ class HaloService:
     ) -> dict:
         if cursor:
             return self._resume("deep_research", cursor, max_chars)
-        del max_pages, max_depth
+        if not question.strip() or not 1 <= max_sources <= 50 or not 1 <= max_pages <= 250 or not 0 <= max_depth <= 3:
+            return self._error("deep_research", "policy", ValueError("INVALID_DEEP_RESEARCH_LIMITS"))
+        seed_urls = list(seed_urls or [])
+        key = (
+            "deep:"
+            + hashlib.sha256(
+                json.dumps(
+                    [
+                        question,
+                        seed_urls,
+                        include_domains,
+                        exclude_domains,
+                        max_sources,
+                        max_pages,
+                        max_depth,
+                        freshness_days,
+                    ],
+                    sort_keys=True,
+                ).encode()
+            ).hexdigest()
+        )
         try:
-            search = await self.ddgs.search(
-                question,
-                max_results=max_sources,
-                include_domains=include_domains,
-                exclude_domains=exclude_domains,
-                freshness_days=freshness_days,
-            )
-            urls = list(seed_urls or []) + [item.url for item in search.items]
-            seen = set()
-            items = []
-            warnings = list(search.warnings)
-            for url in urls:
-                if url in seen or len(items) >= max_sources:
-                    continue
-                seen.add(url)
+
+            async def collect() -> ProviderResult:
+                warnings: list[str] = []
                 try:
-                    fetched = await self.http.fetch(url)
-                    items.extend(fetched.items)
-                    warnings.extend(fetched.warnings)
+                    search = await self.ddgs.search(
+                        question,
+                        max_results=max_sources,
+                        include_domains=include_domains,
+                        exclude_domains=exclude_domains,
+                        freshness_days=freshness_days,
+                    )
+                    warnings.extend(search.warnings)
                 except Exception:
-                    warnings.append("UPSTREAM_UNAVAILABLE")
+                    search = ProviderResult("search-unavailable", [], ["SEARCH_UNAVAILABLE"], 0)
+                    warnings.extend(search.warnings)
+
+                frontier: list[tuple[str, int, str]] = []
+                enqueued: set[str] = set()
+
+                def enqueue(
+                    raw_url: str, depth: int, root_host: str | None = None, base_url: str | None = None
+                ) -> None:
+                    normalized = canonical_url(raw_url, base_url)
+                    if normalized is None:
+                        warnings.append("SOURCE_URL_SKIPPED")
+                        return
+                    host = url_host(normalized)
+                    root = root_host or host
+                    if root_host is not None and host != root:
+                        warnings.append("CROSS_SITE_LINK_SKIPPED")
+                        return
+                    if not domain_allowed(normalized, include_domains, exclude_domains):
+                        warnings.append("SOURCE_FILTERED")
+                        return
+                    if normalized in enqueued:
+                        warnings.append("DUPLICATE_URL_SKIPPED")
+                        return
+                    if len(enqueued) >= max_pages:
+                        warnings.append("PAGE_LIMIT_REACHED")
+                        return
+                    enqueued.add(normalized)
+                    frontier.append((normalized, depth, root))
+
+                for url in seed_urls:
+                    enqueue(url, 0)
+                    if len(enqueued) >= max_pages:
+                        break
+                for item in search.items:
+                    enqueue(item.url, 0)
+                    if len(enqueued) >= max_pages:
+                        break
+
+                items = []
+                deduplicator = BodyDeduplicator()
+                position = 0
+                attempted = 0
+                while position < len(frontier) and attempted < max_pages and len(items) < max_sources:
+                    url, depth, root_host = frontier[position]
+                    position += 1
+                    attempted += 1
+                    fetch_key = "fetch:" + hashlib.sha256(url.encode()).hexdigest()
+                    try:
+                        fetched = await self._cached_run(
+                            "http", client, fetch_key, 3600, lambda current=url: self.http.fetch(current)
+                        )
+                    except Exception:
+                        warnings.append("UPSTREAM_UNAVAILABLE")
+                        continue
+                    warnings.extend(fetched.warnings)
+                    for item in fetched.items:
+                        result_url = canonical_url(item.url)
+                        if result_url is None or not domain_allowed(result_url, include_domains, exclude_domains):
+                            warnings.append("SOURCE_FILTERED")
+                            continue
+                        if url_host(result_url) != root_host:
+                            warnings.append("CROSS_SITE_LINK_SKIPPED")
+                            continue
+                        item.url = result_url
+                        body = item.content or item.snippet or ""
+                        if deduplicator.duplicate(body):
+                            warnings.append("DUPLICATE_CONTENT_SKIPPED")
+                        elif len(items) < max_sources:
+                            items.append(item)
+
+                        links = (item.metadata or {}).get("links") or []
+                        if depth >= max_depth:
+                            if links:
+                                warnings.append("DEPTH_LIMIT_REACHED")
+                            continue
+                        for link in links:
+                            href = link.get("url") if isinstance(link, dict) else link[1] if len(link) > 1 else None
+                            if href:
+                                enqueue(str(href), depth + 1, root_host, item.url)
+
+                if position < len(frontier) and attempted >= max_pages:
+                    warnings.append("PAGE_LIMIT_REACHED")
+                if len(items) >= max_sources and position < len(frontier):
+                    warnings.append("SOURCE_LIMIT_REACHED")
+                return ProviderResult("halo-deep", items, sorted(set(warnings)), len(items))
+
+            result = await self._cached_run("deep", client, key, 1800, collect)
             return self._envelope(
                 "deep_research",
-                ProviderResult("halo-deep", items, sorted(set(warnings)), len(items)),
+                result,
                 max_chars,
                 requested=max_sources,
             )
         except Exception as exc:
             return self._error("deep_research", "halo-deep", exc)
 
-    async def local_fetch(
-        self, target: str | None = None, path: str | None = None, max_chars=None, cursor=None
+    async def github_research(
+        self,
+        query: str,
+        repository: str | None = None,
+        kinds: list[str] | None = None,
+        ref: str | None = None,
+        max_results: int = 10,
+        max_chars=None,
+        cursor=None,
+        client="unidentified",
     ) -> dict:
+        if cursor:
+            return self._resume("github_research", cursor, max_chars)
+        if not query.strip() or not 1 <= max_results <= 30:
+            return self._error("github_research", "github-api", ValueError("INVALID_GITHUB_QUERY"))
+        key = (
+            "github:"
+            + hashlib.sha256(
+                json.dumps([query, repository, kinds, ref, max_results], sort_keys=True).encode()
+            ).hexdigest()
+        )
+        try:
+            result = await self.coordinator.run(
+                "http",
+                client,
+                key,
+                lambda: self.github.research(query, repository, kinds, ref, max_results),
+            )
+            if result.items or "GITHUB_AUTH_NOT_CONFIGURED" not in result.warnings:
+                return self._envelope("github_research", result, max_chars, requested=max_results)
+
+            # Anonymous public discovery remains useful, but is explicitly not
+            # represented as structured/authenticated GitHub API coverage.
+            public_query = f"site:github.com/{repository} {query}" if repository else f"site:github.com {query}"
+            public = await self.web_search(
+                public_query,
+                max_results,
+                "web",
+                ["github.com"],
+                None,
+                None,
+                max_chars,
+                None,
+                client=client,
+            )
+            public["tool"] = "github_research"
+            public["provider"] = "github-public-discovery"
+            public.setdefault("warnings", []).extend(result.warnings)
+            public["warnings"] = sorted(set(public["warnings"]))
+            return public
+        except Exception as exc:
+            return self._error("github_research", "github-api", exc)
+
+    async def transcript_fetch(
+        self,
+        url: str | None,
+        language: str | None = None,
+        prefer_human: bool = True,
+        max_chars=None,
+        cursor=None,
+        client="unidentified",
+    ) -> dict:
+        if cursor:
+            return self._resume("transcript_fetch", cursor, max_chars)
+        if not url:
+            return self._error("transcript_fetch", "policy", ValueError("URL_REQUIRED"))
+        if language is not None and (not language.strip() or len(language) > 64):
+            return self._error("transcript_fetch", "policy", ValueError("INVALID_TRANSCRIPT_LANGUAGE"))
+        from .security import is_sensitive_url
+
+        if is_sensitive_url(url):
+            return self._error("transcript_fetch", "policy", ValueError("SENSITIVE_URL_NOT_ALLOWED"))
+        key = (
+            "transcript:"
+            + hashlib.sha256(json.dumps([url, language, prefer_human], sort_keys=True).encode()).hexdigest()
+        )
+        try:
+            result = await self._cached_run(
+                "http",
+                client,
+                key,
+                3600,
+                lambda: self.transcripts.fetch(url, language, prefer_human),
+                cacheable=not is_sensitive_url(url),
+            )
+            return self._envelope("transcript_fetch", result, max_chars, requested=1)
+        except Exception as exc:
+            return self._error("transcript_fetch", "public-transcript", exc)
+
+    async def community_search(
+        self,
+        query: str,
+        sources: list[str] | None = None,
+        max_results: int = 10,
+        freshness_days: int | None = None,
+        max_chars=None,
+        cursor=None,
+        client="unidentified",
+    ) -> dict:
+        if cursor:
+            return self._resume("community_search", cursor, max_chars)
+        if not query.strip() or len(query) > 500 or not 1 <= max_results <= 25:
+            return self._error("community_search", "policy", ValueError("INVALID_COMMUNITY_QUERY"))
+        if freshness_days is not None and freshness_days < 0:
+            return self._error("community_search", "policy", ValueError("INVALID_FRESHNESS"))
+        key = (
+            "community-search:"
+            + hashlib.sha256(
+                json.dumps([query, sources, max_results, freshness_days], sort_keys=True).encode()
+            ).hexdigest()
+        )
+        selected = {str(source).casefold() for source in (sources or ["all"])}
+        cacheable = not ({"all", "github_discussions"} & selected)
+        try:
+            result = await self._cached_run(
+                "http",
+                client,
+                key,
+                900,
+                lambda: self.community.search(query, sources, max_results, freshness_days),
+                cacheable=cacheable,
+            )
+            return self._envelope("community_search", result, max_chars, requested=max_results)
+        except Exception as exc:
+            return self._error("community_search", "community-public", exc)
+
+    async def community_thread(
+        self,
+        url: str | None,
+        max_replies: int = 40,
+        sort: str = "source_default",
+        max_chars=None,
+        cursor=None,
+        client="unidentified",
+    ) -> dict:
+        if cursor:
+            return self._resume("community_thread", cursor, max_chars)
+        if not url:
+            return self._error("community_thread", "policy", ValueError("URL_REQUIRED"))
+        if not 1 <= max_replies <= 150 or sort not in {"source_default", "top", "oldest", "newest"}:
+            return self._error("community_thread", "policy", ValueError("INVALID_COMMUNITY_THREAD_LIMITS"))
+        try:
+            source = community_source_for_url(url)
+            key = (
+                "community-thread:"
+                + hashlib.sha256(json.dumps([url, max_replies, sort], sort_keys=True).encode()).hexdigest()
+            )
+            if source == "reddit":
+                rss_url = thread_rss_url(url)
+                result = await self._cached_run(
+                    "reddit", client, key, 1800, lambda: self._rss(rss_url, max_replies + 1)
+                )
+            elif source == "forums":
+                result = await self._cached_run(
+                    "crawl",
+                    client,
+                    key,
+                    1800,
+                    lambda: self.crawler.crawl(url, max_pages=1, mode="standard"),
+                )
+                result.provider = "community-forum-crawl"
+                result.warnings = sorted(set([*result.warnings, "FORUM_THREAD_UNSTRUCTURED"]))
+                for item in result.items:
+                    item.metadata = dict(item.metadata or {}) | {"community_source": "forums"}
+            else:
+                result = await self._cached_run(
+                    "http",
+                    client,
+                    key,
+                    1800,
+                    lambda: self.community.thread(url, max_replies, sort),
+                    cacheable=source != "github_discussions",
+                )
+            return self._envelope("community_thread", result, max_chars, requested=max_replies + 1)
+        except Exception as exc:
+            return self._error("community_thread", "community-public", exc)
+
+    async def local_fetch(
+        self,
+        target: str | None = None,
+        path: str | None = None,
+        max_chars=None,
+        cursor=None,
+        client="unidentified",
+    ) -> dict:
+        del client
         if cursor:
             return self._resume("local_fetch", cursor, max_chars)
         if not target or path is None:
@@ -606,7 +923,14 @@ class HaloService:
             return self._error("local_fetch", "local-http", exc)
 
     async def local_crawl(
-        self, target: str | None = None, path: str | None = None, max_pages=1, profile=None, max_chars=None, cursor=None
+        self,
+        target: str | None = None,
+        path: str | None = None,
+        max_pages=1,
+        profile=None,
+        max_chars=None,
+        cursor=None,
+        client="unidentified",
     ) -> dict:
         if cursor:
             return self._resume("local_crawl", cursor, max_chars)
@@ -631,7 +955,7 @@ class HaloService:
             key = "local-crawl:" + hashlib.sha256(json.dumps([target, path, max_pages, profile]).encode()).hexdigest()
             result = await self._cached_run(
                 "crawl",
-                "unidentified",
+                client,
                 key,
                 300,
                 lambda: self.crawler.crawl(
@@ -710,21 +1034,77 @@ class HaloService:
     ) -> dict:
         if target_url.startswith(("http://", "https://")):
             validate_url(target_url)
-        return self.actions.prepare(
-            {
-                "action": action,
-                "target_url": target_url,
-                "intent": intent,
-                "fields": fields,
-                "connection_id": connection_id,
-                "profile": profile,
-                "max_price": max_price,
-            }
-        )
+        plan = {
+            "action": action,
+            "target_url": target_url,
+            "intent": intent,
+            "fields": fields,
+            "connection_id": connection_id,
+            "profile": profile,
+            "max_price": max_price,
+        }
+        if action.startswith("gmail_"):
+            if target_url != "gmail://me" or not connection_id:
+                raise ValueError("GMAIL_TARGET_AND_CONNECTION_REQUIRED")
+            self.gmail._credential(connection_id)
+
+            def addresses(name: str) -> list[str]:
+                value = fields.get(name) or []
+                return [value] if isinstance(value, str) else [str(item) for item in value]
+
+            if action in {"gmail_draft_create", "gmail_draft_update", "gmail_message_send"}:
+                plan["gmail"] = freeze_mime(
+                    sender=fields.get("from"),
+                    to=addresses("to"),
+                    cc=addresses("cc"),
+                    bcc=addresses("bcc"),
+                    reply_to=fields.get("reply_to"),
+                    subject=str(fields.get("subject") or ""),
+                    text=str(fields.get("text") or ""),
+                    message_id=fields.get("message_id"),
+                )
+                if action == "gmail_draft_update":
+                    plan["gmail"]["draft_id"] = str(fields.get("draft_id") or "")
+            elif action == "gmail_draft_send":
+                draft_id = str(fields.get("draft_id") or "")
+                if not draft_id:
+                    raise ValueError("GMAIL_DRAFT_ID_REQUIRED")
+                plan["gmail"] = {"draft_id": draft_id}
+            else:
+                raise ValueError("GMAIL_ACTION_INVALID")
+        elif action.startswith("github_"):
+            if not connection_id:
+                raise ValueError("GITHUB_ACTION_CONNECTION_REQUIRED")
+            self.github_actions._connection(connection_id)
+            repository = github_target(target_url)
+            github: dict[str, object] = {"repository": repository}
+            if action == "github_issue_create":
+                title = str(fields.get("title") or "").strip()
+                if not title or len(title) > 256:
+                    raise ValueError("GITHUB_ISSUE_TITLE_INVALID")
+                github.update(title=title, body=str(fields.get("body") or ""))
+            elif action == "github_comment_create":
+                github.update(issue_number=int(fields["issue_number"]), body=str(fields["body"]))
+            elif action == "github_comment_edit":
+                github.update(comment_id=int(fields["comment_id"]), body=str(fields["body"]))
+            elif action == "github_issue_set_state":
+                state = str(fields.get("state") or "")
+                reason = fields.get("state_reason")
+                if state not in {"open", "closed"} or reason not in {None, "completed", "not_planned", "reopened"}:
+                    raise ValueError("GITHUB_ISSUE_STATE_INVALID")
+                github.update(issue_number=int(fields["issue_number"]), state=state, state_reason=reason)
+            else:
+                raise ValueError("GITHUB_ACTION_INVALID")
+            plan["github"] = github
+        return self.actions.prepare(plan)
 
     async def web_action_execute(self, plan_id: str, approval_token: str, idempotency_key: str) -> dict:
         async def execute(plan):
             target = urllib.parse.urlsplit(plan["target_url"]).hostname
+            if plan["action"].startswith("gmail_"):
+                return await self.gmail.execute(plan)
+            if plan["action"].startswith("github_"):
+                return await self.github_actions.execute(plan)
             if plan["action"] != "form_submit":
                 return {
                     "status": "ACTION_ADAPTER_NOT_CONFIGURED",

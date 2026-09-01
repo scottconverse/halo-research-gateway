@@ -71,12 +71,24 @@ lease_seconds = 30
 
 # Optional paid providers are inert until every field below is deliberately
 # configured. Credentials are stored in the encrypted connection vault; never
-# put a token in this file. Add a vendor-specific adapter/ADR before enabling.
+# put a token in this file. Implemented provider names are `capsolver` and
+# `brightdata`; live enablement still requires an operator-selected account,
+# exact domains, attempt ceiling, spend ceiling, and acceptance receipt.
 [captcha]
 enabled = false
+# provider = "capsolver"
+# connection_id = "operator-created-opaque-id"
+# allowed_domains = ["example.com"]
+# daily_attempt_limit = 2
+# daily_spend_limit_usd = 1.00
 
 [proxy]
 enabled = false
+# provider = "brightdata"
+# connection_id = "operator-created-opaque-id"
+# allowed_domains = ["example.com"]
+# daily_attempt_limit = 2
+# daily_spend_limit_usd = 1.00
 
 [local_targets.mission_control]
 scheme = "http"

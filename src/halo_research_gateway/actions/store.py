@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
 import json
@@ -9,6 +10,7 @@ import secrets
 import sqlite3
 import uuid
 from datetime import timedelta
+from weakref import WeakValueDictionary
 
 from ..clock import SystemClock, rfc3339
 
@@ -18,6 +20,7 @@ class ActionStore:
         self.db_path = db_path
         self.approval_ttl = approval_ttl
         self.clock = clock or SystemClock()
+        self._plan_locks: WeakValueDictionary[str, asyncio.Lock] = WeakValueDictionary()
 
     @staticmethod
     def _canonical(value: dict) -> str:
@@ -56,47 +59,71 @@ class ActionStore:
         return token
 
     async def execute(self, plan_id: str, token: str, idempotency_key: str, executor) -> dict:
-        with sqlite3.connect(self.db_path) as db:
-            existing = db.execute(
-                "SELECT receipt_json FROM action_receipts WHERE idempotency_key=?", (idempotency_key,)
-            ).fetchone()
-            if existing:
-                return json.loads(existing[0])
-            row = db.execute(
-                "SELECT plan_hash,plan_json,approval_digest,approval_expires_at,consumed_at FROM action_plans WHERE plan_id=?",
-                (plan_id,),
-            ).fetchone()
-        if row is None or row[4] is not None:
-            raise PermissionError("ACTION_ALREADY_EXECUTED")
-        if not row[2] or not hmac.compare_digest(row[2], hashlib.sha256(token.encode()).hexdigest()):
-            raise PermissionError("ACTION_APPROVAL_REQUIRED")
-        if row[3] < rfc3339(self.clock.utcnow()):
-            raise PermissionError("ACTION_APPROVAL_EXPIRED")
-        plan = json.loads(row[1])
-        outcome = await executor(plan)
-        receipt = {
-            "receipt_id": str(uuid.uuid4()),
-            "plan_id": plan_id,
-            "plan_hash": row[0],
-            "outcome": outcome,
-            "created_at": rfc3339(self.clock.utcnow()),
-        }
-        encoded = self._canonical(receipt)
-        with sqlite3.connect(self.db_path) as db:
-            db.execute("BEGIN IMMEDIATE")
-            if (
+        lock = self._plan_locks.setdefault(plan_id, asyncio.Lock())
+        async with lock:
+            reserved_at = rfc3339(self.clock.utcnow())
+            with sqlite3.connect(self.db_path) as db:
+                db.execute("BEGIN IMMEDIATE")
+                existing = db.execute(
+                    "SELECT receipt_json FROM action_receipts WHERE idempotency_key=?", (idempotency_key,)
+                ).fetchone()
+                if existing:
+                    return json.loads(existing[0])
+                row = db.execute(
+                    "SELECT plan_hash,plan_json,approval_digest,approval_expires_at,consumed_at "
+                    "FROM action_plans WHERE plan_id=?",
+                    (plan_id,),
+                ).fetchone()
+                if row is None or row[4] is not None:
+                    raise PermissionError("ACTION_ALREADY_EXECUTED")
+                if not row[2] or not hmac.compare_digest(row[2], hashlib.sha256(token.encode()).hexdigest()):
+                    raise PermissionError("ACTION_APPROVAL_REQUIRED")
+                if row[3] < rfc3339(self.clock.utcnow()):
+                    raise PermissionError("ACTION_APPROVAL_EXPIRED")
+                if (
+                    db.execute(
+                        "UPDATE action_plans SET consumed_at=? WHERE plan_id=? AND consumed_at IS NULL",
+                        (reserved_at, plan_id),
+                    ).rowcount
+                    != 1
+                ):
+                    raise PermissionError("ACTION_ALREADY_EXECUTED")
+
+            plan = json.loads(row[1])
+            receipt_outcome = "complete"
+            cancellation = None
+            try:
+                outcome = await executor(plan)
+            except asyncio.CancelledError as exc:
+                cancellation = exc
+                receipt_outcome = "ambiguous"
+                outcome = {"status": "ambiguous", "error_code": "ACTION_EXECUTION_AMBIGUOUS"}
+            except Exception:
+                receipt_outcome = "ambiguous"
+                outcome = {"status": "ambiguous", "error_code": "ACTION_EXECUTION_AMBIGUOUS"}
+            receipt = {
+                "receipt_id": str(uuid.uuid4()),
+                "plan_id": plan_id,
+                "plan_hash": row[0],
+                "outcome": outcome,
+                "created_at": rfc3339(self.clock.utcnow()),
+            }
+            encoded = self._canonical(receipt)
+            with sqlite3.connect(self.db_path) as db:
                 db.execute(
-                    "UPDATE action_plans SET consumed_at=? WHERE plan_id=? AND consumed_at IS NULL",
-                    (receipt["created_at"], plan_id),
-                ).rowcount
-                != 1
-            ):
-                raise PermissionError("ACTION_ALREADY_EXECUTED")
-            db.execute(
-                "INSERT INTO action_receipts VALUES (?,?,?,?,?,?)",
-                (receipt["receipt_id"], plan_id, idempotency_key, "complete", encoded, receipt["created_at"]),
-            )
-        return receipt
+                    "INSERT INTO action_receipts VALUES (?,?,?,?,?,?)",
+                    (
+                        receipt["receipt_id"],
+                        plan_id,
+                        idempotency_key,
+                        receipt_outcome,
+                        encoded,
+                        receipt["created_at"],
+                    ),
+                )
+            if cancellation is not None:
+                raise cancellation
+            return receipt
 
     def list_plans(self, limit: int = 50) -> list[dict]:
         with sqlite3.connect(self.db_path) as db:

@@ -11,17 +11,17 @@ Security here is intended to preserve capability, not make research unusable.
 - Local/private services use exact named target policies and separate tools; they do not weaken public URL policy.
 - Sensitive URLs are not persisted in cache.
 - Secrets are DPAPI-encrypted for the current Windows user and represented to models only by connection ID and non-secret scope/status metadata.
-- Prepared actions do not execute. Operator approval is short-lived and bound to the exact immutable plan. Idempotency prevents duplicate execution.
+- Prepared actions do not execute. Operator approval is short-lived and bound to the exact immutable plan. The plan is durably reserved before any upstream call, preventing concurrent different-key duplicate submission; ambiguous outcomes are receipted and never retried automatically.
 - Research jobs are bounded and operator-visible; there are no invisible unbounded background loops.
 
 These invariants do not claim protection from arbitrary code already running as the same Windows user modifying the source or runtime. They remove accidental and quiet unsafe configuration paths.
 
 ## Browser boundary
 
-Ordinary top-level public navigation is validated and the owned Chromium tree is process-contained. Complete interception of frames, subresources, service workers, WebSockets, mixed DNS answers, and browser-internal redirects is not yet proven. That is a real hardening gap, not a reason to remove Crawl4AI from the useful release.
+Top-level, frame, ordinary subresource, redirect, and WebSocket destinations are routed through public/local policy before connection. Service workers and downloads are disabled, imported profiles are gateway-owned copies, and the Chromium tree is process-contained. Browser-level address pinning across Chromium's own DNS resolution and every browser-internal request class is not yet proven. That remains a real hardening gap, not a reason to remove Crawl4AI from the useful release.
 
 ## Consequential operations
 
-Generic form submission can execute only after exact local approval. Posting, messaging, purchases, account/security changes, and deletion remain prepare-only until a site-specific adapter implements state validation, approval binding, ambiguity handling, and receipts. A model cannot mint or broaden approval.
+Generic form submission, Gmail compose/draft/send, and GitHub issue/comment actions can execute only after exact local approval. Gmail receipts keep MIME hash and Gmail identifiers distinct. GitHub write access uses a separate App; edit/state changes require prior Halo ownership receipts and pull requests are rejected from issue-state mutation. Purchases, account/security changes, deletion, authenticated Reddit, and arbitrary sites remain prepare-only. A model cannot mint or broaden approval.
 
 Credential import and paid challenge/proxy capabilities are not prohibited, but are not silently enabled. They require an operator-selected provider/import scope/domain/budget and a tested adapter.
