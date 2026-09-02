@@ -14,7 +14,8 @@ async def test_browser_request_policy_blocks_private_and_allows_in_document_reso
 
 @pytest.mark.asyncio
 async def test_local_crawl_uses_separate_operator_policy():
-    await Crawl4AIProvider._validate_browser_request("http://127.0.0.1:3090/", False)
+    with pytest.raises(ValueError, match="LOCAL_TARGET_REQUIRED"):
+        await Crawl4AIProvider._validate_browser_request("http://127.0.0.1:3090/", False)
 
 
 class FakeWebSocket:
@@ -26,7 +27,7 @@ class FakeWebSocket:
     def connect_to_server(self):
         self.connected = True
 
-    def close(self, **values):
+    async def close(self, **values):
         self.closed = values
 
 
@@ -40,8 +41,11 @@ async def test_public_websocket_to_loopback_is_blocked_before_connection():
 
 @pytest.mark.asyncio
 async def test_operator_defined_local_websocket_mode_can_connect():
+    from halo_research_gateway.models import LocalTarget
+
     websocket = FakeWebSocket("ws://127.0.0.1:3090/socket")
-    await Crawl4AIProvider._handle_websocket(websocket, False)
+    target = LocalTarget("fixture", "http", "127.0.0.1", 3090, ("/socket",), browser_allowed=True)
+    await Crawl4AIProvider._handle_websocket(websocket, False, target)
     assert websocket.connected is True
     assert websocket.closed is None
 

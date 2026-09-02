@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Literal
+from urllib.parse import unquote, urlsplit
 
 MaxChars = Literal[2000, 4000, 6000]
 
@@ -57,8 +58,42 @@ class LocalTarget:
     cache_authenticated: bool = False
 
     def build_url(self, path: str) -> str:
-        if not path.startswith("/") or not any(
-            path == prefix or path.startswith(prefix.rstrip("/") + "/") for prefix in self.path_prefixes
+        self._validate_path(path)
+        host = f"[{self.host}]" if ":" in self.host else self.host
+        return f"{self.scheme}://{host}:{self.port}{path}"
+
+    def _validate_path(self, path: str) -> None:
+        decoded = path.split("?", 1)[0].split("#", 1)[0]
+        for _ in range(8):
+            next_value = unquote(decoded)
+            if next_value == decoded:
+                break
+            decoded = next_value
+        else:
+            raise ValueError("LOCAL_TARGET_NOT_ALLOWED")
+        if (
+            not decoded.startswith("/")
+            or decoded.startswith("//")
+            or "\\" in decoded
+            or any(ord(char) < 32 for char in decoded)
+            or any(part in {".", ".."} for part in decoded.split("/"))
+            or not any(
+                decoded == prefix or decoded.startswith(prefix.rstrip("/") + "/") for prefix in self.path_prefixes
+            )
         ):
             raise ValueError("LOCAL_TARGET_NOT_ALLOWED")
-        return f"{self.scheme}://{self.host}:{self.port}{path}"
+
+    def validate_request(self, url: str, method: str = "GET") -> None:
+        parsed = urlsplit(url)
+        scheme = {"ws": "http", "wss": "https"}.get(parsed.scheme, parsed.scheme)
+        if (
+            not self.browser_allowed
+            or scheme != self.scheme
+            or parsed.hostname != self.host.lower()
+            or (parsed.port or (443 if scheme == "https" else 80)) != self.port
+            or parsed.username is not None
+            or parsed.password is not None
+            or method.upper() not in self.methods
+        ):
+            raise ValueError("LOCAL_TARGET_NOT_ALLOWED")
+        self._validate_path(parsed.path or "/")

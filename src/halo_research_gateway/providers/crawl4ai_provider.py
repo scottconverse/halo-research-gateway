@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 from ..clock import SystemClock, rfc3339
-from ..models import EvidenceItem, ProviderResult
+from ..models import EvidenceItem, LocalTarget, ProviderResult
 from ..security import validate_url
 from .http_fetch import resolve_public
 
@@ -24,10 +24,10 @@ class Crawl4AIProvider:
         self._crawler = None
         self._active_profile: str | None = None
         self._lock = asyncio.Lock()
-        self._public_navigation = True
+        self._active_policy: LocalTarget | None = None
 
-    async def start(self, profile: str | None = None) -> None:
-        if self._crawler is not None and self._active_profile == profile:
+    async def start(self, profile: str | None = None, local_target: LocalTarget | None = None) -> None:
+        if self._crawler is not None and self._active_profile == profile and self._active_policy == local_target:
             return
         if self._crawler is not None:
             await self._crawler.close()
@@ -62,7 +62,9 @@ class Crawl4AIProvider:
         async def guard_page(_, *, context, **__):
             async def guard_route(route, request):
                 try:
-                    await self._validate_browser_request(request.url, self._public_navigation)
+                    await self._validate_browser_request(
+                        request.url, local_target is None, local_target, request.method
+                    )
                     await route.continue_()
                 except Exception:
                     await route.abort("blockedbyclient")
@@ -70,7 +72,7 @@ class Crawl4AIProvider:
             await context.route("**/*", guard_route)
 
             async def guard_websocket(websocket):
-                await self._handle_websocket(websocket, self._public_navigation)
+                await self._handle_websocket(websocket, local_target is None, local_target)
 
             route_websocket = getattr(context, "route_web_socket", None)
             if route_websocket is None:
@@ -80,12 +82,14 @@ class Crawl4AIProvider:
         self._crawler.crawler_strategy.set_hook("on_page_context_created", guard_page)
         await self._crawler.start()
         self._active_profile = profile
+        self._active_policy = local_target
 
     async def close(self) -> None:
         if self._crawler is not None:
             await self._crawler.close()
             self._crawler = None
             self._active_profile = None
+            self._active_policy = None
 
     async def crawl(
         self,
@@ -96,12 +100,12 @@ class Crawl4AIProvider:
         wait_for: str | None = None,
         profile: str | None = None,
         public: bool = True,
+        local_target: LocalTarget | None = None,
     ) -> ProviderResult:
-        if public:
-            validate_url(url)
+        await self._validate_browser_request(url, public, local_target)
         async with self._lock:
             selected_profile = profile if mode == "managed_profile" else None
-            await self.start(selected_profile)
+            await self.start(selected_profile, None if public else local_target)
             from crawl4ai import CacheMode, CrawlerRunConfig
 
             config = CrawlerRunConfig(
@@ -112,11 +116,7 @@ class Crawl4AIProvider:
                 exclude_external_links=True,
                 scan_full_page=max_pages > 1,
             )
-            self._public_navigation = public
-            try:
-                result = await self._crawler.arun(url=url, config=config)
-            finally:
-                self._public_navigation = True
+            result = await self._crawler.arun(url=url, config=config)
             if not result.success:
                 raise RuntimeError(result.error_message or "browser crawl failed")
             markdown = (
@@ -142,11 +142,16 @@ class Crawl4AIProvider:
         return candidate
 
     @staticmethod
-    async def _validate_browser_request(url: str, public: bool) -> None:
-        if not public:
-            return
+    async def _validate_browser_request(
+        url: str, public: bool, local_target: LocalTarget | None = None, method: str = "GET"
+    ) -> None:
+        if not public and local_target is None:
+            raise ValueError("LOCAL_TARGET_REQUIRED")
         scheme = urlsplit(url).scheme.lower()
         if scheme in {"data", "blob", "about"}:
+            return
+        if not public:
+            local_target.validate_request(url, method)
             return
         if scheme in {"ws", "wss"}:
             parts = urlsplit(url)
@@ -155,9 +160,9 @@ class Crawl4AIProvider:
         await resolve_public(target)
 
     @classmethod
-    async def _handle_websocket(cls, websocket, public: bool) -> None:
+    async def _handle_websocket(cls, websocket, public: bool, local_target: LocalTarget | None = None) -> None:
         try:
-            await cls._validate_browser_request(websocket.url, public)
+            await cls._validate_browser_request(websocket.url, public, local_target)
             websocket.connect_to_server()
         except Exception:
-            websocket.close(code=1008, reason="Blocked by Halo egress policy")
+            await websocket.close(code=1008, reason="Blocked by Halo egress policy")

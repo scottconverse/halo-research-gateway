@@ -674,7 +674,7 @@ class HaloService:
 
     async def github_research(
         self,
-        query: str,
+        query: str | None = None,
         repository: str | None = None,
         kinds: list[str] | None = None,
         ref: str | None = None,
@@ -685,7 +685,7 @@ class HaloService:
     ) -> dict:
         if cursor:
             return self._resume("github_research", cursor, max_chars)
-        if not query.strip() or not 1 <= max_results <= 30:
+        if not query or not query.strip() or not 1 <= max_results <= 30:
             return self._error("github_research", "github-api", ValueError("INVALID_GITHUB_QUERY"))
         key = (
             "github:"
@@ -717,11 +717,21 @@ class HaloService:
                 None,
                 client=client,
             )
-            public["tool"] = "github_research"
-            public["provider"] = "github-public-discovery"
-            public.setdefault("warnings", []).extend(result.warnings)
-            public["warnings"] = sorted(set(public["warnings"]))
-            return public
+            if not public["ok"]:
+                public["tool"] = "github_research"
+                return public
+            # Repage the full normalized snapshot under the correct tool. Editing
+            # a rendered search page leaves its signed cursor bound to web_search.
+            search_result = self._snapshots[public["cache"]["key"]]
+            fallback = ProviderResult(
+                "github-public-discovery",
+                search_result.items,
+                sorted(set(search_result.warnings + result.warnings)),
+                search_result.available,
+                cache_hit=search_result.cache_hit,
+                cache_age_seconds=search_result.cache_age_seconds,
+            )
+            return self._envelope("github_research", fallback, max_chars, requested=max_results)
         except Exception as exc:
             return self._error("github_research", "github-api", exc)
 
@@ -942,6 +952,7 @@ class HaloService:
                     mode="managed_profile" if profile else "standard",
                     profile=profile,
                     public=False,
+                    local_target=policy,
                 ),
                 cacheable=cacheable,
             )

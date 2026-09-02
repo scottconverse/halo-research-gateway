@@ -190,7 +190,7 @@ def create_application(config: GatewayConfig | None = None):
     )
     async def github_research(
         ctx: Context,
-        query: str,
+        query: str | None = None,
         repository: str | None = None,
         kinds: list[str] | None = None,
         ref: str | None = None,

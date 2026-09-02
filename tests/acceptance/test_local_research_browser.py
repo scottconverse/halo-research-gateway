@@ -1,0 +1,95 @@
+"""Real Chrome/Crawl4AI acceptance; no personal profile or external sites."""
+
+import pytest
+from aiohttp import web
+
+from halo_research_gateway.models import LocalTarget
+from halo_research_gateway.providers.crawl4ai_provider import Crawl4AIProvider
+
+
+@pytest.mark.asyncio
+async def test_rendered_research_enforces_http_and_websocket_target(tmp_path):
+    hits = []
+
+    async def forbidden(request):
+        hits.append(("forbidden", request.method, request.path))
+        return web.Response(text="should never be read")
+
+    peer = web.Application()
+    peer.router.add_route("*", "/{tail:.*}", forbidden)
+    peer_runner = web.AppRunner(peer)
+    await peer_runner.setup()
+    peer_site = web.TCPSite(peer_runner, "127.0.0.1", 0)
+    await peer_site.start()
+    peer_port = peer_site._server.sockets[0].getsockname()[1]
+
+    async def page(request):
+        return web.Response(
+            content_type="text/html",
+            text="""<!doctype html>
+<html><head><title>Gateway browser fixture</title></head><body>
+<h1>Research fixture</h1><div id="results"></div><script>
+async function get(url, options) {
+  try { return await (await fetch(url, options)).text(); }
+  catch (_) { return 'BLOCKED'; }
+}
+function socket(path) {
+  return new Promise(resolve => {
+    const ws = new WebSocket('ws://' + location.host + path);
+    const timer = setTimeout(() => { ws.close(); resolve('TIMEOUT'); }, 5000);
+    ws.onmessage = e => { clearTimeout(timer); ws.close(); resolve(e.data); };
+    ws.onclose = () => { clearTimeout(timer); resolve('BLOCKED'); };
+    ws.onerror = () => { clearTimeout(timer); resolve('BLOCKED'); };
+  });
+}
+(async () => {
+  const values = await Promise.all([
+    get('/research/data'), get('/outside'),
+    get('http://127.0.0.1:PEER_PORT/other'),
+    get('/research/data', {method:'POST'}),
+    socket('/research/socket'), socket('/outside/socket')
+  ]);
+  document.querySelector('#results').textContent = values.join(' | ');
+  const ready = document.createElement('p'); ready.id = 'ready';
+  ready.textContent = 'RESEARCH_READY'; document.body.appendChild(ready);
+})();</script></body></html>""".replace("PEER_PORT", str(peer_port)),
+        )
+
+    async def data(request):
+        hits.append(("allowed", request.method, request.path))
+        return web.Response(text="DYNAMIC_EVIDENCE")
+
+    async def websocket(request):
+        hits.append(("allowed", "WS", request.path))
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+        await ws.send_str("WEBSOCKET_EVIDENCE")
+        await ws.close()
+        return ws
+
+    app = web.Application()
+    app.router.add_get("/research/page", page)
+    app.router.add_get("/research/data", data)
+    app.router.add_get("/research/socket", websocket)
+    app.router.add_route("*", "/{tail:.*}", forbidden)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "127.0.0.1", 0)
+    await site.start()
+    port = site._server.sockets[0].getsockname()[1]
+    target = LocalTarget("research-fixture", "http", "127.0.0.1", port, ("/research",), browser_allowed=True)
+    provider = Crawl4AIProvider(str(tmp_path / "browser"))
+    try:
+        result = await provider.crawl(
+            target.build_url("/research/page"), public=False, local_target=target, wait_for="#ready"
+        )
+        text = result.items[0].content
+        assert "DYNAMIC_EVIDENCE | BLOCKED | BLOCKED | BLOCKED | WEBSOCKET_EVIDENCE | BLOCKED" in text
+        assert "RESEARCH_READY" in text
+        assert result.items[0].url == target.build_url("/research/page")
+        assert not [hit for hit in hits if hit[0] == "forbidden"]
+        assert ("allowed", "WS", "/research/socket") in hits
+    finally:
+        await provider.close()
+        await runner.cleanup()
+        await peer_runner.cleanup()
