@@ -85,6 +85,10 @@ Discussion threads return at most the requested number of replies (up to 100), i
 
 ### Pagination
 
+Ordinary web search prefers anonymous Exa and falls back to DDGS. Domain inclusion/exclusion applies to either route. Freshness and non-web searches use DDGS because the anonymous Exa adapter does not pass those controls. Upstream freshness filtering is approximate, not a guarantee that every result has a verified publication date; inspect the source date. If Exa returns unrecognized text, links are marked as requiring fetch rather than borrowing an excerpt from another source.
+
+For `web_crawl.wait_for`, supply a CSS selector such as `.quote` or `#ready`, without a `css:` prefix.
+
 Results are bounded for local-model reliability. A signed cursor means more evidence exists. Call the same tool with that cursor; continuation uses the cached snapshot and does not repeat upstream traffic. Each page remains independently citable. Models may request `2000`, `4000`, or `6000` characters within their tested host ceiling.
 
 ## 5. Connections and OAuth

@@ -9,6 +9,7 @@ All notable Halo Research Gateway product releases are recorded here.
 - Preserve existing runtime data and historical receipts; old action plans cannot execute through import review.
 - Correct current documentation and agent instructions. DSH native permissions are unchanged.
 - Fix GitHub fallback cursor continuation and exact-target local browser/WebSocket request checks.
+- Fix Exa text-result attribution so each excerpt stays with its own URL; unidentified text yields discovery links only. Apply domain filters to Exa and route freshness/non-web requests to the provider that accepts those controls.
 - Add authenticated read-only GitHub discussion search/thread retrieval, bounded nested replies, and branch/tag/commit-pinned documentation/code retrieval. Operator token connections now work as well as GitHub Apps.
 - See [current scope and remaining acceptance](docs/RESEARCH-ONLY-SCOPE.md). Entries below describe historical releases, not the current capability contract.
 

@@ -323,30 +323,32 @@ class HaloService:
         try:
 
             async def run():
-                try:
-                    self.rate.admit("exa-anonymous", self.config.exa.daily_soft_limit)
-                    result = await self.exa.search(query, max_results)
-                    self.rate.success("exa-anonymous")
-                    return result
-                except ExaRateLimited:
-                    self.rate.rate_limited("exa-anonymous", threshold=1, cooldown_seconds=3600)
-                    return await self.ddgs.search(
-                        query,
-                        max_results=max_results,
-                        content_type=content_type,
-                        include_domains=include_domains,
-                        exclude_domains=exclude_domains,
-                        freshness_days=freshness_days,
-                    )
-                except Exception:
-                    return await self.ddgs.search(
-                        query,
-                        max_results=max_results,
-                        content_type=content_type,
-                        include_domains=include_domains,
-                        exclude_domains=exclude_domains,
-                        freshness_days=freshness_days,
-                    )
+                # This anonymous Exa tool accepts only query/result count here.
+                # Route controls it cannot express to the accountless provider.
+                if content_type == "web" and freshness_days is None:
+                    try:
+                        self.rate.admit("exa-anonymous", self.config.exa.daily_soft_limit)
+                        count = min(30, max_results * 2) if include_domains or exclude_domains else max_results
+                        result = await self.exa.search(query, count)
+                        self.rate.success("exa-anonymous")
+                        result.items = [
+                            item for item in result.items if domain_allowed(item.url, include_domains, exclude_domains)
+                        ][:max_results]
+                        result.available = len(result.items)
+                        if result.items:
+                            return result
+                    except ExaRateLimited:
+                        self.rate.rate_limited("exa-anonymous", threshold=1, cooldown_seconds=3600)
+                    except Exception:
+                        pass
+                return await self.ddgs.search(
+                    query,
+                    max_results=max_results,
+                    content_type=content_type,
+                    include_domains=include_domains,
+                    exclude_domains=exclude_domains,
+                    freshness_days=freshness_days,
+                )
 
             result = await self._cached_run("exa", client, key, 21600, run, max_age_seconds=max_age_seconds)
             return self._envelope("web_search", result, max_chars, requested=max_results)

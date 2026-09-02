@@ -49,6 +49,56 @@ async def test_github_public_fallback_continues_with_its_own_cursor(tmp_path):
         await service.close()
 
 
+@pytest.mark.asyncio
+async def test_search_filters_exa_sources_by_requested_domains(tmp_path):
+    service = service_at(tmp_path)
+
+    async def search(query, max_results):
+        return ProviderResult(
+            "exa-anonymous",
+            [
+                EvidenceItem(url=url, retrieved_at="2026-09-02T00:00:00Z", snippet="evidence")
+                for url in ["https://outside.org/", "https://docs.example.com/", "https://private.example.com/"]
+            ],
+        )
+
+    service.exa.search = search
+    try:
+        result = await service.web_search(
+            "test", include_domains=["example.com"], exclude_domains=["private.example.com"]
+        )
+        assert [item["url"] for item in result["items"]] == ["https://docs.example.com/"]
+    finally:
+        await service.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("options", [{"content_type": "news"}, {"freshness_days": 7}])
+async def test_search_routes_controls_to_provider_that_accepts_them(tmp_path, options):
+    service = service_at(tmp_path)
+    calls = []
+
+    async def exa(*args):
+        calls.append("unfiltered-exa")
+        return ProviderResult(
+            "exa-anonymous", [EvidenceItem(url="https://example.com/stale", retrieved_at="2026-09-02T00:00:00Z")]
+        )
+
+    async def ddgs(query, **kwargs):
+        calls.append(kwargs)
+        return ProviderResult(
+            "ddgs-accountless", [EvidenceItem(url="https://example.com/current", retrieved_at="2026-09-02T00:00:00Z")]
+        )
+
+    service.exa.search, service.ddgs.search = exa, ddgs
+    try:
+        result = await service.web_search("test", **options)
+        assert result["provider"] == "ddgs-accountless"
+        assert all(calls[0][key] == value for key, value in options.items())
+    finally:
+        await service.close()
+
+
 @pytest.mark.parametrize(
     "path", ["/research/../admin", "/research/%2e%2e/admin", "/research/%252e%252e/admin", "/research/..\\admin"]
 )

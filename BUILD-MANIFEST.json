@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-02T22:19:12.8876566Z",
+  "generated_at": "2026-09-02T22:26:20.9761282Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -29,8 +29,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "3b17cd7a09df12d258830f9323af806157f477c6f80ccbc2a11afccff0c952b3",
-      "bytes": 3036
+      "sha256": "60654ac7500f4c8a1596d27e696e1f33f0d1392dcd6e9907fd80581620c6e851",
+      "bytes": 3267
     },
     {
       "path": "config/config.example.toml",
@@ -83,6 +83,11 @@
       "bytes": 2261
     },
     {
+      "path": "docs/LIVE-SOURCE-ACCEPTANCE-2026-09-02.md",
+      "sha256": "9d22fb236b336103bae0883d83755270ea6d44bda55e1656327c8267e4b207e7",
+      "bytes": 9556
+    },
+    {
       "path": "docs/operations.md",
       "sha256": "147af657e852f810af7a4fcf87b348c0934c1d05f46de656ed3bb431685b5bee",
       "bytes": 2963
@@ -114,8 +119,8 @@
     },
     {
       "path": "docs/USER-MANUAL.md",
-      "sha256": "58d3fc8d10ab1c2a4f7908af285986475b317055920b09cc00ae27d68c4919ad",
-      "bytes": 16221
+      "sha256": "db00d32a85cc6ffd4c92ef110a504f85d3ceff5521a89107a26804484142ff44",
+      "bytes": 16809
     },
     {
       "path": "pyproject.toml",
@@ -344,8 +349,8 @@
     },
     {
       "path": "src/halo_research_gateway/providers/exa.py",
-      "sha256": "c53eab79c994a3054763e1b543b1bdcb09d3c82d94fb43467ceeba04443b3283",
-      "bytes": 3399
+      "sha256": "e1f779980082ccfd56506e68842d235f02f179e6c6ac8b79a5eb6bc5d3f4add5",
+      "bytes": 4702
     },
     {
       "path": "src/halo_research_gateway/providers/github.py",
@@ -399,8 +404,8 @@
     },
     {
       "path": "src/halo_research_gateway/service.py",
-      "sha256": "e8ae2428bb3ddd3f349613122f3b010c7e121653991d51de68a0a938bc52c84f",
-      "bytes": 44637
+      "sha256": "5f2dc73e2e4b7567f0b8e391d125e3e16f3edb2e8add26cb4d019d731c41aea6",
+      "bytes": 44935
     },
     {
       "path": "src/halo_research_gateway/tools/__init__.py",
@@ -448,6 +453,11 @@
       "bytes": 2109
     },
     {
+      "path": "tests/acceptance/research_matrix.py",
+      "sha256": "71cf7afb94dff62f7be9862948688c2b1ee5ad86929d7b5bccfa01f9e194d4b5",
+      "bytes": 7814
+    },
+    {
       "path": "tests/acceptance/test_local_research_browser.py",
       "sha256": "2bca777eab084e0572f248dbdcb0ba1376956057683c9ebb2e869bae3763846f",
       "bytes": 3800
@@ -489,8 +499,8 @@
     },
     {
       "path": "tests/unit/test_exa.py",
-      "sha256": "184ff02062c6d40729bc4abb4f672a09e7671cbf11872c572fa9190998318fc1",
-      "bytes": 339
+      "sha256": "25391331d336c3098edd7886ee39bff90b6428be27888311f49309027ee33f3c",
+      "bytes": 1353
     },
     {
       "path": "tests/unit/test_github_provider.py",
@@ -544,8 +554,8 @@
     },
     {
       "path": "tests/unit/test_retrieval_regressions.py",
-      "sha256": "30960c9b9b304fb57b3d4395d5fd99562a51e67dd37f86332b3314300ebe6f84",
-      "bytes": 3024
+      "sha256": "42e1b97e9e57a0b662103dcb1f8739acc819c3c4dc2b854e03f3398cc52cb601",
+      "bytes": 4826
     },
     {
       "path": "tests/unit/test_scaffold.py",

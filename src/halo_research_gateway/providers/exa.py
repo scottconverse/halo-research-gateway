@@ -37,7 +37,8 @@ class ExaProvider:
         if _is_rate_limited(text, raw):
             raise ExaRateLimited("anonymous Exa quota is exhausted")
         items = _normalize(raw, text, max_results, rfc3339(self.clock.utcnow()))
-        return ProviderResult("exa-anonymous", items, [], len(items))
+        warnings = ["SEARCH_LINKS_REQUIRE_FETCH"] if items and all(not item.snippet for item in items) else []
+        return ProviderResult("exa-anonymous", items, warnings, len(items))
 
 
 def _maybe_json(text: str):
@@ -86,10 +87,32 @@ def _normalize(raw, text: str, limit: int, now: str) -> list[EvidenceItem]:
         if len(items) >= limit:
             return items
     if not items:
-        for url in dict.fromkeys(URL_RE.findall(text)):
+        # The anonymous MCP commonly returns labelled text blocks rather than
+        # JSON. Only the block's URL is its source; links inside its excerpts
+        # must not inherit that source's claims.
+        for block in re.split(r"(?m)(?=^Title:[ \t]*)", text):
+            title = re.match(r"Title:[ \t]*(.*)", block)
+            source = re.search(r"(?m)^URL:[ \t]*(https?://[^\s]+)[ \t]*$", block)
+            if not title or not source:
+                continue
+            date = re.search(r"(?m)^Published(?: Date)?:[ \t]*(.*)$", block)
+            published = date.group(1).strip() if date else None
+            excerpt = re.split(r"(?m)^(?:Highlights|Text|Content):[ \t]*\n?", block, maxsplit=1)
             items.append(
-                EvidenceItem(url=url.rstrip(".,"), retrieved_at=now, source=urlsplit(url).hostname, snippet=text[:800])
+                EvidenceItem(
+                    url=source.group(1),
+                    title=title.group(1).strip() or None,
+                    published_at=published if published != "N/A" else None,
+                    retrieved_at=now,
+                    source=urlsplit(source.group(1)).hostname,
+                    snippet=excerpt[1].strip() if len(excerpt) == 2 else None,
+                )
             )
+            if len(items) >= limit:
+                return items
+    if not items:
+        for url in dict.fromkeys(URL_RE.findall(text)):
+            items.append(EvidenceItem(url=url.rstrip(".,"), retrieved_at=now, source=urlsplit(url).hostname))
             if len(items) >= limit:
                 break
     return items
