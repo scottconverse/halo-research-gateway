@@ -38,6 +38,18 @@ def test_complete_personal_import_is_no_longer_supported(tmp_path):
         importer.preview(source, "complete", complete=True)
 
 
+def test_closed_chrome_stale_lock_file_does_not_prevent_cookie_import(tmp_path):
+    source = fixture_profile(tmp_path)
+    (source / "LOCK").write_bytes(b"")
+    importer = ChromeImporter(tmp_path / "gateway-profiles")
+    preview = importer.preview(source, "closed-profile", ["cookies"])
+    try:
+        receipt = importer.execute(preview)
+    except ValueError as exc:
+        receipt = {"status": str(exc)}
+    assert receipt["status"] == "imported"
+
+
 @pytest.mark.asyncio
 async def test_service_import_requires_exact_approval_and_writes_redacted_receipt(tmp_path):
     from halo_research_gateway.config import GatewayConfig

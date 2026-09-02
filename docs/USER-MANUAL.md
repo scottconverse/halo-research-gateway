@@ -139,6 +139,8 @@ Only `cookies` is supported. Saved passwords, autofill, payment metadata, extens
 
 The source remains untouched. Replace stages the new destination and retains the prior gateway profile as a named backup. Receipts contain no credential values.
 
+For an imported session, installed Chrome reads the encrypted cookie copy and passes cookies in memory to the isolated research browser. No plaintext cookie export is saved. Session changes in that research browser last for its current context; they are not written back to the source or imported profile. Chrome may create fresh empty housekeeping databases in the owned copy; those are not imported passwords/history. A real-Chrome loopback fixture passed, but site-specific login and Chrome app-bound cookie compatibility still require validation with the operator's chosen dedicated profile.
+
 ## 7. Browser crawling
 
 `web_crawl` uses Crawl4AI and gateway-owned Chrome. The ordinary path is headless and text-oriented.
@@ -152,6 +154,8 @@ Implemented boundaries:
 - disabled service workers and downloads;
 - one owned browser slot;
 - owned process containment and cleanup.
+
+Reddit requests use the shared bounded HTTP downloader, including redirect revalidation and response-size limits. A rate-limit response reports `RATE_LIMITED` and a retry delay; the durable cooldown applies to all clients before another request is allowed.
 
 WebSocket handshakes are intercepted and passed through the same destination policy. Remaining hardening work includes Chromium-level DNS pinning and acceptance proof for a visible 120-second human-challenge handoff. These gaps do not make fetched content trusted and do not authorize actions.
 

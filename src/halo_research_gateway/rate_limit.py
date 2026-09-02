@@ -15,6 +15,18 @@ class ProviderBudgetExhausted(RuntimeError):
 class ProviderCircuitOpen(RuntimeError):
     code = "PROVIDER_CIRCUIT_OPEN"
 
+    def __init__(self, message: str, retry_after_seconds: float | None = None):
+        super().__init__(message)
+        self.retry_after_seconds = retry_after_seconds
+
+
+class ProviderRateLimited(RuntimeError):
+    code = "RATE_LIMITED"
+
+    def __init__(self, retry_after_seconds: float):
+        super().__init__("Provider requested a delay before another request")
+        self.retry_after_seconds = retry_after_seconds
+
 
 class RateLedger:
     def __init__(self, db_path: str, clock=None) -> None:
@@ -34,7 +46,9 @@ class RateLedger:
             if row:
                 count = row[1] if row[0] == day else 0
                 if row[2] == "open" and row[3] and datetime.fromisoformat(row[3]) > now:
-                    raise ProviderCircuitOpen(f"{bucket} circuit is open")
+                    raise ProviderCircuitOpen(
+                        f"{bucket} circuit is open", (datetime.fromisoformat(row[3]) - now).total_seconds()
+                    )
             if daily_limit is not None and count >= daily_limit:
                 raise ProviderBudgetExhausted(f"{bucket} daily budget is exhausted")
             count += 1
@@ -54,14 +68,15 @@ class RateLedger:
                 (bucket,),
             )
 
-    def rate_limited(self, bucket: str, threshold: int, cooldown_seconds: int) -> None:
+    def rate_limited(self, bucket: str, threshold: int, cooldown_seconds: int, backoff_seconds: int = 0) -> None:
         now = self.clock.utcnow()
         with sqlite3.connect(self.db_path) as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT consecutive_429 FROM rate_state WHERE bucket_key=?", (bucket,)).fetchone()
             failures = (row[0] if row else 0) + 1
-            state = "open" if failures >= threshold else "closed"
-            until = rfc3339(now + timedelta(seconds=cooldown_seconds)) if state == "open" else None
+            delay = max(cooldown_seconds, backoff_seconds) if failures >= threshold else backoff_seconds
+            state = "open" if delay > 0 else "closed"
+            until = rfc3339(now + timedelta(seconds=delay)) if state == "open" else None
             db.execute(
                 "INSERT INTO rate_state(bucket_key,last_started_at,window_started_at,request_count,consecutive_429,circuit_state,circuit_until) "
                 "VALUES(?,?,?,?,?,?,?) ON CONFLICT(bucket_key) DO UPDATE SET consecutive_429=excluded.consecutive_429,"

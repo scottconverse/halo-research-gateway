@@ -50,10 +50,10 @@ class Crawl4AIProvider:
             "extra_args": ["--disable-features=ServiceWorker"],
         }
         if profile is not None:
-            browser_values.update(
-                use_persistent_context=True,
-                user_data_dir=str(self._profile_directory(profile)),
-            )
+            # Crawl4AI 0.9.3's persistent path ignores chrome_channel and starts
+            # bundled Chromium. Let installed Chrome read its own encrypted
+            # cookie copy, then seed the isolated research context in memory.
+            browser_values["cookies"] = await self._profile_cookies(profile)
         browser = BrowserConfig(
             **browser_values,
         )
@@ -140,6 +140,28 @@ class Crawl4AIProvider:
         if candidate.parent != profile_root or not candidate.is_dir():
             raise ValueError("BROWSER_PROFILE_NOT_FOUND")
         return candidate
+
+    async def _profile_cookies(self, profile: str) -> list[dict]:
+        from playwright.async_api import async_playwright
+
+        directory = self._profile_directory(profile)
+        args = ["--disable-background-networking", "--disable-sync", "--no-first-run"]
+        if (directory / "Profile").is_dir():
+            args.append("--profile-directory=Profile")
+        async with async_playwright() as playwright:
+            context = await playwright.chromium.launch_persistent_context(
+                str(directory),
+                channel="chrome",
+                headless=True,
+                args=args,
+                accept_downloads=False,
+                service_workers="block",
+            )
+            try:
+                await context.route("**/*", lambda route: route.abort())
+                return await context.cookies()
+            finally:
+                await context.close()
 
     @staticmethod
     async def _validate_browser_request(

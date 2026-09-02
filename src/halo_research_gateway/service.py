@@ -32,14 +32,14 @@ from .providers.deep import BodyDeduplicator, canonical_url, domain_allowed, url
 from .providers.document_extract import DocumentProvider
 from .providers.exa import ExaProvider, ExaRateLimited
 from .providers.github import GitHubProvider
-from .providers.http_fetch import HttpFetchProvider, PinnedTransport, resolve_public
+from .providers.http_fetch import HttpFetchProvider
 from .providers.optional import OptionalProviderRegistry
 from .providers.paid import BrightDataUnlockerAdapter, CapSolverAdapter
 from .providers.reddit_rss import parse_atom, search_url, thread_rss_url
 from .providers.search import DdgsSearchProvider
 from .providers.transcripts import TranscriptProvider
-from .rate_limit import RateLedger
-from .security import UrlPolicyError, validate_url
+from .rate_limit import ProviderRateLimited, RateLedger
+from .security import UrlPolicyError
 
 
 class HaloService:
@@ -290,7 +290,12 @@ class HaloService:
         if isinstance(exc, UrlPolicyError):
             code = "UNSAFE_URL"
         return error_envelope(
-            tool, provider, str(uuid.uuid4()), code, f"{type(exc).__name__}: operation did not complete"
+            tool,
+            provider,
+            str(uuid.uuid4()),
+            code,
+            f"{type(exc).__name__}: operation did not complete",
+            retry_after_seconds=getattr(exc, "retry_after_seconds", None),
         )
 
     async def web_search(
@@ -416,26 +421,26 @@ class HaloService:
 
     async def _rss(self, url: str, limit: int) -> ProviderResult:
         self.rate.admit("reddit-anonymous")
-        target = validate_url(url)
-        address = await resolve_public(target)
-        async with httpx.AsyncClient(
-            transport=PinnedTransport(target, address),
-            trust_env=False,
-            timeout=30,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) halo-research-gateway/0.1 (+local-personal-research)"
-            },
-        ) as client:
-            response = await client.get(url)
-            if response.status_code == 429:
+        try:
+            _, _, _, body = await self.http.download(url, accept="application/atom+xml,application/rss+xml")
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 429:
+                requested_delay = exc.response.headers.get("Retry-After", "")
+                delay = max(
+                    self.config.reddit.rate_limit_backoff_seconds,
+                    int(requested_delay) if requested_delay.isdecimal() else 0,
+                )
+                delay = min(delay, 86400)
                 self.rate.rate_limited(
                     "reddit-anonymous",
                     self.config.reddit.max_consecutive_429,
                     self.config.reddit.circuit_cooldown_seconds,
+                    backoff_seconds=delay,
                 )
-            response.raise_for_status()
-            self.rate.success("reddit-anonymous")
-            return parse_atom(response.content, limit=limit, clock=self.clock)
+                raise ProviderRateLimited(delay) from exc
+            raise
+        self.rate.success("reddit-anonymous")
+        return parse_atom(body, limit=limit, clock=self.clock)
 
     async def reddit_search(
         self,

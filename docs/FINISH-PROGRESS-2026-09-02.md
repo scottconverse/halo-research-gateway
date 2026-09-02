@@ -9,8 +9,8 @@ the goal. The research-only scope remains unchanged.
 | Local browser requests | Exact target is passed into immutable per-context guards; host/port/path/method checks and decoded traversal rejection added. Real Chrome fixture passed. |
 | WebSocket handling | Async close is awaited; allowed local socket returns evidence and forbidden socket never reaches the server in real Chrome. |
 | GitHub discussions and ref support | Implemented; authenticated public-source adapter canary passed for search, exact discussion/replies, and commit-pinned README. Full DSH acceptance still pending. |
-| All research source tools and authenticated GitHub | Pending complete live evidence matrix. |
-| Research login/challenge/optional providers | Pending implementation/verification; user asked to select a dedicated research profile/site. No paid calls authorized. |
+| All research source tools and authenticated GitHub | Live MCP search, page/cursor, JS rendering, PDF, captions, Reddit search and HN thread have results. Exa misattribution/filter defects fixed in d9bb096. Reddit thread throttling found and repaired locally; full matrix/DSH proof remains. |
+| Research login/challenge/optional providers | Actual Chrome cookie-only login fixture passes after stale-LOCK and persistent-channel defects were fixed. Real-world profile/site choice, app-bound cookies, challenge flow and provider routing remain. No paid calls authorized. |
 | Full DSH workflow and durable-job controls | Pending end-to-end evidence. |
 | Reliability and installation | Existing unit coverage is not full acceptance; startup discrepancy, broader concurrency/process/recovery/install tests remain. |
 | Delivery | Prior removal commits local; push/CI/merge and corrected hosted-page publication remain. Authorized by the full finish request. |

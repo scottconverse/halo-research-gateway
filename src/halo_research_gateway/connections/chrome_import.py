@@ -15,7 +15,9 @@ class ChromeImportError(ValueError):
 CATEGORY_PATHS = {
     "cookies": ("Network/Cookies", "Cookies"),
 }
-EXCLUDED_NAMES = {"SingletonLock", "SingletonCookie", "SingletonSocket", "LOCK"}
+# Chrome's database LOCK file can remain after a clean shutdown. Its existence
+# is not a live-process signal; actual unreadable cookie databases still fail.
+EXCLUDED_NAMES = {"SingletonLock", "SingletonCookie", "SingletonSocket"}
 
 
 class ChromeImporter:
@@ -89,7 +91,7 @@ class ChromeImporter:
         if destination.parent != self.destination_root:
             raise ChromeImportError("CHROME_DESTINATION_INVALID")
         source_profile = Path(preview["source_profile"])
-        if any((source_profile / name).exists() for name in EXCLUDED_NAMES):
+        if any((root / name).exists() for root in (source_profile, source_profile.parent) for name in EXCLUDED_NAMES):
             raise ChromeImportError("CHROME_SOURCE_APPEARS_OPEN")
         replacing = destination.exists() and preview["behavior"] == "replace"
         target_root = destination
