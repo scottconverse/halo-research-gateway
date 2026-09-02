@@ -161,6 +161,21 @@ separate delivery steps and are not claimed here.
 
 ## What is not finished
 
+### Final runtime recheck and recovery
+
+After the local cleanup commit, a later health check refused connection. The
+earlier terminal-launched service was no longer running; the cause was not
+established. Running `Start-ScheduledTask -TaskName 'Halo Research Gateway'`
+restored it using the existing task (result 0), with launcher PID 44224 and
+listener PID 30108, start time `2026-09-02T21:48:26.136436Z`. A separate follow-up
+check confirmed health `ok`, no actions property, old action endpoint 404, and
+the MCP smoke result `{'tools': 14, 'web_fetch': 'ok', 'chars': 1379}`.
+
+The runtime PID record still referenced the earlier launcher. Its PID and start
+time were corrected to the verified current launcher; no task configuration or
+startup code was changed. This discrepancy remains part of startup/recovery
+acceptance, not a claim that lifecycle reliability is fully solved.
+
 See [the research-only finish list](RESEARCH-ONLY-SCOPE.md). Retrieval defects,
 authenticated account/browser acceptance, optional challenge/provider wiring,
 complete multi-step DSH proof, concurrency/recovery/installer evidence, and remote

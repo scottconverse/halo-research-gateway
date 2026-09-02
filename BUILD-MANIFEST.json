@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-02T21:46:31.4625104Z",
+  "generated_at": "2026-09-02T21:50:13.3941675Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -94,8 +94,8 @@
     },
     {
       "path": "docs/RESEARCH-ONLY-REMOVAL-EVIDENCE-2026-09-02.md",
-      "sha256": "8b1646be91cb9d0a04c772f86933fa93e5c83f94f6a39750610fcf1b042aec52",
-      "bytes": 6981
+      "sha256": "c8cb404dc20649034471a09ea857fd757c26d9853503932db928922074b6fb8f",
+      "bytes": 7865
     },
     {
       "path": "docs/RESEARCH-ONLY-SCOPE.md",
