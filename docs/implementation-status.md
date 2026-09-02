@@ -18,12 +18,12 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
-Removal and retrieval repairs are pushed to private main through `135cdd8`; CI run 33691709059 passed for that revision. Active-call cancellation and accurate DSH acceptance failure reporting are committed locally in `6477bc7`. Version remains 0.2.0; no new tag or PR merge is claimed. See [progress](FINISH-PROGRESS-2026-09-02.md) for evidence by capability.
+Removal, retrieval repairs, active cancellation, DSH failure reporting and job controls are pushed to private main through `2aa748e`; CI run 33694089968 passed for that exact revision. Version remains 0.2.0; no new tag or PR merge is claimed. See [progress](FINISH-PROGRESS-2026-09-02.md) for evidence by capability.
 
 GitHub cursor/discussion/ref and exact local-browser/WebSocket repairs have tests; public-source live MCP/adapter probes returned useful evidence. A disposable real-Chrome v10 cookie-only login fixture passed. Real login/app-bound cookies, human challenge handling, optional-provider routing and complete DSH acceptance are not proved.
 
 DSH failed before Gateway dispatch because host and agent-loop resolve distinct tools-package scheduler symbols. Repair/restart approval was requested; no DSH settings, packages, permissions, models, presets or existing conversations were changed. See [DSH failure evidence](DSH-WORKFLOW-CANCELLATION-2026-09-02.md).
 
-Research-job controls now stop active work, enforce admission/argument bounds, protect terminal states and preserve honest empty/partial outcomes in isolated tests. Source-frontier persistence, cumulative budgets and lease renewal remain open; resume currently repeats the run, not exact-source continuation. These changes require a verified deployment before they apply to the live process.
+Research-job controls stop the async worker, enforce admission/argument bounds, protect terminal states and preserve honest empty/partial outcomes. The new continuation checkpoint adds saved sources/frontier, cumulative budgets, lease renewal and bounded pageable status. A native process-crash/restart fixture recovered evidence without repeating completed discovery/pages. Broader provider cancellation (especially synchronous DDGS), production/DSH jobs, stress and startup ownership remain unproved. See DURABLE-JOB-EVIDENCE-2026-09-02.md; source/test evidence requires a verified deployment before it applies to the live process.
 
 The six-part [finish list](RESEARCH-ONLY-SCOPE.md#needs-to-be-done-to-finish) covers DSH, durable continuation, login/challenges, reliability/install, source-provider gaps and final website/delivery. No outbound actions or general personal-assistant features belong in it.

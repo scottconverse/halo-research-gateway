@@ -63,8 +63,10 @@ was proven at adapter level. These do not complete the following work:
    rerun discovery, pagination, multi-source reading and cited synthesis.
 2. **Finish durable research jobs.** Pause/cancel, admission/argument bounds,
    state protection and honest empty/partial outcomes now pass isolated tests.
-   Resume/recovery still does not persist a source frontier or cumulative budget,
-   and running leases are not renewed. Prove real restart continuation and limits.
+   Source checkpoints, cumulative budgets, lease renewal and bounded status now
+   have regression coverage and a native process-crash/restart fixture passes.
+   Prove production/DSH job use, long-running stress and provider cancellation;
+   an already-running synchronous DDGS request cannot be forcibly cancelled.
 3. **Finish research login/challenge access.** A real Chrome v10 cookie fixture
    passes; app-bound cookies and an operator-chosen real login are unproven.
    Complete visible human challenge handling and actual optional-provider crawl

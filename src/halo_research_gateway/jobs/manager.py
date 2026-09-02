@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from ..clock import SystemClock, rfc3339
 
@@ -94,7 +94,8 @@ class JobManager:
         return self.status(job_id, owner)
 
     def finish(self, job_id: str, owner: str, progress: dict, error_code: str | None = None) -> dict:
-        self.status(job_id, owner)
+        current = self.status(job_id, owner)
+        progress = {**current["progress"], **progress}
         state = "failed" if error_code else "complete"
         now = rfc3339(self.clock.utcnow())
         with sqlite3.connect(self.db_path) as db:
@@ -104,6 +105,33 @@ class JobManager:
                 (state, json.dumps(progress), now, error_code, job_id),
             )
         return self.status(job_id, owner)
+
+    def checkpoint(self, job_id: str, owner: str, checkpoint: dict, max_bytes: int) -> None:
+        current = self.status(job_id, owner)
+        payload = json.dumps({**current["progress"], "checkpoint": checkpoint})
+        if len(payload.encode("utf-8")) > max_bytes:
+            raise ValueError("JOB_CHECKPOINT_TOO_LARGE")
+        with sqlite3.connect(self.db_path) as db:
+            db.execute(
+                "UPDATE jobs SET progress_json=?,updated_at=? WHERE job_id=? AND owner_profile=? "
+                "AND state IN ('running','paused','paused_recoverable','cancelled')",
+                (payload, rfc3339(self.clock.utcnow()), job_id, owner),
+            )
+
+    def heartbeat(self, job_id: str, owner: str, elapsed_seconds: float, lease_seconds: float) -> None:
+        current = self.status(job_id, owner)
+        progress = current["progress"]
+        checkpoint = progress.setdefault("checkpoint", {})
+        checkpoint["elapsed_seconds"] = max(checkpoint.get("elapsed_seconds", 0), elapsed_seconds)
+        now = self.clock.utcnow()
+        lease = rfc3339(now + timedelta(seconds=max(0, lease_seconds)))
+        with sqlite3.connect(self.db_path) as db:
+            db.execute(
+                "UPDATE jobs SET progress_json=?,updated_at=?,"
+                "lease_until=CASE WHEN state='running' THEN ? ELSE lease_until END "
+                "WHERE job_id=? AND owner_profile=?",
+                (json.dumps(progress), rfc3339(now), lease, job_id, owner),
+            )
 
     def interrupt(self, job_id: str, owner: str) -> dict:
         """Record an interrupted worker without overriding an operator's pause/cancel."""
@@ -116,14 +144,34 @@ class JobManager:
             )
         return self.status(job_id, owner)
 
-    def recover_expired(self) -> int:
+    def recover_expired(self, *, recover_queued: bool = False) -> int:
         now = rfc3339(self.clock.utcnow())
         with sqlite3.connect(self.db_path) as db:
-            result = db.execute(
-                "UPDATE jobs SET state='paused_recoverable', updated_at=? WHERE state='running' AND lease_until < ?",
-                (now, now),
-            )
-            return result.rowcount
+            db.execute("BEGIN IMMEDIATE")
+            expired = db.execute(
+                "SELECT job_id,progress_json,updated_at,lease_until FROM jobs "
+                "WHERE (state='running' AND lease_until <= ?) OR (? AND state='queued')",
+                (now, recover_queued),
+            ).fetchall()
+            for job_id, payload, updated_at, lease_until in expired:
+                progress = json.loads(payload)
+                checkpoint = progress.setdefault("checkpoint", {})
+                # Charge the unobserved lease interval, not arbitrary downtime.
+                uncertain = (
+                    max(0, (datetime.fromisoformat(lease_until) - datetime.fromisoformat(updated_at)).total_seconds())
+                    if lease_until
+                    else 0
+                )
+                checkpoint["elapsed_seconds"] = checkpoint.get("elapsed_seconds", 0) + uncertain
+                checkpoint["warnings"] = sorted(
+                    set(checkpoint.get("warnings", []) + ["JOB_RECOVERED_AFTER_INTERRUPTION"])
+                )
+                db.execute(
+                    "UPDATE jobs SET state='paused_recoverable',progress_json=?,updated_at=?,lease_until=NULL "
+                    "WHERE job_id=?",
+                    (json.dumps(progress), now, job_id),
+                )
+            return len(expired)
 
     def list(self, limit: int = 50) -> list[dict]:
         with sqlite3.connect(self.db_path) as db:

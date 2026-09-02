@@ -25,7 +25,7 @@ from .envelope import build_envelope, error_envelope
 from .jobs.manager import JobManager
 from .migrations import SCHEMA_VERSION as DATABASE_SCHEMA_VERSION
 from .migrations import migrate
-from .models import LocalTarget, ProviderResult
+from .models import EvidenceItem, LocalTarget, ProviderResult
 from .providers.community import CommunityProvider, community_source_for_url
 from .providers.crawl4ai_provider import Crawl4AIProvider
 from .providers.deep import BodyDeduplicator, canonical_url, domain_allowed, url_host
@@ -39,7 +39,7 @@ from .providers.reddit_rss import parse_atom, search_url, thread_rss_url
 from .providers.search import DdgsSearchProvider
 from .providers.transcripts import TranscriptProvider
 from .rate_limit import ProviderRateLimited, RateLedger
-from .security import UrlPolicyError
+from .security import UrlPolicyError, is_sensitive_url
 
 
 class HaloService:
@@ -101,7 +101,7 @@ class HaloService:
         self._job_tasks: dict[str, asyncio.Task] = {}
         self._job_lock = asyncio.Lock()
         self._oauth_tasks: dict[str, asyncio.Task] = {}
-        self.jobs.recover_expired()
+        self.jobs.recover_expired(recover_queued=True)
 
     async def close(self) -> None:
         for task in self._job_tasks.values():
@@ -545,6 +545,8 @@ class HaloService:
         max_chars=None,
         cursor=None,
         client="unidentified",
+        _checkpoint=None,
+        _checkpoint_save=None,
     ) -> dict:
         if cursor:
             return self._resume("deep_research", cursor, max_chars)
@@ -572,22 +574,26 @@ class HaloService:
         try:
 
             async def collect() -> ProviderResult:
-                warnings: list[str] = []
-                try:
-                    search = await self.ddgs.search(
-                        question,
-                        max_results=max_sources,
-                        include_domains=include_domains,
-                        exclude_domains=exclude_domains,
-                        freshness_days=freshness_days,
-                    )
-                    warnings.extend(search.warnings)
-                except Exception:
-                    search = ProviderResult("search-unavailable", [], ["SEARCH_UNAVAILABLE"], 0)
-                    warnings.extend(search.warnings)
+                state = _checkpoint if _checkpoint is not None else {}
+                warnings: list[str] = list(state.get("warnings", []))
+                frontier: list[tuple[str, int, str]] = [tuple(entry) for entry in state.get("frontier", [])]
+                enqueued: set[str] = {entry[0] for entry in frontier}
+                items = [EvidenceItem(**item) for item in state.get("items", [])]
+                position = state.get("position", 0)
+                attempted = state.get("attempted", 0)
 
-                frontier: list[tuple[str, int, str]] = []
-                enqueued: set[str] = set()
+                def checkpoint():
+                    if _checkpoint_save is not None:
+                        state.update(
+                            version=1,
+                            search_complete=True,
+                            frontier=frontier,
+                            position=position,
+                            attempted=attempted,
+                            items=[item.as_dict() for item in items],
+                            warnings=sorted(set(warnings)),
+                        )
+                        _checkpoint_save(state)
 
                 def enqueue(
                     raw_url: str, depth: int, root_host: str | None = None, base_url: str | None = None
@@ -595,6 +601,9 @@ class HaloService:
                     normalized = canonical_url(raw_url, base_url)
                     if normalized is None:
                         warnings.append("SOURCE_URL_SKIPPED")
+                        return
+                    if _checkpoint_save is not None and is_sensitive_url(normalized):
+                        warnings.append("SENSITIVE_SOURCE_NOT_PERSISTED")
                         return
                     host = url_host(normalized)
                     root = root_host or host
@@ -613,23 +622,36 @@ class HaloService:
                     enqueued.add(normalized)
                     frontier.append((normalized, depth, root))
 
-                for url in seed_urls:
-                    enqueue(url, 0)
-                    if len(enqueued) >= max_pages:
-                        break
-                for item in search.items:
-                    enqueue(item.url, 0)
-                    if len(enqueued) >= max_pages:
-                        break
+                if not state.get("search_complete"):
+                    try:
+                        search = await self.ddgs.search(
+                            question,
+                            max_results=max_sources,
+                            include_domains=include_domains,
+                            exclude_domains=exclude_domains,
+                            freshness_days=freshness_days,
+                        )
+                        warnings.extend(search.warnings)
+                    except Exception:
+                        search = ProviderResult("search-unavailable", [], ["SEARCH_UNAVAILABLE"], 0)
+                        warnings.extend(search.warnings)
+                    for url in seed_urls:
+                        enqueue(url, 0)
+                        if len(enqueued) >= max_pages:
+                            break
+                    for item in search.items:
+                        enqueue(item.url, 0)
+                        if len(enqueued) >= max_pages:
+                            break
+                    checkpoint()
 
-                items = []
                 deduplicator = BodyDeduplicator()
-                position = 0
-                attempted = 0
+                for item in items:
+                    deduplicator.duplicate(item.content or item.snippet or "")
                 while position < len(frontier) and attempted < max_pages and len(items) < max_sources:
                     url, depth, root_host = frontier[position]
-                    position += 1
                     attempted += 1
+                    checkpoint()  # Charge before dispatch; interrupted reads consume their attempt.
                     fetch_key = "fetch:" + hashlib.sha256(url.encode()).hexdigest()
                     try:
                         fetched = await self._cached_run(
@@ -637,6 +659,8 @@ class HaloService:
                         )
                     except Exception:
                         warnings.append("UPSTREAM_UNAVAILABLE")
+                        position += 1
+                        checkpoint()
                         continue
                     warnings.extend(fetched.warnings)
                     for item in fetched.items:
@@ -644,10 +668,25 @@ class HaloService:
                         if result_url is None or not domain_allowed(result_url, include_domains, exclude_domains):
                             warnings.append("SOURCE_FILTERED")
                             continue
+                        if _checkpoint_save is not None and is_sensitive_url(result_url):
+                            warnings.append("SENSITIVE_SOURCE_NOT_PERSISTED")
+                            continue
                         if url_host(result_url) != root_host:
                             warnings.append("CROSS_SITE_LINK_SKIPPED")
                             continue
                         item.url = result_url
+                        if _checkpoint_save is not None:
+                            metadata = dict(item.metadata or {})
+                            safe_links = []
+                            for link in metadata.get("links") or []:
+                                href = link.get("url") if isinstance(link, dict) else link[1] if len(link) > 1 else None
+                                normalized_link = canonical_url(str(href), result_url) if href else None
+                                if normalized_link and is_sensitive_url(normalized_link):
+                                    warnings.append("SENSITIVE_SOURCE_NOT_PERSISTED")
+                                else:
+                                    safe_links.append(link)
+                            metadata["links"] = safe_links
+                            item = EvidenceItem(**{**item.as_dict(), "metadata": metadata})
                         body = item.content or item.snippet or ""
                         if deduplicator.duplicate(body):
                             warnings.append("DUPLICATE_CONTENT_SKIPPED")
@@ -663,14 +702,21 @@ class HaloService:
                             href = link.get("url") if isinstance(link, dict) else link[1] if len(link) > 1 else None
                             if href:
                                 enqueue(str(href), depth + 1, root_host, item.url)
+                    position += 1
+                    checkpoint()
 
                 if position < len(frontier) and attempted >= max_pages:
                     warnings.append("PAGE_LIMIT_REACHED")
                 if len(items) >= max_sources and position < len(frontier):
                     warnings.append("SOURCE_LIMIT_REACHED")
+                checkpoint()
                 return ProviderResult("halo-deep", items, sorted(set(warnings)), len(items))
 
-            result = await self._cached_run("deep", client, key, 1800, collect)
+            if _checkpoint is None:
+                result = await self._cached_run("deep", client, key, 1800, collect)
+            else:
+                # Job-local checkpoints cannot be shared with a different job's frontier.
+                result = await self.coordinator.run("deep", client, "job:" + _checkpoint["job_id"], collect)
             return self._envelope(
                 "deep_research",
                 result,
@@ -975,9 +1021,39 @@ class HaloService:
         self, operation: str, owner: str, job_id=None, question=None, profile="standard", limits=None
     ) -> dict:
         async with self._job_lock:
-            return await self._control_job(operation, owner, job_id, question, profile, limits)
+            status = await self._control_job(operation, owner, job_id, question, profile, limits)
+            return self._job_status_view(status)
+
+    def _job_status_view(self, status: dict) -> dict:
+        """Return counts and a citable page, not the entire durable evidence packet."""
+        progress = dict(status["progress"])
+        checkpoint = progress.get("checkpoint")
+        if checkpoint is not None:
+            items = [EvidenceItem(**item) for item in checkpoint.get("items", [])]
+            progress["checkpoint"] = {
+                "attempted": checkpoint.get("attempted", 0),
+                "completed_sources": len(items),
+                "remaining_sources": max(0, len(checkpoint.get("frontier", [])) - checkpoint.get("position", 0)),
+                "elapsed_seconds": checkpoint.get("elapsed_seconds", 0),
+                "search_complete": checkpoint.get("search_complete", False),
+            }
+            if items:
+                warnings = list(checkpoint.get("warnings", []))
+                if status.get("error_code"):
+                    warnings.append(status["error_code"])
+                result = ProviderResult("halo-deep", items, sorted(set(warnings)), len(items))
+                encoded = self._encode_result(result)
+                result.cache_key = "job-evidence:" + hashlib.sha256(encoded).hexdigest()
+                self.cache.put(result.cache_key, encoded, self.config.output.cursor_ttl_seconds)
+                self.cache.evict()
+                progress["result"] = self._envelope("deep_research", result, 4000)
+                progress["partial"] = bool(
+                    warnings or progress["result"]["page"]["next_cursor"] or status["state"] != "complete"
+                )
+        return {**status, "progress": progress}
 
     async def _control_job(self, operation, owner, job_id, question, profile, limits) -> dict:
+        self.jobs.recover_expired()
         if operation == "create":
             requested_limits = {"profile": profile, **(limits or {})}
             bounds = {
@@ -1000,7 +1076,13 @@ class HaloService:
         if operation == "status":
             return self.jobs.status(job_id, owner)
         if operation == "resume":
-            self.jobs.status(job_id, owner)
+            current = self.jobs.status(job_id, owner)
+            if current["state"] not in {"paused", "paused_recoverable"}:
+                raise ValueError("JOB_STATE_CONFLICT")
+            prior = self._job_tasks.get(job_id)
+            if prior is not None:
+                prior.cancel()
+                await asyncio.gather(prior, return_exceptions=True)
             self._check_job_capacity()
         changed = self.jobs.transition(job_id, owner, operation)
         if operation == "resume":
@@ -1033,7 +1115,38 @@ class HaloService:
         if job["state"] != "running":
             return
         limits = job["limits"]
+        checkpoint = job["progress"].get("checkpoint", {})
+        checkpoint["job_id"] = job_id
+        elapsed_before = checkpoint.get("elapsed_seconds", 0)
+        started = self.clock.monotonic()
+
+        def elapsed():
+            return elapsed_before + max(0, self.clock.monotonic() - started)
+
+        def heartbeat():
+            self.jobs.heartbeat(
+                job_id,
+                owner,
+                elapsed(),
+                min(self.config.jobs.lease_seconds, max(0, limits["timeout_seconds"] - elapsed())),
+            )
+
+        def save(state):
+            state["elapsed_seconds"] = elapsed()
+            self.jobs.checkpoint(job_id, owner, state, self.config.storage.entry_max_bytes)
+
+        async def renew():
+            while True:
+                await self.clock.sleep(max(0.05, self.config.jobs.lease_seconds / 3))
+                heartbeat()
+
+        renewal = None
         try:
+            remaining = limits["timeout_seconds"] - elapsed_before
+            if remaining <= 0:
+                raise TimeoutError
+            heartbeat()
+            renewal = asyncio.create_task(renew())
             result = await asyncio.wait_for(
                 self.deep_research(
                     job["request"]["question"],
@@ -1041,8 +1154,10 @@ class HaloService:
                     max_pages=limits["max_pages"],
                     max_chars=6000,
                     client=owner,
+                    _checkpoint=checkpoint,
+                    _checkpoint_save=save,
                 ),
-                timeout=limits["timeout_seconds"],
+                timeout=remaining,
             )
             current = self.jobs.status(job_id, owner)
             if current["state"] == "running":
@@ -1058,6 +1173,11 @@ class HaloService:
             self.jobs.finish(job_id, owner, {}, "JOB_TIMEOUT")
         except Exception:
             self.jobs.finish(job_id, owner, {}, "UPSTREAM_UNAVAILABLE")
+        finally:
+            if renewal is not None:
+                renewal.cancel()
+                await asyncio.gather(renewal, return_exceptions=True)
+            heartbeat()
 
     def health(self) -> dict:
         return {

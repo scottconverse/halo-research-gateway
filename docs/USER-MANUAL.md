@@ -183,14 +183,22 @@ Use `local_fetch` or `local_crawl` with the target name. Never weaken public URL
 - `create`: finite job with explicit limits;
 - `status`: owner-visible progress/results;
 - `pause`: stop the active worker before returning, without erasing the job record;
-- `resume`: restart a paused/recoverable job; already-running and terminal jobs cannot be resumed;
+- `resume`: continue a paused/recoverable job from saved sources; already-running and terminal jobs cannot be resumed;
 - `cancel`: terminate without erasing its record.
 
-Create/resume share the configured active-job ceiling across clients. `max_sources`, `max_pages`, and `timeout_seconds` must be positive integers; the returned limits show applied ceilings (currently 50 sources and at most 250 pages, or a lower configured page ceiling). Saturation returns `JOB_CAPACITY_REACHED`; invalid lifecycle operations return `JOB_STATE_CONFLICT`. Limits apply per run, not yet cumulatively across restarts.
+Create/resume share the configured active-job ceiling and deep-research provider queue across clients. `max_sources`, `max_pages`, and `timeout_seconds` must be positive integers; returned limits show applied ceilings (currently 50 sources and at most 250 page attempts, or a lower configured ceiling). Saturation returns `JOB_CAPACITY_REACHED`; invalid lifecycle operations return `JOB_STATE_CONFLICT`. Page attempts and active elapsed time are cumulative across pause/resume. An interrupted in-flight page consumes its attempt; retrying it consumes another. Paused time does not consume the active-time budget.
 
 Failed retrieval is a failed job, and an empty result is `NO_RESEARCH_EVIDENCE`. Usable results with warnings or more cursor pages are marked `progress.partial: true`; read the retained warnings and follow result cursors before claiming full coverage. Completion means the worker finished, not that every source was available or a final answer was verified.
 
-Graceful shutdown leaves interrupted workers `paused_recoverable`; an operator pause/cancel cannot be overwritten by a late timeout. Expired crash leases are treated as incomplete, not successful. **Continuation is not finished:** the current implementation does not persist the source frontier or renew running leases. Resume repeats the research run (and may reuse cached pages), rather than continuing exactly at the last source. Do not rely on it for durable long-running research yet.
+Completed pages, discovery results, remaining sources, deduplication inputs and budgets are checkpointed locally. Resume does not repeat completed discovery or completed pages, even when their cache entries have been removed. An interrupted page is retried only if budget remains. If interruption occurred before discovery finished, discovery may need to run again.
+
+Running jobs renew their leases. Graceful shutdown leaves interrupted workers `paused_recoverable`; startup also recovers jobs interrupted before worker start. A running job whose lease has not yet expired remains incomplete until expiry; the next job-control/status request checks recovery again. After a crash, the unobserved remainder of the lease is conservatively charged to the time budget, not the entire downtime. An operator pause/cancel cannot be overwritten by a late timeout.
+
+Status returns checkpoint counts and a bounded evidence page instead of the whole stored packet. Follow that page's cursor with `deep_research`; cached evidence cursors survive restart until expiry/eviction. A status request can create a fresh evidence cursor from the retained checkpoint. Check the job's `state` and `error_code`: a failed/timed-out job can still return useful partial source evidence.
+
+Checkpoint size is bounded by `storage.entry_max_bytes`; overflow reports `JOB_CHECKPOINT_TOO_LARGE` and retains the previous checkpoint. Sources and extracted links with recognized sensitive query parameters are excluded from durable jobs with `SENSITIVE_SOURCE_NOT_PERSISTED`. This is pattern-based protection, not a guarantee that arbitrary page prose contains no sensitive information. Use jobs for public research.
+
+A disposable native Windows process-crash/restart fixture passed, including preserved evidence, no completed-source re-fetch, and cumulative attempts. Full DSH/live-provider job acceptance remains separate. DDGS performs synchronous work in a thread: cancellation stops the async research worker, but cannot forcibly terminate an already-running synchronous provider call. Broader provider cancellation/stress and single-process startup ownership still require acceptance testing.
 
 ## 10. Research-only product boundary
 
