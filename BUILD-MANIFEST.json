@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-02T23:40:53.2158841Z",
+  "generated_at": "2026-09-02T23:46:28.0622164Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -136,6 +136,11 @@
       "path": "docs/SESSION-RSS-EVIDENCE-2026-09-02.md",
       "sha256": "d7c161087453f9b99022d9ac1e559aac040aed717a361b149b5073202577319c",
       "bytes": 16879
+    },
+    {
+      "path": "docs/SITE-CORRECTION-2026-09-02.md",
+      "sha256": "b55b6812730f5b308e5e184dd406d6c9f7ea9f46b606dbf977d86ed45c93bb5a",
+      "bytes": 2905
     },
     {
       "path": "docs/USER-MANUAL.md",
@@ -679,8 +684,8 @@
     },
     {
       "path": "website/app/page.tsx",
-      "sha256": "e9a8c599f924dc59a0317b65b1f7b549bcba80c4147253a21f74afc84f53e251",
-      "bytes": 21524
+      "sha256": "3544bab9174ec408b849e40e4cc23b575cce7b7a07006dfd7a8fdbd8a83ef043",
+      "bytes": 22229
     },
     {
       "path": "website/components.json",

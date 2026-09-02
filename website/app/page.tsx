@@ -28,7 +28,7 @@ const capabilities = [
   {
     icon: Globe2,
     title: 'Fetch and real browser crawl',
-    body: 'DNS-pinned direct HTTP for ordinary pages. Crawl4AI and gateway-owned Chrome add JavaScript, imported profiles, and policy-checked WebSockets.',
+    body: 'Read ordinary pages directly, or render JavaScript with gateway-owned Chrome. Cookie-only research sessions and WebSocket checks have fixture coverage; real login compatibility still needs testing.',
   },
   {
     icon: Database,
@@ -47,8 +47,8 @@ const capabilities = [
   },
   {
     icon: ShieldCheck,
-    title: 'Powerful by design',
-    body: 'All public ports, exact local targets, and disabled-by-default CapSolver/Bright Data adapters with domain and spend limits.',
+    title: 'Explicit limits and coverage',
+    body: 'Public web sources and named local targets, with shared queues and visible partial results. Optional challenge/proxy adapters are disabled; complete crawl routing is not yet verified.',
   },
 ];
 
@@ -116,9 +116,10 @@ export default function Home() {
               <span className="text-cyan-200">Every agent.</span>
             </h1>
             <p className="mt-7 max-w-2xl text-pretty text-lg leading-8 text-slate-300 sm:text-xl">
-              Search, crawling, evidence, identity, and operator-authorized web
-              operations for local models that ship real work—without making a
-              cloud LLM the control plane.
+              Give DSH the tools to find web sources, read pages and documents,
+              compare evidence, and return useful citations. The Gateway runs
+              locally on Windows. It does not send email, post to GitHub, buy
+              things, or manage accounts.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <a
@@ -128,7 +129,7 @@ export default function Home() {
                   'h-11 bg-cyan-200 px-5 text-slate-950 hover:bg-cyan-100',
                 )}
               >
-                Install in five minutes <ArrowRight />
+                Read installation steps <ArrowRight />
               </a>
               <a
                 href="https://github.com/scottconverse/halo-research-gateway"
@@ -142,9 +143,9 @@ export default function Home() {
             </div>
             <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-400">
               {[
-                '16 semantic tools',
-                '128 deterministic tests',
-                '5 host integrations',
+                '14 research tools',
+                '176 local regression tests',
+                'DSH is the primary client',
               ].map((item) => (
                 <span key={item} className="flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-emerald-300" />
@@ -160,7 +161,7 @@ export default function Home() {
                 <span className="size-2.5 rounded-full bg-rose-400/70" />
                 <span className="size-2.5 rounded-full bg-amber-300/70" />
                 <span className="size-2.5 rounded-full bg-emerald-300/70" />
-                <span className="ml-2">halo://research/trajectory</span>
+                <span className="ml-2">Example flow · not a live session</span>
               </div>
               <div className="space-y-3 p-4 sm:p-6">
                 <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/6 p-4">
@@ -271,7 +272,7 @@ export default function Home() {
                     'GitHub + transcripts + communities',
                     'cache + queues + signed cursors',
                     'DPAPI vault + OAuth PKCE',
-                    'jobs + approval + receipts',
+                    'research jobs + cookie-import review',
                   ].map((line) => (
                     <div
                       key={line}
@@ -325,8 +326,8 @@ export default function Home() {
               Fourteen tools. Find, read, and cite.
             </h2>
             <p className="section-copy">
-              Small enough for local models to select correctly, complete enough
-              for real research and explicitly authorized operations.
+              One shared toolkit for finding sources, reading their contents,
+              and returning citations. Account operations are outside its scope.
             </p>
           </div>
           <div className="space-y-3">
@@ -355,36 +356,42 @@ export default function Home() {
           <div>
             <p className="section-kicker">Evidence, not adjectives</p>
             <h2 className="section-title">
-              The release proves what it claims—and labels what it does not.
+              What is verified—and what is still open.
             </h2>
             <p className="section-copy">
-              The same gate runs before commit and in GitHub Windows CI. Live
-              canaries separately prove actual providers without turning outside
-              availability into a fake deterministic promise.
+              Local regression tests, public-source checks, and disposable
+              browser/process tests provide different kinds of evidence. None
+              replaces a complete successful research workflow through DSH.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <span className="proof-pill">128 / 128 tests</span>
-              <span className="proof-pill">Windows CI green</span>
+              <span className="proof-pill">176 local tests passed</span>
+              <span className="proof-pill">Windows CI for delivered checkpoints</span>
               <span className="proof-pill">Schema 1.5</span>
               <span className="proof-pill">DB schema 3</span>
             </div>
+            <p className="mt-6 text-sm leading-6 text-amber-200">
+              The latest DSH workflow failed before search could run because of
+              a DSH tools-package mismatch. That repair still needs approval.
+              Real-world login and app-bound cookies, human challenges, optional
+              provider routing, and full installation/stress acceptance remain open.
+            </p>
           </div>
           <div className="rounded-3xl border border-white/10 bg-white/[.025] p-6 sm:p-8">
             <div className="mb-6 flex items-center justify-between">
               <span className="font-mono text-xs text-slate-400">
                 acceptance / live
               </span>
-              <span className="flex items-center gap-2 text-sm text-emerald-200">
-                <span className="size-2 rounded-full bg-emerald-300" />{' '}
-                operational
+              <span className="flex items-center gap-2 text-sm text-amber-200">
+                <span className="size-2 rounded-full bg-amber-300" />{' '}
+                partial acceptance
               </span>
             </div>
             {[
               'MCP surface — 14 research tools',
-              'Cursor-only continuation — 1,729 chars',
-              'Exa · DDGS · Crawl4AI · Reddit · PyMuPDF',
-              'Windows Job Object containment',
-              'Real DSH planner tool selection',
+              'Public pages, JavaScript, PDF, captions and community evidence',
+              'Authenticated read-only GitHub adapter canary',
+              'Disposable Chrome cookie-only login fixture',
+              'Native research-job crash/restart fixture',
             ].map((line) => (
               <div
                 key={line}
@@ -438,7 +445,7 @@ export default function Home() {
         <div className="mx-auto max-w-5xl px-5 text-center lg:px-8">
           <p className="section-kicker">Version 0.2.0</p>
           <h2 className="mx-auto max-w-3xl text-balance text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
-            From install to source-backed DSH research in one command.
+            Install the local Gateway, then verify your host connection.
           </h2>
           <div className="mx-auto mt-9 flex max-w-3xl items-center gap-4 rounded-2xl border border-white/10 bg-[#08131e] p-4 text-left shadow-xl shadow-black/20">
             <Terminal className="size-5 shrink-0 text-cyan-200" />
