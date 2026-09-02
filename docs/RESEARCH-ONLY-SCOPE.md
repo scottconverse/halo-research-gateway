@@ -77,8 +77,9 @@ was proven at adapter level. These do not complete the following work:
 5. **Close source-provider coverage gaps.** Prove the actual DDGS fallback path,
    connected Gateway/DSH authenticated GitHub, larger/nested discussions, and
    honest source/coverage limits. Keep intermittent upstream throttling visible.
-6. **Finish delivery.** Publish the corrected landing page, synchronize operator
-   copies, finish metadata/documentation and verify CI for the final revision.
+6. **Finish delivery.** The corrected owner-only landing page is published.
+   Keep operator copies aligned, finish metadata/documentation and verify CI
+   for the final revision after the remaining functional acceptance work.
    Product version remains `0.2.0`; no new release tag or package is claimed.
 
 Optional fallback-host integrations do not justify expanding the core product.

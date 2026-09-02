@@ -13,7 +13,7 @@ the goal. The research-only scope remains unchanged.
 | Research login/challenge/optional providers | Actual Chrome cookie-only login fixture passes after stale-LOCK and persistent-channel defects were fixed. Real-world profile/site choice, app-bound cookies, challenge flow and provider routing remain. No paid calls authorized. |
 | Full DSH workflow and durable-job controls | DSH FAILED before tool dispatch: two tools-package instances have different scheduler symbols; repair/restart approval requested. Job controls, persistent frontier/evidence, cumulative budgets, leases and bounded status have regression coverage; a native process-crash/restart fixture passed. Production/DSH job and stress acceptance remain. See DURABLE-JOB-EVIDENCE-2026-09-02.md. |
 | Reliability and installation | Existing unit coverage is not full acceptance; startup discrepancy, broader concurrency/process/recovery/install tests remain. |
-| Delivery | Checkpoints pushed directly to existing main through 2aa748e; exact-revision CI run 33694089968 succeeded. No PR was created/merged and no new tag exists. Corrected hosted page is not published yet. |
+| Delivery | Source checkpoints pushed directly to main through eb5ca02; its CI is tracked separately from prior green 2aa748e. The corrected owner-only landing page published successfully as Sites version 3 on 2026-09-02. No PR merge or new product tag is claimed. See SITE-CORRECTION-2026-09-02.md for exact publication identity. |
 
 ## First retrieval checkpoint
 

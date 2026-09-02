@@ -13,13 +13,15 @@ Halo Research Gateway is a persistent, localhost-only MCP service that gives DSH
 
 The governing product scope and finish list are [Research-only scope](docs/RESEARCH-ONLY-SCOPE.md); this supersedes conflicting requirements in the original v1.5 design. The operator handbook is the [complete user manual](docs/USER-MANUAL.md).
 
+Current acceptance is partial: 176 local regression tests and a disposable native job crash/restart test pass, and public-source probes have returned usable evidence. The latest full DSH workflow failed before search dispatch due to a DSH tools-package mismatch. Real login/challenge/provider routing and wider installation/stress checks remain open. See [current evidence](docs/FINISH-PROGRESS-2026-09-02.md), not historical release counts, for what is and is not proved.
+
 ## Why it exists
 
 Agent hosts have inconsistent web access. Some can search but not crawl; others can fetch a URL but cannot discover it; separate instances can unknowingly spend the same anonymous quota or hammer Reddit. Halo centralizes that work without making DSH dependent on a cloud LLM.
 
 It supplies shared search, fetch, JavaScript crawling, Reddit, documents, GitHub-oriented discovery, transcripts, community research, durable jobs, exact local targets, encrypted connections, OAuth PKCE, cookie-only research-session import, and disabled-by-default budgeted CAPTCHA/proxy provider seams.
 
-## Five-minute start
+## Quick start
 
 Prerequisites: Windows 11, PowerShell, [`uv`](https://docs.astral.sh/uv/) with the locked Python 3.12 environment, Google Chrome for Crawl4AI, and at least one supported MCP host.
 

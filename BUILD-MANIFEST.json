@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-02T23:46:28.0622164Z",
+  "generated_at": "2026-09-02T23:53:12.8971082Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -69,8 +69,8 @@
     },
     {
       "path": "docs/FINISH-PROGRESS-2026-09-02.md",
-      "sha256": "b6c8350cd335ade12a5e18632e9861518655fef6c4f0cb1618cea43c4ce40dae",
-      "bytes": 19622
+      "sha256": "00e5c39944b2fbca2a4ac75597d808c8c2df9ce5b05fb1a10270bf0de41ea0fb",
+      "bytes": 19742
     },
     {
       "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
@@ -124,8 +124,8 @@
     },
     {
       "path": "docs/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "bf3a26d0fdccb67e0868e47c7a2901de11343cc5158882baccbe39264f22b913",
-      "bytes": 5644
+      "sha256": "72c3bb45a020902cad311d113613520d19e5bbc17cb3f345924b8b1952c3cdd3",
+      "bytes": 5711
     },
     {
       "path": "docs/security.md",
@@ -139,8 +139,8 @@
     },
     {
       "path": "docs/SITE-CORRECTION-2026-09-02.md",
-      "sha256": "b55b6812730f5b308e5e184dd406d6c9f7ea9f46b606dbf977d86ed45c93bb5a",
-      "bytes": 2905
+      "sha256": "ffffe92776d3bf6b933d40c6fe4ba8032b7b5dabc3b8e1c109af10c4a1de0041",
+      "bytes": 6047
     },
     {
       "path": "docs/USER-MANUAL.md",
@@ -154,8 +154,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "58b2050705b6399586904b81b524c7cf3cecd17b9f4c4430e129c63a05da7f6c",
-      "bytes": 9326
+      "sha256": "072ad5575095b08beff2e52505b1b8fd8d100405ea981a55a692e34dd4bcc921",
+      "bytes": 9794
     },
     {
       "path": "scripts/Install-HaloResearch.ps1",
@@ -224,8 +224,8 @@
     },
     {
       "path": "skills/halo-research/references/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "bf3a26d0fdccb67e0868e47c7a2901de11343cc5158882baccbe39264f22b913",
-      "bytes": 5644
+      "sha256": "72c3bb45a020902cad311d113613520d19e5bbc17cb3f345924b8b1952c3cdd3",
+      "bytes": 5711
     },
     {
       "path": "skills/halo-research/references/source-selection.md",
