@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import re
 import urllib.parse
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
@@ -49,7 +50,7 @@ def build_app_jwt(app_id: str, private_key_pem: str, issued_at: int) -> str:
 class GitHubProvider:
     """Use a configured token/GitHub App without exposing credentials to callers."""
 
-    SUPPORTED_KINDS = {"code", "issues", "pulls", "commits", "releases", "docs"}
+    SUPPORTED_KINDS = {"code", "issues", "pulls", "commits", "releases", "docs", "discussions"}
 
     def __init__(
         self,
@@ -109,7 +110,7 @@ class GitHubProvider:
 
     async def _token(self, connection: dict) -> str:
         secret = self.connections.secret(connection["connection_id"])
-        static_token = secret.get("access_token") or secret.get("token")
+        static_token = secret.get("access_token") or secret.get("token") or secret.get("value")
         if static_token:
             return static_token
         required = {"app_id", "installation_id", "private_key_pem"}
@@ -183,6 +184,13 @@ class GitHubProvider:
         ref: str | None,
         max_results: int,
     ) -> ProviderResult:
+        if repository and (
+            not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository)
+            or any(part in {".", ".."} for part in repository.split("/"))
+        ):
+            raise ValueError("GITHUB_REPOSITORY_INVALID")
+        if ref and (len(ref) > 256 or any(ord(char) < 32 for char in ref)):
+            raise ValueError("GITHUB_REF_INVALID")
         connection = self._connection()
         if connection is None:
             return ProviderResult("github-public", [], ["GITHUB_AUTH_NOT_CONFIGURED"], 0)
@@ -193,8 +201,9 @@ class GitHubProvider:
         if unsupported:
             warnings.append("GITHUB_KIND_UNSUPPORTED:" + ",".join(sorted(unsupported)))
         selected = [kind for kind in selected if kind in self.SUPPORTED_KINDS]
-        if ref and any(kind in {"code", "docs", "issues", "pulls", "releases"} for kind in selected):
-            warnings.append("GITHUB_REF_FILTER_PARTIAL")
+        non_ref_kinds = set(selected) & {"issues", "pulls", "discussions"}
+        if ref and non_ref_kinds:
+            warnings.append("GITHUB_REF_NOT_APPLICABLE:" + ",".join(sorted(non_ref_kinds)))
         headers = self._headers(token)
         retrieved_at = rfc3339(self.clock.utcnow())
         items: list[EvidenceItem] = []
@@ -202,13 +211,45 @@ class GitHubProvider:
         for kind in selected:
             if len(items) >= max_results:
                 break
+            if kind == "discussions":
+                discussion_result = await self._discussion_search(query, repository, max_results - len(items), headers)
+                items.extend(discussion_result.items)
+                warnings.extend(discussion_result.warnings)
+                continue
+            if ref and kind in {"code", "docs"}:
+                if not repository:
+                    warnings.append("GITHUB_REF_REQUIRES_REPOSITORY")
+                    continue
+                ref_result = await self._ref_content(query, repository, kind, ref, max_results - len(items), headers)
+                items.extend(ref_result.items)
+                warnings.extend(ref_result.warnings)
+                continue
             if kind == "releases":
                 if not repository:
                     warnings.append("GITHUB_RELEASES_REQUIRE_REPOSITORY")
                     continue
-                path = f"/repos/{repository}/releases?per_page={per_kind}"
+                path = (
+                    f"/repos/{repository}/releases/tags/{urllib.parse.quote(ref, safe='')}"
+                    if ref
+                    else f"/repos/{repository}/releases?per_page={per_kind}"
+                )
                 payload = await self._requester("GET", path, headers, None)
-                rows = [row for row in payload if query.casefold() in json.dumps(row).casefold()]
+                rows = [
+                    row for row in ([payload] if ref else payload) if query.casefold() in json.dumps(row).casefold()
+                ]
+            elif ref and kind == "commits":
+                if not repository:
+                    warnings.append("GITHUB_REF_REQUIRES_REPOSITORY")
+                    continue
+                path = f"/repos/{repository}/commits?" + urllib.parse.urlencode({"sha": ref, "per_page": 100})
+                payload = await self._requester("GET", path, headers, None)
+                rows = [
+                    row
+                    for row in payload
+                    if query.casefold() in str((row.get("commit") or {}).get("message", "")).casefold()
+                ]
+                if len(payload) == 100:
+                    warnings.append("GITHUB_COMMIT_HISTORY_PAGE_LIMIT")
             else:
                 endpoint = (
                     "code" if kind in {"code", "docs"} else "issues" if kind in {"issues", "pulls"} else "commits"
@@ -222,8 +263,6 @@ class GitHubProvider:
                     qualifiers.append("is:pr")
                 elif kind == "docs":
                     qualifiers.append("extension:md")
-                if ref and kind == "commits":
-                    qualifiers.append(ref)
                 q = " ".join([query, *qualifiers])
                 path = f"/search/{endpoint}?q={urllib.parse.quote(q)}&per_page={per_kind}"
                 payload = await self._requester("GET", path, headers, None)
@@ -233,3 +272,200 @@ class GitHubProvider:
                 if len(items) >= max_results:
                     break
         return ProviderResult("github-api", items, warnings, len(items))
+
+    @staticmethod
+    def _discussion_item(raw: dict, retrieved_at: str, depth: int = 0) -> EvidenceItem:
+        return EvidenceItem(
+            url=raw["url"],
+            title=raw.get("title"),
+            content=raw.get("bodyText") or raw.get("body") or "",
+            published_at=raw.get("createdAt"),
+            retrieved_at=retrieved_at,
+            source="api.github.com",
+            metadata={
+                "kind": "discussions",
+                "repository": (raw.get("repository") or {}).get("nameWithOwner"),
+                "number": raw.get("number"),
+                "node_id": raw.get("id"),
+                "author": (raw.get("author") or {}).get("login"),
+                "depth": depth,
+                "is_answer": bool(raw.get("isAnswer")),
+                "reply_count": (raw.get("comments") or {}).get("totalCount"),
+            },
+        )
+
+    async def _graphql(self, query: str, variables: dict, headers: dict) -> dict:
+        # Only internal constant read queries use this path; user text is bound
+        # as a variable, never interpolated into GraphQL syntax.
+        if not query.lstrip().startswith("query"):
+            raise ValueError("GITHUB_READ_QUERY_REQUIRED")
+        payload = await self._requester("POST", "/graphql", headers, {"query": query, "variables": variables})
+        if payload.get("errors") or not isinstance(payload.get("data"), dict):
+            raise ValueError("GITHUB_GRAPHQL_ERROR")
+        return payload["data"]
+
+    async def _discussion_search(self, query: str, repository: str | None, limit: int, headers: dict) -> ProviderResult:
+        query_text = query + (f" repo:{repository}" if repository else "")
+        data = await self._graphql(
+            """query ResearchDiscussions($query: String!, $limit: Int!) {
+          search(query: $query, type: DISCUSSION, first: $limit) {
+            discussionCount pageInfo { hasNextPage }
+            nodes { ... on Discussion { id number title url bodyText createdAt
+              author { login } repository { nameWithOwner } comments { totalCount }
+            } }
+          }
+        }""",
+            {"query": query_text, "limit": min(30, limit)},
+            headers,
+        )
+        found = data["search"]
+        items = [self._discussion_item(raw, rfc3339(self.clock.utcnow())) for raw in found.get("nodes", []) if raw]
+        warnings = ["GITHUB_RESULTS_LIMIT_REACHED"] if found.get("pageInfo", {}).get("hasNextPage") else []
+        return ProviderResult("github-api", items, warnings, found.get("discussionCount", len(items)))
+
+    async def discussion_thread(self, repository: str, number: int, max_replies: int) -> ProviderResult:
+        if (
+            not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository)
+            or not 0 <= max_replies <= 100
+            or number < 1
+        ):
+            raise ValueError("GITHUB_DISCUSSION_INVALID")
+        connection = self._connection()
+        if connection is None:
+            return ProviderResult("github-public", [], ["GITHUB_AUTH_NOT_CONFIGURED"], 0)
+        owner, name = repository.split("/")
+        headers = self._headers(await self._token(connection))
+        data = await self._graphql(
+            """query ResearchDiscussion($owner: String!, $name: String!, $number: Int!, $limit: Int!) {
+          repository(owner: $owner, name: $name) { discussion(number: $number) {
+            id number title url bodyText createdAt author { login } repository { nameWithOwner }
+            comments(first: $limit) { totalCount pageInfo { hasNextPage }
+              nodes { id url bodyText createdAt author { login } isAnswer
+                replies(first: 1) { totalCount pageInfo { hasNextPage endCursor }
+                  nodes { id url bodyText createdAt author { login } isAnswer }
+                }
+              }
+            }
+          } }
+        }""",
+            {"owner": owner, "name": name, "number": number, "limit": max_replies},
+            headers,
+        )
+        raw = (data.get("repository") or {}).get("discussion")
+        if not raw:
+            return ProviderResult("github-api", [], ["GITHUB_DISCUSSION_UNAVAILABLE"], 0)
+        now = rfc3339(self.clock.utcnow())
+        items = [self._discussion_item(raw, now)]
+        comments = raw.get("comments") or {}
+        warnings = ["REPLY_LIMIT_REACHED"] if comments.get("pageInfo", {}).get("hasNextPage") else []
+        reply_requests = 0
+        for comment in comments.get("nodes", []):
+            if len(items) > max_replies:
+                warnings.append("REPLY_LIMIT_REACHED")
+                break
+            items.append(self._discussion_item(comment, now, 1))
+            replies = comment.get("replies") or {}
+            seen_cursors = set()
+            while True:
+                for reply in replies.get("nodes", []):
+                    if len(items) > max_replies:
+                        warnings.append("REPLY_LIMIT_REACHED")
+                        break
+                    items.append(self._discussion_item(reply, now, 2))
+                page = replies.get("pageInfo", {})
+                if not page.get("hasNextPage"):
+                    break
+                if len(items) > max_replies:
+                    warnings.append("REPLY_LIMIT_REACHED")
+                    break
+                cursor = page.get("endCursor")
+                if not cursor or cursor in seen_cursors or reply_requests >= 10:
+                    warnings.append("NESTED_REPLIES_PARTIAL")
+                    break
+                seen_cursors.add(cursor)
+                reply_requests += 1
+                more = await self._graphql(
+                    """query ResearchDiscussionReplies($id: ID!, $after: String!, $limit: Int!) {
+                      node(id: $id) { ... on DiscussionComment {
+                        replies(first: $limit, after: $after) { pageInfo { hasNextPage endCursor }
+                          nodes { id url bodyText createdAt author { login } isAnswer }
+                        }
+                      } }
+                    }""",
+                    {"id": comment["id"], "after": cursor, "limit": max_replies + 1 - len(items)},
+                    headers,
+                )
+                replies = (more.get("node") or {}).get("replies")
+                if not replies:
+                    warnings.append("NESTED_REPLIES_PARTIAL")
+                    break
+        return ProviderResult("github-api", items, sorted(set(warnings)), len(items))
+
+    async def _ref_content(
+        self, query: str, repository: str, kind: str, ref: str, limit: int, headers: dict
+    ) -> ProviderResult:
+        commit = await self._requester(
+            "GET", f"/repos/{repository}/commits/{urllib.parse.quote(ref, safe='')}", headers, None
+        )
+        sha = commit.get("sha", "")
+        tree_sha = ((commit.get("commit") or {}).get("tree") or {}).get("sha", "")
+        if not re.fullmatch(r"[0-9a-f]{40,64}", sha) or not re.fullmatch(r"[0-9a-f]{40,64}", tree_sha):
+            raise ValueError("GITHUB_REF_RESPONSE_INVALID")
+        tree = await self._requester("GET", f"/repos/{repository}/git/trees/{tree_sha}?recursive=1", headers, None)
+        warnings = ["GITHUB_REF_LITERAL_SEARCH"]
+        if tree.get("truncated"):
+            warnings.append("GITHUB_REF_TREE_TRUNCATED")
+        files = [row for row in tree.get("tree", []) if row.get("type") == "blob"]
+        if kind == "docs":
+            files = [
+                row
+                for row in files
+                if str(row.get("path", "")).lower().endswith((".md", ".mdx", ".rst", ".txt", ".adoc"))
+            ]
+        files.sort(key=lambda row: (query.casefold() not in row["path"].casefold(), row["path"]))
+        items = []
+        total_bytes = 0
+        scanned = 0
+        for row in files:
+            if scanned >= 40 or total_bytes >= 4_000_000 or len(items) >= limit:
+                warnings.append("GITHUB_REF_SCAN_LIMIT_REACHED")
+                break
+            if row.get("size", 0) > 250_000:
+                warnings.append("GITHUB_REF_LARGE_FILE_SKIPPED")
+                continue
+            blob_sha = row.get("sha", "")
+            if not re.fullmatch(r"[0-9a-f]{40,64}", blob_sha):
+                raise ValueError("GITHUB_BLOB_RESPONSE_INVALID")
+            blob = await self._requester("GET", f"/repos/{repository}/git/blobs/{blob_sha}", headers, None)
+            scanned += 1
+            if blob.get("encoding") != "base64":
+                warnings.append("GITHUB_REF_FILE_UNAVAILABLE")
+                continue
+            body = base64.b64decode(blob.get("content", ""))
+            total_bytes += len(body)
+            if len(body) > 250_000:
+                warnings.append("GITHUB_REF_LARGE_FILE_SKIPPED")
+                continue
+            if b"\x00" in body:
+                continue
+            text = body.decode("utf-8", errors="replace")
+            if query.casefold() not in (row["path"] + "\n" + text).casefold():
+                continue
+            items.append(
+                EvidenceItem(
+                    url=f"https://github.com/{repository}/blob/{sha}/{urllib.parse.quote(row['path'], safe='/')}",
+                    title=row["path"],
+                    content=text,
+                    retrieved_at=rfc3339(self.clock.utcnow()),
+                    source="api.github.com",
+                    metadata={
+                        "kind": kind,
+                        "repository": repository,
+                        "path": row["path"],
+                        "sha": sha,
+                        "blob_sha": blob_sha,
+                        "ref": ref,
+                    },
+                )
+            )
+        return ProviderResult("github-api", items, sorted(set(warnings)), len(items))

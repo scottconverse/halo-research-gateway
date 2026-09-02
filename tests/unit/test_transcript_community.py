@@ -43,6 +43,10 @@ class FakeGitHub:
         self.calls.append((query, repository, kinds, ref, max_results))
         return self.result
 
+    async def discussion_thread(self, repository, number, max_replies):
+        self.calls.append(("thread", repository, number, max_replies))
+        return self.result
+
 
 class FakeSearch:
     def __init__(self, result=None):
@@ -340,7 +344,7 @@ async def test_github_discussions_hands_off_or_returns_an_honest_partial_warning
 
     result = await provider.thread("https://github.com/acme/widgets/discussions/77", 10, "source_default")
 
-    assert github.calls == [("77", "acme/widgets", ["discussions"], None, 11)]
+    assert github.calls == [("thread", "acme/widgets", 77, 10)]
     assert result.items == []
     assert set(result.warnings) == {
         "GITHUB_AUTH_NOT_CONFIGURED",

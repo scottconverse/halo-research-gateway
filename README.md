@@ -41,7 +41,7 @@ The installer preserves operator configuration, runs the quality gate, installs 
 | Public web | `web_search`, `web_fetch`, `web_crawl` | Discover sources, retrieve a known page, or render JavaScript content. |
 | Reddit | `reddit_search`, `reddit_thread` | Search Reddit and read a post plus available RSS comments through one paced queue. |
 | Documents | `document_extract` | Extract bounded, citable text from public PDFs/documents. |
-| Research | `deep_research`, `github_research`, `transcript_fetch` | Build evidence packets, focus discovery on GitHub, or retrieve public transcript material. |
+| Research | `deep_research`, `github_research`, `transcript_fetch` | Build evidence packets, retrieve read-only GitHub evidence, or retrieve public transcript material. |
 | Communities | `community_search`, `community_thread` | Search and read technical discussions outside Reddit. |
 | Local targets | `local_fetch`, `local_crawl` | Read or render an exact operator-defined private/local target. |
 | Durable work | `research_job` | Create, inspect, pause, resume, or cancel a finite research job. |

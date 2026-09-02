@@ -211,3 +211,190 @@ async def test_service_forwards_structured_query_and_returns_github_envelope(tmp
         "ref": "abc123",
         "max_results": 7,
     }
+
+
+@pytest.mark.asyncio
+async def test_discussion_search_returns_authored_citable_read_only_evidence():
+    calls = []
+
+    async def request(method, path, headers, body):
+        calls.append((method, path, body))
+        return {
+            "data": {
+                "search": {
+                    "discussionCount": 1,
+                    "pageInfo": {"hasNextPage": False},
+                    "nodes": [
+                        {
+                            "title": "Research discussion",
+                            "url": "https://github.com/acme/widgets/discussions/7",
+                            "bodyText": "Measured evidence",
+                            "number": 7,
+                            "createdAt": "2026-09-01T00:00:00Z",
+                            "author": {"login": "researcher"},
+                            "repository": {"nameWithOwner": "acme/widgets"},
+                            "comments": {"totalCount": 2},
+                        }
+                    ],
+                }
+            }
+        }
+
+    provider = GitHubProvider(Connections({"token": "fixture-token"}), FixedClock(), request)
+    result = await provider.research("research", "acme/widgets", ["discussions"], None, 5)
+    assert len(result.items) == 1
+    assert result.items[0].content == "Measured evidence"
+    assert result.items[0].metadata["repository"] == "acme/widgets"
+    assert result.items[0].metadata["author"] == "researcher"
+    assert calls[0][0:2] == ("POST", "/graphql")
+    assert calls[0][2]["query"].lstrip().startswith("query")
+    assert "mutation" not in calls[0][2]["query"]
+    assert "repo:acme/widgets" in calls[0][2]["variables"]["query"]
+
+
+@pytest.mark.asyncio
+async def test_discussion_thread_fetches_exact_number_not_text_search():
+    from halo_research_gateway.providers.community import CommunityProvider
+
+    calls = []
+
+    async def request(method, path, headers, body):
+        calls.append(body)
+        return {
+            "data": {
+                "repository": {
+                    "discussion": {
+                        "id": "D7",
+                        "number": 7,
+                        "title": "Exact discussion",
+                        "url": "https://github.com/acme/widgets/discussions/7",
+                        "bodyText": "Original evidence",
+                        "repository": {"nameWithOwner": "acme/widgets"},
+                        "comments": {
+                            "totalCount": 1,
+                            "pageInfo": {"hasNextPage": False},
+                            "nodes": [
+                                {
+                                    "id": "C1",
+                                    "url": "https://github.com/acme/widgets/discussions/7#discussioncomment-1",
+                                    "bodyText": "Reply evidence",
+                                    "author": {"login": "expert"},
+                                    "isAnswer": True,
+                                    "replies": {"totalCount": 0, "pageInfo": {"hasNextPage": False}, "nodes": []},
+                                }
+                            ],
+                        },
+                    }
+                }
+            }
+        }
+
+    github = GitHubProvider(Connections({"token": "fixture-token"}), FixedClock(), request)
+    community = CommunityProvider(None, github, None, FixedClock())
+    result = await community.thread("https://github.com/acme/widgets/discussions/7", 5, "source_default")
+    assert len(result.items) == 2
+    assert result.items[0].content == "Original evidence"
+    assert result.items[1].content == "Reply evidence"
+    assert result.items[1].metadata["is_answer"] is True
+    assert calls[0]["variables"]["number"] == 7
+
+
+@pytest.mark.asyncio
+async def test_ref_search_reads_commit_tree_not_default_branch_search():
+    calls = []
+    commit_sha = "a" * 40
+    tree_sha = "b" * 40
+    blob_sha = "c" * 40
+
+    async def request(method, path, headers, body):
+        calls.append(path)
+        if path.startswith("/repos/acme/widgets/commits/"):
+            return {"sha": commit_sha, "commit": {"tree": {"sha": tree_sha}}}
+        if "/git/trees/" in path:
+            return {
+                "truncated": False,
+                "tree": [{"path": "docs/new-only.md", "type": "blob", "sha": blob_sha, "size": 31}],
+            }
+        if "/git/blobs/" in path:
+            return {"encoding": "base64", "content": base64.b64encode(b"needle only exists on this ref").decode()}
+        return {"items": []}
+
+    provider = GitHubProvider(Connections({"token": "fixture-token"}), FixedClock(), request)
+    result = await provider.research("needle", "acme/widgets", ["docs"], "feature/research", 5)
+    assert len(result.items) == 1
+    assert result.items[0].url == f"https://github.com/acme/widgets/blob/{commit_sha}/docs/new-only.md"
+    assert result.items[0].metadata["sha"] == commit_sha
+    assert result.items[0].metadata["ref"] == "feature/research"
+    assert "needle" in result.items[0].content
+    assert not any(path.startswith("/search/code") for path in calls)
+    assert "GITHUB_REF_FILTER_PARTIAL" not in result.warnings
+
+
+@pytest.mark.asyncio
+async def test_generic_operator_token_value_is_usable_for_research():
+    provider = GitHubProvider(Connections({"value": "operator-fixture-token"}), FixedClock())
+    assert await provider._token(provider._connection()) == "operator-fixture-token"
+
+
+@pytest.mark.asyncio
+async def test_discussion_follows_nested_replies_within_total_reply_budget():
+    calls = []
+
+    def reply(number):
+        return {
+            "id": f"R{number}",
+            "url": f"https://github.com/acme/widgets/discussions/7#discussioncomment-{number}",
+            "bodyText": f"Evidence {number}",
+        }
+
+    async def request(method, path, headers, body):
+        calls.append(body)
+        if body["variables"].get("id"):
+            assert body["variables"] == {"id": "C1", "after": "cursor-1", "limit": 2}
+            return {"data": {"node": {"replies": {"nodes": [reply(2), reply(3)], "pageInfo": {"hasNextPage": False}}}}}
+        return {
+            "data": {
+                "repository": {
+                    "discussion": {
+                        "url": "https://github.com/acme/widgets/discussions/7",
+                        "bodyText": "Root",
+                        "comments": {
+                            "nodes": [
+                                {
+                                    "id": "C1",
+                                    "url": "https://github.com/acme/widgets/discussions/7#discussioncomment-0",
+                                    "bodyText": "Parent",
+                                    "replies": {
+                                        "nodes": [reply(1)],
+                                        "pageInfo": {"hasNextPage": True, "endCursor": "cursor-1"},
+                                    },
+                                }
+                            ],
+                            "pageInfo": {"hasNextPage": False},
+                        },
+                    }
+                }
+            }
+        }
+
+    provider = GitHubProvider(Connections({"token": "fixture-token"}), FixedClock(), request)
+    result = await provider.discussion_thread("acme/widgets", 7, 4)
+    assert [item.content for item in result.items] == ["Root", "Parent", "Evidence 1", "Evidence 2", "Evidence 3"]
+    assert len(calls) == 2
+    assert result.warnings == []
+
+
+@pytest.mark.asyncio
+async def test_ref_blob_actual_size_is_checked_even_when_tree_size_is_wrong():
+    async def request(method, path, headers, body):
+        if "/commits/" in path:
+            return {"sha": "a" * 40, "commit": {"tree": {"sha": "b" * 40}}}
+        if "/git/trees/" in path:
+            return {"tree": [{"type": "blob", "path": "README.md", "sha": "c" * 40, "size": 1}]}
+        return {"encoding": "base64", "content": base64.b64encode(b"x" * 250_001).decode()}
+
+    result = await GitHubProvider(Connections({"token": "fixture-token"}), FixedClock(), request).research(
+        "README", "acme/widgets", ["docs"], "main", 1
+    )
+    assert result.items == []
+    assert "GITHUB_REF_LARGE_FILE_SKIPPED" in result.warnings

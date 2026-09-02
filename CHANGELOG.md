@@ -8,6 +8,8 @@ All notable Halo Research Gateway product releases are recorded here.
 - Remove full/personal Chrome import; retain cookie-only research sessions and their import-specific review/receipts.
 - Preserve existing runtime data and historical receipts; old action plans cannot execute through import review.
 - Correct current documentation and agent instructions. DSH native permissions are unchanged.
+- Fix GitHub fallback cursor continuation and exact-target local browser/WebSocket request checks.
+- Add authenticated read-only GitHub discussion search/thread retrieval, bounded nested replies, and branch/tag/commit-pinned documentation/code retrieval. Operator token connections now work as well as GitHub Apps.
 - See [current scope and remaining acceptance](docs/RESEARCH-ONLY-SCOPE.md). Entries below describe historical releases, not the current capability contract.
 
 ## 0.2.0 — 2026-09-01

@@ -8,7 +8,7 @@ the goal. The research-only scope remains unchanged.
 | GitHub fallback pagination | Fixed with a full normalized snapshot and GitHub-bound cursor; regression passes without a second upstream request. |
 | Local browser requests | Exact target is passed into immutable per-context guards; host/port/path/method checks and decoded traversal rejection added. Real Chrome fixture passed. |
 | WebSocket handling | Async close is awaited; allowed local socket returns evidence and forbidden socket never reaches the server in real Chrome. |
-| GitHub discussions and ref support | Pending implementation and source-specific proof. |
+| GitHub discussions and ref support | Implemented; authenticated public-source adapter canary passed for search, exact discussion/replies, and commit-pinned README. Full DSH acceptance still pending. |
 | All research source tools and authenticated GitHub | Pending complete live evidence matrix. |
 | Research login/challenge/optional providers | Pending implementation/verification; user asked to select a dedicated research profile/site. No paid calls authorized. |
 | Full DSH workflow and durable-job controls | Pending end-to-end evidence. |
@@ -210,3 +210,142 @@ context through the actual Crawl4AI provider. Allowed dynamic content and socket
 messages arrive; out-of-prefix HTTP, another port, POST, and out-of-prefix socket
 requests do not reach the fixture servers. It uses no personal profile and is
 not a replacement for live login, general provider, or DSH acceptance.
+## GitHub discussion and ref checkpoint
+
+Read and changed the GitHub provider, community adapter, related tests, README, changelog, and manual. Existing operator sign-in was used only in memory; no token, private repository content, connection, or changed scope was saved.
+
+Baseline command: `uv run --locked python -m pytest -q tests/unit/test_github_provider.py tests/unit/test_transcript_community.py`.
+Baseline: `19 passed in 1.45s` (after the initial support changes; original support RED below).
+
+Initial support RED command: `uv run --locked python -m pytest -q tests/unit/test_github_provider.py`.
+
+```text
+See prior execution record; not available in persistent tool store.
+```
+
+Falsification RED command: `uv run --locked python -m pytest -q tests/unit/test_github_provider.py -k 'nested_replies or actual_size'`.
+
+```text
+FF                                                                       [100%]
+================================== FAILURES ===================================
+______ test_discussion_follows_nested_replies_within_total_reply_budget _______
+
+    @pytest.mark.asyncio
+    async def test_discussion_follows_nested_replies_within_total_reply_budget():
+        calls = []
+    
+        def reply(number):
+            return {"id": f"R{number}", "url": f"https://github.com/acme/widgets/discussions/7#discussioncomment-{number}", "bodyText": f"Evidence {number}"}
+    
+        async def request(method, path, headers, body):
+            calls.append(body)
+            if body["variables"].get("id"):
+                assert body["variables"] == {"id": "C1", "after": "cursor-1", "limit": 2}
+                return {"data": {"node": {"replies": {"nodes": [reply(2), reply(3)], "pageInfo": {"hasNextPage": False}}}}}
+            return {"data": {"repository": {"discussion": {
+                "url": "https://github.com/acme/widgets/discussions/7", "bodyText": "Root",
+                "comments": {"nodes": [{"id": "C1", "url": "https://github.com/acme/widgets/discussions/7#discussioncomment-0", "bodyText": "Parent",
+                    "replies": {"nodes": [reply(1)], "pageInfo": {"hasNextPage": True, "endCursor": "cursor-1"}}}], "pageInfo": {"hasNextPage": False}},
+            }}}}
+    
+        provider = GitHubProvider(Connections({"token": "fixture-token"}), FixedClock(), request)
+        result = await provider.discussion_thread("acme/widgets", 7, 4)
+>       assert [item.content for item in result.items] == ["Root", "Parent", "Evidence 1", "Evidence 2", "Evidence 3"]
+E       AssertionError: assert ['Root', 'Par... 'Evidence 1'] == ['Root', 'Par... 'Evidence 3']
+E         
+E         Right contains 2 more items, first extra item: 'Evidence 2'
+E         Use -v to get more diff
+
+tests\unit\test_github_provider.py:359: AssertionError
+______ test_ref_blob_actual_size_is_checked_even_when_tree_size_is_wrong ______
+
+    @pytest.mark.asyncio
+    async def test_ref_blob_actual_size_is_checked_even_when_tree_size_is_wrong():
+        async def request(method, path, headers, body):
+            if "/commits/" in path:
+                return {"sha": "a" * 40, "commit": {"tree": {"sha": "b" * 40}}}
+            if "/git/trees/" in path:
+                return {"tree": [{"type": "blob", "path": "README.md", "sha": "c" * 40, "size": 1}]}
+            return {"encoding": "base64", "content": base64.b64encode(b"x" * 250_001).decode()}
+    
+        result = await GitHubProvider(Connections({"token": "fixture-token"}), FixedClock(), request).research("README", "acme/widgets", ["docs"], "main", 1)
+>       assert result.items == []
+E       AssertionError: assert [EvidenceItem...ef': 'main'})] == []
+E         
+E         Left contains one more item: EvidenceItem(url='https://github.com/acme/widgets/blob/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/README.md', retrieved_...a': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'blob_sha': 'cccccccccccccccccccccccccccccccccccccccc', 'ref': 'main'})
+E         Use -v to get more diff
+
+tests\unit\test_github_provider.py:374: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/unit/test_github_provider.py::test_discussion_follows_nested_replies_within_total_reply_budget
+FAILED tests/unit/test_github_provider.py::test_ref_blob_actual_size_is_checked_even_when_tree_size_is_wrong
+2 failed, 10 deselected in 1.00s
+
+```
+
+GREEN commands:
+
+```powershell
+uv run --locked ruff format src tests
+uv run --locked python -m pytest -q tests/unit/test_github_provider.py tests/unit/test_transcript_community.py
+```
+
+```text
+1 file reformatted, 69 files left unchanged
+.....................                                                    [100%]
+21 passed in 1.39s
+```
+
+Live command: `uv run --locked python tests/acceptance/github_live.py` (preceded by `uv run --locked ruff format tests/acceptance/github_live.py`).
+
+```text
+1 file reformatted
+{"discussion_search": {"provider": "github-api", "urls": ["https://github.com/deepseek-ai/deepseek-harness/discussions/1468", "https://github.com/lfnovo/open-notebook/discussions/1243"], "warnings": ["GITHUB_RESULTS_LIMIT_REACHED"]}}
+{"discussion_thread": {"items": 2, "urls": ["https://github.com/deepseek-ai/deepseek-harness/discussions/1468", "https://github.com/deepseek-ai/deepseek-harness/discussions/1468#discussioncomment-18036509"], "warnings": []}}
+{"ref_pinned_docs": {"url": "https://github.com/microsoft/playwright/blob/855c734916c244533748f1b4dbfa6e231329ea54/README.md", "sha": "855c734916c244533748f1b4dbfa6e231329ea54", "chars": 11261, "warnings": ["GITHUB_REF_LITERAL_SEARCH", "GITHUB_REF_SCAN_LIMIT_REACHED"]}}
+Authenticated GitHub read-only canary PASS
+
+```
+
+The live canary uses authenticated GitHub APIs against public sources, not a connected production Gateway account or DSH. HTTP reads and constant GraphQL queries only; no GitHub mutation. Ref scanning has explicit limits; this does not claim exhaustive repository search. No dependency added. Transport response-byte and total-duration limits remain part of the broader reliability work.
+
+First full-gate attempt found the following canary lint error (no tests ran):
+
+```text
+ASYNC221 Async functions should not run processes with blocking methods
+  --> tests\acceptance\github_live.py:15:18
+   |
+14 | async def main():
+15 |     credential = subprocess.run(
+   |                  ^^^^^^^^^^^^^^
+16 |         ["gh", "auth", "token", "--hostname", "github.com"], capture_output=True, text=True, check=False
+17 |     )
+   |
+
+Found 1 error.
+Exception: C:\Users\scott\Desktop\Code\halo-research-gateway\scripts\Invoke-QualityGate.ps1:9
+Line |
+   9 |  … EXITCODE -ne 0) { throw "$Name failed with exit code $LASTEXITCODE" }
+     |                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | lint failed with exit code 1
+```
+
+Moved the existing keyring subprocess read to `asyncio.to_thread`; no authentication behavior changed. Reran `uv run --locked ruff format tests/acceptance/github_live.py`, `pwsh -NoProfile -File scripts/Update-BuildManifest.ps1`, and `pwsh -NoProfile -File scripts/Invoke-QualityGate.ps1 -Scope Commit`:
+
+```text
+1 file left unchanged
+Wrote BUILD-MANIFEST.json with 192 files.
+[GATE] lock check
+Resolved 130 packages in 1ms
+[GATE] format
+70 files already formatted
+[GATE] lint
+All checks passed!
+[GATE] unit and fixture tests
+........................................................................ [ 50%]
+.......................................................................  [100%]
+143 passed in 5.52s
+[GATE] skill package
+halo-research skill package valid
+[GATE] PASS (Commit)
+```

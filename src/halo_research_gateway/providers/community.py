@@ -363,8 +363,8 @@ class CommunityProvider:
         if match is None:
             raise ValueError("INVALID_COMMUNITY_THREAD")
         repository = f"{match.group(1)}/{match.group(2)}"
-        discussion_id = match.group(3)
-        result = await self.github.research(discussion_id, repository, ["discussions"], None, max_replies + 1)
+        discussion_id = int(match.group(3))
+        result = await self.github.discussion_thread(repository, discussion_id, max_replies)
         for item in result.items:
             item.metadata = dict(item.metadata or {}) | {
                 "community_source": "github_discussions",
