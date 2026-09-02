@@ -11,9 +11,9 @@ the goal. The research-only scope remains unchanged.
 | GitHub discussions and ref support | Implemented; authenticated public-source adapter canary passed for search, exact discussion/replies, and commit-pinned README. Full DSH acceptance still pending. |
 | All research source tools and authenticated GitHub | Live MCP search, page/cursor, JS rendering, PDF, captions, Reddit search and HN thread have results. Exa misattribution/filter defects fixed in d9bb096. Reddit thread throttling found and repaired locally; full matrix/DSH proof remains. |
 | Research login/challenge/optional providers | Actual Chrome cookie-only login fixture passes after stale-LOCK and persistent-channel defects were fixed. Real-world profile/site choice, app-bound cookies, challenge flow and provider routing remain. No paid calls authorized. |
-| Full DSH workflow and durable-job controls | Pending end-to-end evidence. |
+| Full DSH workflow and durable-job controls | FAILED before tool dispatch: two DSH tools-package instances have different scheduler symbols. Separate DSH repair/restart approval requested. Job pause/resume/frontier persistence also unfinished. |
 | Reliability and installation | Existing unit coverage is not full acceptance; startup discrepancy, broader concurrency/process/recovery/install tests remain. |
-| Delivery | Prior removal commits local; push/CI/merge and corrected hosted-page publication remain. Authorized by the full finish request. |
+| Delivery | Six checkpoints pushed directly to existing main through 135cdd8; exact-revision CI run 33691709059 succeeded. No PR was created/merged and no new tag exists. Corrected hosted page is not published yet. |
 
 ## First retrieval checkpoint
 

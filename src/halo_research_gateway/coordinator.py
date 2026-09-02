@@ -34,6 +34,7 @@ class _QueuedOperation:
     future: asyncio.Future
     waiters: int = 1
     state: str = "queued"
+    task: asyncio.Task | None = None
 
 
 class Coordinator:
@@ -94,7 +95,13 @@ class Coordinator:
     async def _detach_waiter(self, item: _QueuedOperation) -> None:
         async with self._state_lock:
             item.waiters -= 1
-            if item.waiters or item.state != "queued":
+            if item.waiters:
+                return
+            if item.state == "active":
+                if item.task is not None:
+                    item.task.cancel()
+                return
+            if item.state != "queued":
                 return
             client_queue = self._queues[item.provider].get(item.client)
             if client_queue is not None:
@@ -128,7 +135,7 @@ class Coordinator:
             item.state = "active"
             self._last_served[provider] = client
             self._active[provider] += 1
-            asyncio.create_task(self._execute(item))
+            item.task = asyncio.create_task(self._execute(item))
 
     async def _execute(self, item: _QueuedOperation) -> None:
         result = exception = None

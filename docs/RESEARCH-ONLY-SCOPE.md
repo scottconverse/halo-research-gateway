@@ -48,27 +48,35 @@ review configuration is `[imports]`. It cannot restore removed functionality.
 
 This is the remaining research-only acceptance list, not a new feature plan.
 
-1. **Complete and verify this removal.** Check source, MCP discovery, console,
-   installed skill/docs, and the landing page. Commit scoped work; distinguish
-   local tests/runtime from pushed/merged code and published documentation.
-2. **Fix remaining retrieval defects.** GitHub cursor/snapshot identity; local
-   browser request validation and awaited WebSocket rejection; truthful partial
-   results and supported GitHub discussion/ref behavior. Add regression tests.
-3. **Prove the source tools.** Search/fallback, page reading/crawling, PDFs,
-   transcripts, Reddit/community, and authenticated read-only GitHub. Record
-   actual responses/citations, not just that each tool appears in a list.
-4. **Prove authenticated and challenged-page reading.** Validate cookie-only
-   managed-session crawling with a selected research profile, profile layout and
-   encryption compatibility, and visible operator challenge handling. Either
-   prove optional solver/proxy routing under an explicit budget or accurately
-   describe the adapters as unwired/unproven. No paid calls without authorization.
-5. **Prove a complete workflow through DSH.** Discover, read multiple sources,
-   follow a continuation, compare evidence, and produce a supported cited answer;
-   also prove bounded deep-research/job pause/resume/recovery and honest failures.
-6. **Finish reliability and delivery.** Verify concurrent clients, shared limits,
-   cancellation, browser cleanup, restart/recovery, and the corrected installation.
-   Align README, manual, skill, and landing page with what actually passed; record
-   exact version/commit/CI/release identity and any remaining failures.
+The removal, recorded GitHub/browser/WebSocket fixes, Exa source attribution and
+filter fixes, and cookie-only fixture repair are committed. Pushed checkpoint
+`135cdd8` passed CI. Live MCP returned ordinary/JS pages, PDF text, captions,
+Reddit search/thread and Hacker News discussion evidence. Authenticated GitHub
+was proven at adapter level. These do not complete the following work:
+
+1. **Repair the DSH integration, then prove the whole workflow.** The local
+   model selected the correct Gateway search tool but DSH failed before dispatch:
+   `Cannot read properties of undefined (reading 'prepare')`. Its host and agent
+   loop resolve different tools-package instances and scheduler symbols.
+   Approval is requested for a scoped DSH package-resolution repair/restart,
+   preserving all model choices, permissions, presets and conversations. Then
+   rerun discovery, pagination, multi-source reading and cited synthesis.
+2. **Finish durable research jobs.** Pause currently does not stop active work;
+   resume/recovery does not persist a source frontier. Verify limits, leases,
+   state transitions, partial failures and restart continuation with evidence.
+3. **Finish research login/challenge access.** A real Chrome v10 cookie fixture
+   passes; app-bound cookies and an operator-chosen real login are unproven.
+   Complete visible human challenge handling and actual optional-provider crawl
+   routing. Use fixtures for paid adapters unless paid use is separately approved.
+4. **Finish reliability acceptance.** Verify shared concurrent clients, active
+   cancellation, browser/process cleanup, startup/PID identity, restart recovery,
+   response/time bounds and installation. Unit tests alone are not host acceptance.
+5. **Close source-provider coverage gaps.** Prove the actual DDGS fallback path,
+   connected Gateway/DSH authenticated GitHub, larger/nested discussions, and
+   honest source/coverage limits. Keep intermittent upstream throttling visible.
+6. **Finish delivery.** Publish the corrected landing page, synchronize operator
+   copies, finish metadata/documentation and verify CI for the final revision.
+   Product version remains `0.2.0`; no new release tag or package is claimed.
 
 Optional fallback-host integrations do not justify expanding the core product.
 No Gmail, publishing, shopping, account management, broad personal-data migration,
