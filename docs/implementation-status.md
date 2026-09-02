@@ -16,6 +16,14 @@ The untouched baseline passed 128 tests. Nine new scope assertions failed on the
 
 The final gate passed `131 passed in 3.98s`. The live service exposes fourteen tools, public fetch passed, and the retired action approval endpoint returns 404. See [removal evidence](RESEARCH-ONLY-REMOVAL-EVIDENCE-2026-09-02.md). These are not end-to-end DSH or live-account acceptance claims.
 
-Use the six-part [finish list](RESEARCH-ONLY-SCOPE.md#needs-to-be-done-to-finish): finish removal delivery; fix retrieval defects; prove source tools; prove research login/challenges; prove an end-to-end DSH workflow; finish reliability and release evidence. No outbound actions or general personal-assistant features belong in that list.
+## Current checkpoints
 
-Known research gaps include GitHub cursor identity and discussion/ref coverage, local-browser request/WebSocket handling, imported-profile/Chrome encryption compatibility, visible human challenge handling, paid adapter routing, full multi-step DSH acceptance, and concurrency/recovery evidence. Do not label these complete based on isolated unit tests or old receipts.
+Removal and retrieval repairs are pushed to private main through `135cdd8`; CI run 33691709059 passed for that revision. Active-call cancellation and accurate DSH acceptance failure reporting are committed locally in `6477bc7`. Version remains 0.2.0; no new tag or PR merge is claimed. See [progress](FINISH-PROGRESS-2026-09-02.md) for evidence by capability.
+
+GitHub cursor/discussion/ref and exact local-browser/WebSocket repairs have tests; public-source live MCP/adapter probes returned useful evidence. A disposable real-Chrome v10 cookie-only login fixture passed. Real login/app-bound cookies, human challenge handling, optional-provider routing and complete DSH acceptance are not proved.
+
+DSH failed before Gateway dispatch because host and agent-loop resolve distinct tools-package scheduler symbols. Repair/restart approval was requested; no DSH settings, packages, permissions, models, presets or existing conversations were changed. See [DSH failure evidence](DSH-WORKFLOW-CANCELLATION-2026-09-02.md).
+
+Research-job controls now stop active work, enforce admission/argument bounds, protect terminal states and preserve honest empty/partial outcomes in isolated tests. Source-frontier persistence, cumulative budgets and lease renewal remain open; resume currently repeats the run, not exact-source continuation. These changes require a verified deployment before they apply to the live process.
+
+The six-part [finish list](RESEARCH-ONLY-SCOPE.md#needs-to-be-done-to-finish) covers DSH, durable continuation, login/challenges, reliability/install, source-provider gaps and final website/delivery. No outbound actions or general personal-assistant features belong in it.

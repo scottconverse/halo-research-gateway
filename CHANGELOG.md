@@ -12,6 +12,7 @@ All notable Halo Research Gateway product releases are recorded here.
 - Fix Exa text-result attribution so each excerpt stays with its own URL; unidentified text yields discovery links only. Apply domain filters to Exa and route freshness/non-web requests to the provider that accepts those controls.
 - Route Reddit RSS through bounded HTTP retrieval and persist rate-limit backoff with visible retry delays.
 - Cancel an active retrieval when its last caller leaves, while preserving reads still needed by another caller. The DSH acceptance runner now rejects an errored completed turn.
+- Make research-job pause/cancel stop the worker; enforce positive limits and shared admission, reject invalid resume transitions, and keep late failures from overwriting paused/cancelled records. Empty retrieval is failed, partial evidence is marked, and interrupted shutdown is recoverable. Exact source-frontier continuation remains unfinished.
 - Fix cookie-only research-session reuse: closed Chrome's stale database LOCK file no longer falsely blocks import, and installed Chrome loads the encrypted copy before an in-memory handoff to the research context.
 - Add authenticated read-only GitHub discussion search/thread retrieval, bounded nested replies, and branch/tag/commit-pinned documentation/code retrieval. Operator token connections now work as well as GitHub Apps.
 - See [current scope and remaining acceptance](docs/RESEARCH-ONLY-SCOPE.md). Entries below describe historical releases, not the current capability contract.

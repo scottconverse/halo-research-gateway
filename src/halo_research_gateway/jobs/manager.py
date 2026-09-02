@@ -65,7 +65,19 @@ class JobManager:
             raise ValueError("INVALID_ARGUMENT")
         now = rfc3339(self.clock.utcnow())
         with sqlite3.connect(self.db_path) as db:
-            db.execute("UPDATE jobs SET state=?, updated_at=?, lease_until=NULL WHERE job_id=?", (target, now, job_id))
+            allowed = {
+                "pause": ("queued", "running", "paused", "paused_recoverable"),
+                "resume": ("paused", "paused_recoverable"),
+                "cancel": ("queued", "running", "paused", "paused_recoverable", "cancelled"),
+            }[operation]
+            placeholders = ",".join("?" for _ in allowed)
+            changed = db.execute(
+                "UPDATE jobs SET state=?,updated_at=?,lease_until=NULL,error_code=NULL "
+                f"WHERE job_id=? AND owner_profile=? AND state IN ({placeholders})",
+                (target, now, job_id, owner, *allowed),
+            )
+            if changed.rowcount != 1:
+                raise ValueError("JOB_STATE_CONFLICT")
         return self.status(job_id, owner)
 
     def start(self, job_id: str, owner: str, lease_seconds: int) -> dict:
@@ -75,7 +87,8 @@ class JobManager:
         now = self.clock.utcnow()
         with sqlite3.connect(self.db_path) as db:
             db.execute(
-                "UPDATE jobs SET state='running',updated_at=?,lease_until=? WHERE job_id=?",
+                "UPDATE jobs SET state='running',updated_at=?,lease_until=? WHERE job_id=? "
+                "AND state IN ('queued','paused_recoverable')",
                 (rfc3339(now), rfc3339(now + timedelta(seconds=lease_seconds)), job_id),
             )
         return self.status(job_id, owner)
@@ -86,8 +99,20 @@ class JobManager:
         now = rfc3339(self.clock.utcnow())
         with sqlite3.connect(self.db_path) as db:
             db.execute(
-                "UPDATE jobs SET state=?,progress_json=?,updated_at=?,lease_until=NULL,error_code=? WHERE job_id=?",
+                "UPDATE jobs SET state=?,progress_json=?,updated_at=?,lease_until=NULL,error_code=? WHERE job_id=? "
+                "AND state='running'",
                 (state, json.dumps(progress), now, error_code, job_id),
+            )
+        return self.status(job_id, owner)
+
+    def interrupt(self, job_id: str, owner: str) -> dict:
+        """Record an interrupted worker without overriding an operator's pause/cancel."""
+        self.status(job_id, owner)
+        with sqlite3.connect(self.db_path) as db:
+            db.execute(
+                "UPDATE jobs SET state='paused_recoverable',updated_at=?,lease_until=NULL "
+                "WHERE job_id=? AND state IN ('queued','running')",
+                (rfc3339(self.clock.utcnow()), job_id),
             )
         return self.status(job_id, owner)
 

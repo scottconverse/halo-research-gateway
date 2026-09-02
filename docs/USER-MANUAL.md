@@ -182,11 +182,15 @@ Use `local_fetch` or `local_crawl` with the target name. Never weaken public URL
 
 - `create`: finite job with explicit limits;
 - `status`: owner-visible progress/results;
-- `pause`: stop forward progress while preserving state;
-- `resume`: reacquire a lease and continue;
+- `pause`: stop the active worker before returning, without erasing the job record;
+- `resume`: restart a paused/recoverable job; already-running and terminal jobs cannot be resumed;
 - `cancel`: terminate without erasing its record.
 
-Jobs have absolute time/page limits and ownership. Restart recovery treats expired leases as incomplete, not successful.
+Create/resume share the configured active-job ceiling across clients. `max_sources`, `max_pages`, and `timeout_seconds` must be positive integers; the returned limits show applied ceilings (currently 50 sources and at most 250 pages, or a lower configured page ceiling). Saturation returns `JOB_CAPACITY_REACHED`; invalid lifecycle operations return `JOB_STATE_CONFLICT`. Limits apply per run, not yet cumulatively across restarts.
+
+Failed retrieval is a failed job, and an empty result is `NO_RESEARCH_EVIDENCE`. Usable results with warnings or more cursor pages are marked `progress.partial: true`; read the retained warnings and follow result cursors before claiming full coverage. Completion means the worker finished, not that every source was available or a final answer was verified.
+
+Graceful shutdown leaves interrupted workers `paused_recoverable`; an operator pause/cancel cannot be overwritten by a late timeout. Expired crash leases are treated as incomplete, not successful. **Continuation is not finished:** the current implementation does not persist the source frontier or renew running leases. Resume repeats the research run (and may reuse cached pages), rather than continuing exactly at the last source. Do not rely on it for durable long-running research yet.
 
 ## 10. Research-only product boundary
 

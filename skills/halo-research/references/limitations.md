@@ -9,5 +9,7 @@ The current surface contains fourteen research tools. [Research-only scope](RESE
 - Cookie-only import passed an actual Chrome encrypted-cookie loopback-login fixture. The owned copy is read by installed Chrome and cookies are transferred in memory to the research context. It is not site-filtered; app-bound cookies and a chosen real-world login remain unproven. No passwords, payment data, extensions, history, bookmarks, settings, or full-profile import.
 - OAuth and encrypted research connections remain. Live setup requires the operator's chosen account and scopes.
 - Optional CapSolver/Bright Data adapters remain disabled; complete crawl routing and live challenge/proxy acceptance are not proven.
+- Research-job pause/cancel and lifecycle bounds have isolated regression coverage. Resume still repeats the run: exact source-frontier persistence, cumulative budgets and lease renewal are not finished. A completed worker may have partial evidence; inspect progress and warnings.
+- The latest DSH acceptance run failed before tool dispatch because its host/agent-loop resolved different tools-package scheduler symbols. Gateway source-tool tests are not a substitute for a successful DSH workflow.
 - No email, posting, GitHub-write, general form, purchase, account-change, or deletion tools remain. Those are removed scope, not future work.
 - A cloud-only client cannot reach workstation loopback merely by installing this skill.

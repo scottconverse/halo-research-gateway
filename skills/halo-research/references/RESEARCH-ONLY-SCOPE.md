@@ -61,9 +61,10 @@ was proven at adapter level. These do not complete the following work:
    Approval is requested for a scoped DSH package-resolution repair/restart,
    preserving all model choices, permissions, presets and conversations. Then
    rerun discovery, pagination, multi-source reading and cited synthesis.
-2. **Finish durable research jobs.** Pause currently does not stop active work;
-   resume/recovery does not persist a source frontier. Verify limits, leases,
-   state transitions, partial failures and restart continuation with evidence.
+2. **Finish durable research jobs.** Pause/cancel, admission/argument bounds,
+   state protection and honest empty/partial outcomes now pass isolated tests.
+   Resume/recovery still does not persist a source frontier or cumulative budget,
+   and running leases are not renewed. Prove real restart continuation and limits.
 3. **Finish research login/challenge access.** A real Chrome v10 cookie fixture
    passes; app-bound cookies and an operator-chosen real login are unproven.
    Complete visible human challenge handling and actual optional-provider crawl

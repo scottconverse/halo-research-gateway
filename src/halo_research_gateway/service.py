@@ -99,6 +99,7 @@ class HaloService:
         self._snapshots: dict[str, ProviderResult] = {}
         self.started_at = rfc3339(self.clock.utcnow())
         self._job_tasks: dict[str, asyncio.Task] = {}
+        self._job_lock = asyncio.Lock()
         self._oauth_tasks: dict[str, asyncio.Task] = {}
         self.jobs.recover_expired()
 
@@ -973,31 +974,59 @@ class HaloService:
     async def research_job(
         self, operation: str, owner: str, job_id=None, question=None, profile="standard", limits=None
     ) -> dict:
+        async with self._job_lock:
+            return await self._control_job(operation, owner, job_id, question, profile, limits)
+
+    async def _control_job(self, operation, owner, job_id, question, profile, limits) -> dict:
         if operation == "create":
             requested_limits = {"profile": profile, **(limits or {})}
-            requested_limits["max_sources"] = min(int(requested_limits.get("max_sources", 12)), 50)
-            requested_limits["max_pages"] = min(
-                int(requested_limits.get("max_pages", 20)), self.config.jobs.absolute_pages
-            )
-            requested_limits["timeout_seconds"] = min(
-                int(requested_limits.get("timeout_seconds", self.config.jobs.default_timeout_seconds)),
-                self.config.jobs.absolute_timeout_seconds,
-            )
+            bounds = {
+                "max_sources": (12, 50),
+                "max_pages": (20, min(250, self.config.jobs.absolute_pages)),
+                "timeout_seconds": (
+                    self.config.jobs.default_timeout_seconds,
+                    self.config.jobs.absolute_timeout_seconds,
+                ),
+            }
+            for name, (default, maximum) in bounds.items():
+                value = requested_limits.get(name, default)
+                if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                    raise ValueError("INVALID_JOB_LIMITS")
+                requested_limits[name] = min(value, maximum)
+            self._check_job_capacity()
             created = self.jobs.create(owner, question or "", requested_limits)
-            task = asyncio.create_task(self._run_job(created["job_id"], owner))
-            self._job_tasks[created["job_id"]] = task
-            task.add_done_callback(lambda _, key=created["job_id"]: self._job_tasks.pop(key, None))
+            self._schedule_job(created["job_id"], owner)
             return created
         if operation == "status":
             return self.jobs.status(job_id, owner)
+        if operation == "resume":
+            self.jobs.status(job_id, owner)
+            self._check_job_capacity()
         changed = self.jobs.transition(job_id, owner, operation)
         if operation == "resume":
-            task = asyncio.create_task(self._run_job(job_id, owner))
-            self._job_tasks[job_id] = task
-            task.add_done_callback(lambda _, key=job_id: self._job_tasks.pop(key, None))
-        elif operation == "cancel" and job_id in self._job_tasks:
-            self._job_tasks[job_id].cancel()
+            self._schedule_job(job_id, owner)
+        elif operation in {"pause", "cancel"} and job_id in self._job_tasks:
+            task = self._job_tasks[job_id]
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
         return changed
+
+    def _check_job_capacity(self) -> None:
+        counts = self._job_counts()
+        if counts["queued"] + counts["running"] >= self.config.jobs.max_active:
+            raise ValueError("JOB_CAPACITY_REACHED")
+
+    def _schedule_job(self, job_id: str, owner: str) -> None:
+        task = asyncio.create_task(self._run_job(job_id, owner))
+        self._job_tasks[job_id] = task
+
+        def done(completed):
+            if self._job_tasks.get(job_id) is completed:
+                self._job_tasks.pop(job_id, None)
+            if completed.cancelled():
+                self.jobs.interrupt(job_id, owner)
+
+        task.add_done_callback(done)
 
     async def _run_job(self, job_id: str, owner: str) -> None:
         job = self.jobs.start(job_id, owner, self.config.jobs.lease_seconds)
@@ -1017,8 +1046,13 @@ class HaloService:
             )
             current = self.jobs.status(job_id, owner)
             if current["state"] == "running":
-                self.jobs.finish(job_id, owner, {"result": result})
+                error = None if result.get("ok") else (result.get("error") or {}).get("code", "RESEARCH_FAILED")
+                if not error and not result.get("items"):
+                    error = "NO_RESEARCH_EVIDENCE"
+                partial = bool(result.get("warnings") or (result.get("page") or {}).get("next_cursor"))
+                self.jobs.finish(job_id, owner, {"result": result, "partial": partial}, error)
         except asyncio.CancelledError:
+            self.jobs.interrupt(job_id, owner)
             return
         except TimeoutError:
             self.jobs.finish(job_id, owner, {}, "JOB_TIMEOUT")
