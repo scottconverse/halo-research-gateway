@@ -30,8 +30,6 @@ async def main():
                     "local_fetch",
                     "local_crawl",
                     "research_job",
-                    "web_action_prepare",
-                    "web_action_execute",
                 }
                 if set(names) != expected:
                     raise SystemExit(f"tool mismatch: {names}")

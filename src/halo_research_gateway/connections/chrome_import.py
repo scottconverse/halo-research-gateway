@@ -1,4 +1,4 @@
-"""Explicit previewed Chrome profile import into a gateway-owned copy."""
+"""Explicit cookie-only research-session import into a gateway-owned copy."""
 
 from __future__ import annotations
 
@@ -8,21 +8,13 @@ import uuid
 from pathlib import Path
 
 
-class ChromeImportError(RuntimeError):
+class ChromeImportError(ValueError):
     pass
 
 
 CATEGORY_PATHS = {
-    "bookmarks": ("Bookmarks",),
-    "history": ("History",),
     "cookies": ("Network/Cookies", "Cookies"),
-    "saved_passwords": ("Login Data",),
-    "autofill": ("Web Data",),
-    "payment_metadata": ("Web Data",),
-    "extensions": ("Extensions",),
-    "settings": ("Preferences", "Secure Preferences"),
 }
-EXCLUDED_PARTS = {"Cache", "Code Cache", "GPUCache", "GrShaderCache", "ShaderCache", "Crashpad"}
 EXCLUDED_NAMES = {"SingletonLock", "SingletonCookie", "SingletonSocket", "LOCK"}
 
 
@@ -37,7 +29,6 @@ class ChromeImporter:
         destination_name: str,
         categories: list[str] | None = None,
         *,
-        complete: bool = False,
         behavior: str = "replace",
     ) -> dict:
         source = Path(source_profile).resolve()
@@ -49,24 +40,17 @@ class ChromeImporter:
             raise ChromeImportError("CHROME_BEHAVIOR_INVALID")
         chosen = sorted(set(categories or []))
         unknown = set(chosen) - set(CATEGORY_PATHS)
-        if unknown or (not complete and not chosen):
+        if unknown or not chosen:
             raise ChromeImportError("CHROME_CATEGORY_INVALID")
 
         files: list[Path] = []
-        if complete:
-            files = [path for path in source.rglob("*") if path.is_file() and self._included(path, source)]
-        else:
-            for category in chosen:
-                for relative in CATEGORY_PATHS[category]:
-                    candidate = source / Path(relative)
-                    if candidate.is_file():
-                        files.append(candidate)
-                    elif candidate.is_dir():
-                        files.extend(path for path in candidate.rglob("*") if path.is_file())
-            if {"cookies", "saved_passwords", "autofill", "payment_metadata"} & set(chosen):
-                local_state = source.parent / "Local State"
-                if local_state.is_file():
-                    files.append(local_state)
+        for relative in CATEGORY_PATHS["cookies"]:
+            candidate = source / Path(relative)
+            if candidate.is_file():
+                files.append(candidate)
+        local_state = source.parent / "Local State"
+        if local_state.is_file():
+            files.append(local_state)
         files = sorted(set(files))
         digest = hashlib.sha256()
         total = 0
@@ -83,7 +67,7 @@ class ChromeImporter:
             "source_profile": str(source),
             "destination_name": destination_name,
             "destination": str(self.destination_root / destination_name),
-            "categories": ["complete_profile"] if complete else chosen,
+            "categories": chosen,
             "behavior": behavior,
             "files": records,
             "file_count": len(records),
@@ -92,6 +76,15 @@ class ChromeImporter:
         }
 
     def execute(self, preview: dict) -> dict:
+        if preview.get("categories") != ["cookies"]:
+            raise ChromeImportError("RESEARCH_SESSION_IMPORT_REQUIRED")
+        # A stored legacy plan cannot smuggle other profile files into execution.
+        source = Path(preview["source_profile"]).resolve()
+        allowed = {source / relative for relative in CATEGORY_PATHS["cookies"]} | {source.parent / "Local State"}
+        for record in preview["files"]:
+            path = Path(record["source"]).resolve()
+            if path not in allowed or record["relative"] != self._relative_for_copy(path, source).as_posix():
+                raise ChromeImportError("RESEARCH_SESSION_IMPORT_REQUIRED")
         destination = Path(preview["destination"]).resolve()
         if destination.parent != self.destination_root:
             raise ChromeImportError("CHROME_DESTINATION_INVALID")
@@ -139,11 +132,6 @@ class ChromeImporter:
             "previous_profile_backup": str(backup) if backup else None,
             "status": "imported",
         }
-
-    @staticmethod
-    def _included(path: Path, root: Path) -> bool:
-        relative = path.relative_to(root)
-        return path.name not in EXCLUDED_NAMES and not (set(relative.parts) & EXCLUDED_PARTS)
 
     @staticmethod
     def _relative_for_copy(path: Path, source: Path) -> Path:

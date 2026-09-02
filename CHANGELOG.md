@@ -2,6 +2,14 @@
 
 All notable Halo Research Gateway product releases are recorded here.
 
+## Unreleased — research-only scope correction (2026-09-02)
+
+- Remove Gmail compose/draft/send, GitHub issue/comment writes, general form submission, the two action MCP tools, and the general action approval endpoint/UI.
+- Remove full/personal Chrome import; retain cookie-only research sessions and their import-specific review/receipts.
+- Preserve existing runtime data and historical receipts; old action plans cannot execute through import review.
+- Correct current documentation and agent instructions. DSH native permissions are unchanged.
+- See [current scope and remaining acceptance](docs/RESEARCH-ONLY-SCOPE.md). Entries below describe historical releases, not the current capability contract.
+
 ## 0.2.0 — 2026-09-01
 
 ### Added

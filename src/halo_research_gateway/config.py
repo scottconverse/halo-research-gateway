@@ -124,10 +124,8 @@ class LocalTargetConfig(StrictModel):
     cache_authenticated: bool = False
 
 
-class ActionConfig(StrictModel):
-    enabled: bool = True
+class ImportConfig(StrictModel):
     approval_ttl_seconds: int = Field(300, ge=30, le=3600)
-    default_policy: Literal["always_ask", "session", "standing"] = "always_ask"
 
 
 class JobConfig(StrictModel):
@@ -174,7 +172,7 @@ class GatewayConfig(StrictModel):
     exa: ExaConfig = ExaConfig()
     crawl: CrawlConfig = CrawlConfig()
     local_targets: dict[str, LocalTargetConfig] = {}
-    actions: ActionConfig = ActionConfig()
+    imports: ImportConfig = ImportConfig()
     jobs: JobConfig = JobConfig()
     captcha: OptionalProviderConfig = OptionalProviderConfig()
     proxy: OptionalProviderConfig = OptionalProviderConfig()
@@ -187,6 +185,9 @@ class GatewayConfig(StrictModel):
             with Path(path).open("rb") as stream:
                 data = tomllib.load(stream)
             _reject_banned(data)
+            # Legacy action settings cannot enable a removed feature. Keep old
+            # installs startable without modifying their operator-owned config.
+            data.pop("actions", None)
             known = set(cls.model_fields)
             unknown = set(data) - known
             if unknown:

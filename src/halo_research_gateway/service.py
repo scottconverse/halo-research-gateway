@@ -6,20 +6,17 @@ import asyncio
 import hashlib
 import json
 import sqlite3
-import urllib.parse
 import uuid
 from pathlib import Path
 
 import httpx
 
 from . import __version__
-from .actions.github import GitHubIssueActionAdapter, github_target
-from .actions.gmail import GmailComposeAdapter, freeze_mime
-from .actions.store import ActionStore
 from .cache import Cache
 from .clock import SystemClock, rfc3339
 from .config import GatewayConfig
 from .connections.chrome_import import ChromeImporter
+from .connections.import_reviews import ImportReviewStore
 from .connections.oauth import OAuthManager
 from .connections.store import ConnectionStore
 from .coordinator import Coordinator, QueuePolicy
@@ -80,12 +77,12 @@ class HaloService:
         self.crawler = Crawl4AIProvider(config.crawl.base_directory, self.clock)
         self.documents = DocumentProvider(self.http, self.clock)
         self.jobs = JobManager(config.storage.database, self.clock)
-        self.actions = ActionStore(config.storage.database, config.actions.approval_ttl_seconds, self.clock)
+        self.import_reviews = ImportReviewStore(
+            config.storage.database, config.imports.approval_ttl_seconds, self.clock
+        )
         self.rate = RateLedger(config.storage.database, self.clock)
         runtime_root = Path(config.storage.database).parent.parent
         self.connections = ConnectionStore(config.storage.database, runtime_root / "vault", self.clock)
-        self.gmail = GmailComposeAdapter(self.connections)
-        self.github_actions = GitHubIssueActionAdapter(self.connections, config.storage.database)
         self.github = GitHubProvider(self.connections, self.clock)
         self.transcripts = TranscriptProvider(self.http, self.clock)
         self.community = CommunityProvider(self.http, self.github, self.ddgs, self.clock)
@@ -117,26 +114,6 @@ class HaloService:
         await self.crawler.close()
 
     async def oauth_begin(self, **values) -> dict:
-        if str(values.get("provider", "")).strip().casefold() in {"gmail", "google gmail"}:
-            expected_authorize = "https://accounts.google.com/o/oauth2/v2/auth"
-            expected_token = "https://oauth2.googleapis.com/token"
-            requested_scopes = set(values.get("scopes") or [])
-            if (
-                values.get("authorization_endpoint") != expected_authorize
-                or values.get("token_endpoint") != expected_token
-                or requested_scopes != {"https://www.googleapis.com/auth/gmail.compose"}
-            ):
-                raise ValueError("GMAIL_OAUTH_POLICY_MISMATCH")
-            extra = dict(values.get("extra_authorize") or {})
-            if set(extra) - {"access_type", "include_granted_scopes", "prompt"}:
-                raise ValueError("GMAIL_OAUTH_PARAMETER_NOT_ALLOWED")
-            if extra.get("prompt") not in {None, "consent"}:
-                raise ValueError("GMAIL_OAUTH_PROMPT_INVALID")
-            values["extra_authorize"] = {
-                "access_type": "offline",
-                "include_granted_scopes": "true",
-                **extra,
-            }
         begun = await self.oauth.begin(**values)
         self._oauth_tasks[begun["flow_id"]] = asyncio.create_task(self.oauth.complete(begun["flow_id"]))
         return begun
@@ -155,7 +132,7 @@ class HaloService:
 
     def chrome_import_preview(self, **values) -> dict:
         preview = self.chrome_importer.preview(**values)
-        return self.actions.prepare({"action": "chrome_import", "import": preview})
+        return self.import_reviews.prepare({"action": "chrome_import", "import": preview})
 
     async def chrome_import_execute(self, plan_id: str, approval_token: str, idempotency_key: str) -> dict:
         async def executor(plan):
@@ -163,7 +140,7 @@ class HaloService:
                 raise ValueError("CHROME_IMPORT_PLAN_REQUIRED")
             return await asyncio.to_thread(self.chrome_importer.execute, plan["import"])
 
-        return await self.actions.execute(plan_id, approval_token, idempotency_key, executor)
+        return await self.import_reviews.execute(plan_id, approval_token, idempotency_key, executor)
 
     def _budget(self, max_chars: int | None) -> int:
         return min(
@@ -1030,99 +1007,6 @@ class HaloService:
         except Exception:
             self.jobs.finish(job_id, owner, {}, "UPSTREAM_UNAVAILABLE")
 
-    def web_action_prepare(
-        self, action: str, target_url: str, intent: str, fields: dict, connection_id=None, profile=None, max_price=None
-    ) -> dict:
-        if target_url.startswith(("http://", "https://")):
-            validate_url(target_url)
-        plan = {
-            "action": action,
-            "target_url": target_url,
-            "intent": intent,
-            "fields": fields,
-            "connection_id": connection_id,
-            "profile": profile,
-            "max_price": max_price,
-        }
-        if action.startswith("gmail_"):
-            if target_url != "gmail://me" or not connection_id:
-                raise ValueError("GMAIL_TARGET_AND_CONNECTION_REQUIRED")
-            self.gmail._credential(connection_id)
-
-            def addresses(name: str) -> list[str]:
-                value = fields.get(name) or []
-                return [value] if isinstance(value, str) else [str(item) for item in value]
-
-            if action in {"gmail_draft_create", "gmail_draft_update", "gmail_message_send"}:
-                plan["gmail"] = freeze_mime(
-                    sender=fields.get("from"),
-                    to=addresses("to"),
-                    cc=addresses("cc"),
-                    bcc=addresses("bcc"),
-                    reply_to=fields.get("reply_to"),
-                    subject=str(fields.get("subject") or ""),
-                    text=str(fields.get("text") or ""),
-                    message_id=fields.get("message_id"),
-                )
-                if action == "gmail_draft_update":
-                    plan["gmail"]["draft_id"] = str(fields.get("draft_id") or "")
-            elif action == "gmail_draft_send":
-                draft_id = str(fields.get("draft_id") or "")
-                if not draft_id:
-                    raise ValueError("GMAIL_DRAFT_ID_REQUIRED")
-                plan["gmail"] = {"draft_id": draft_id}
-            else:
-                raise ValueError("GMAIL_ACTION_INVALID")
-        elif action.startswith("github_"):
-            if not connection_id:
-                raise ValueError("GITHUB_ACTION_CONNECTION_REQUIRED")
-            self.github_actions._connection(connection_id)
-            repository = github_target(target_url)
-            github: dict[str, object] = {"repository": repository}
-            if action == "github_issue_create":
-                title = str(fields.get("title") or "").strip()
-                if not title or len(title) > 256:
-                    raise ValueError("GITHUB_ISSUE_TITLE_INVALID")
-                github.update(title=title, body=str(fields.get("body") or ""))
-            elif action == "github_comment_create":
-                github.update(issue_number=int(fields["issue_number"]), body=str(fields["body"]))
-            elif action == "github_comment_edit":
-                github.update(comment_id=int(fields["comment_id"]), body=str(fields["body"]))
-            elif action == "github_issue_set_state":
-                state = str(fields.get("state") or "")
-                reason = fields.get("state_reason")
-                if state not in {"open", "closed"} or reason not in {None, "completed", "not_planned", "reopened"}:
-                    raise ValueError("GITHUB_ISSUE_STATE_INVALID")
-                github.update(issue_number=int(fields["issue_number"]), state=state, state_reason=reason)
-            else:
-                raise ValueError("GITHUB_ACTION_INVALID")
-            plan["github"] = github
-        return self.actions.prepare(plan)
-
-    async def web_action_execute(self, plan_id: str, approval_token: str, idempotency_key: str) -> dict:
-        async def execute(plan):
-            target = urllib.parse.urlsplit(plan["target_url"]).hostname
-            if plan["action"].startswith("gmail_"):
-                return await self.gmail.execute(plan)
-            if plan["action"].startswith("github_"):
-                return await self.github_actions.execute(plan)
-            if plan["action"] != "form_submit":
-                return {
-                    "status": "ACTION_ADAPTER_NOT_CONFIGURED",
-                    "message": "This action requires a site-specific operator-configured adapter",
-                    "target": target,
-                }
-            try:
-                return await self.http.submit_form(plan["target_url"], plan["fields"])
-            except Exception:
-                return {
-                    "status": "ACTION_STATE_AMBIGUOUS",
-                    "message": "The submission outcome could not be proven; it was not retried",
-                    "target": target,
-                }
-
-        return await self.actions.execute(plan_id, approval_token, idempotency_key, execute)
-
     def health(self) -> dict:
         return {
             "status": "ok",
@@ -1140,7 +1024,6 @@ class HaloService:
                 "ready": sum(item["status"] == "ready" for item in self.connections.list()),
                 "revoked": sum(item["status"] == "revoked" for item in self.connections.list()),
             },
-            "actions": "ready" if self.config.actions.enabled else "disabled",
             "jobs": self._job_counts(),
             "optional_providers": self.optional_providers.status(),
             "cache_entries": self.cache.stats()["entries"],

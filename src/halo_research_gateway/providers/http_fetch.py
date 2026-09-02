@@ -155,26 +155,3 @@ class HttpFetchProvider:
             metadata={"content_type": content_type, "links": links[:100], "sha256": hashlib.sha256(body).hexdigest()},
         )
         return ProviderResult("direct-http", [item], warnings, 1)
-
-    async def submit_form(self, url: str, fields: dict[str, str]) -> dict:
-        """Submit one approved form without redirect replay or implicit retry."""
-        target = validate_url(url)
-        address = await resolve_public(target)
-        transport = PinnedTransport(target, address)
-        async with self._origin_gate(target):
-            async with httpx.AsyncClient(
-                transport=transport,
-                trust_env=False,
-                timeout=self.timeout,
-                follow_redirects=False,
-                headers={"User-Agent": USER_AGENT, "Accept": "text/html,application/json,text/plain,*/*;q=0.2"},
-            ) as client:
-                response = await client.post(url, data={str(key): str(value) for key, value in fields.items()})
-                body = await response.aread()
-        return {
-            "status": "submitted" if 200 <= response.status_code < 400 else "rejected",
-            "http_status": response.status_code,
-            "location": response.headers.get("location"),
-            "response_sha256": hashlib.sha256(body).hexdigest(),
-            "response_chars": len(body.decode(errors="replace")),
-        }

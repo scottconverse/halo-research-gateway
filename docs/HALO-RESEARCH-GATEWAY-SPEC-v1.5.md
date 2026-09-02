@@ -1,3 +1,8 @@
+> HISTORICAL DESIGN: scope superseded on 2026-09-02 by [Research-only scope](RESEARCH-ONLY-SCOPE.md).
+> This document is retained as history. Its email, publishing, purchasing,
+> account-operation, broad Chrome import, and sixteen-tool requirements are
+> cancelled, not remaining implementation work. Do not reinstate them.
+
 # Halo Research Gateway — Implementation Specification
 
 **Specification version:** 1.5

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import secrets
 from contextlib import asynccontextmanager
 from typing import Literal
@@ -296,40 +295,6 @@ def create_application(config: GatewayConfig | None = None):
         del max_chars, cursor
         return await service.research_job(operation, request_client(ctx), job_id, question, profile, limits)
 
-    @server.tool(description="Prepare and preview a consequential action. This never submits it.")
-    async def web_action_prepare(
-        ctx: Context,
-        action: Literal[
-            "form_submit",
-            "post",
-            "message",
-            "purchase",
-            "account_change",
-            "delete",
-            "gmail_draft_create",
-            "gmail_draft_update",
-            "gmail_draft_send",
-            "gmail_message_send",
-            "github_issue_create",
-            "github_comment_create",
-            "github_comment_edit",
-            "github_issue_set_state",
-        ],
-        target_url: str,
-        intent: str,
-        fields: dict,
-        connection_id: str | None = None,
-        profile: str | None = None,
-        max_price: str | None = None,
-    ) -> dict:
-        del ctx
-        return service.web_action_prepare(action, target_url, intent, fields, connection_id, profile, max_price)
-
-    @server.tool(description="Execute one exact prepared action using an operator-issued approval token.")
-    async def web_action_execute(ctx: Context, plan_id: str, approval_token: str, idempotency_key: str) -> dict:
-        del ctx
-        return await service.web_action_execute(plan_id, approval_token, idempotency_key)
-
     async def health(_: Request):
         return JSONResponse(service.health())
 
@@ -349,8 +314,8 @@ def create_application(config: GatewayConfig | None = None):
             return JSONResponse(
                 {
                     "plan_id": plan_id,
-                    "approval_token": service.actions.approve(plan_id),
-                    "expires_in_seconds": config.actions.approval_ttl_seconds,
+                    "approval_token": service.import_reviews.approve(plan_id),
+                    "expires_in_seconds": config.imports.approval_ttl_seconds,
                 }
             )
         except Exception:
@@ -411,12 +376,13 @@ def create_application(config: GatewayConfig | None = None):
             return JSONResponse({"error": "csrf denied"}, status_code=403)
         try:
             body = await request.json()
+            if body.get("complete"):
+                raise ValueError("Complete personal profile import has been removed")
             return JSONResponse(
                 service.chrome_import_preview(
                     source_profile=body["source_profile"],
                     destination_name=body["destination_name"],
                     categories=body.get("categories"),
-                    complete=bool(body.get("complete", False)),
                     behavior=body.get("behavior", "replace"),
                 ),
                 status_code=201,
@@ -445,8 +411,8 @@ def create_application(config: GatewayConfig | None = None):
                 "health": service.health(),
                 "connections": service.connections.list(),
                 "jobs": service.jobs.list(),
-                "actions": service.actions.list_plans(),
-                "receipts": service.actions.list_receipts(),
+                "imports": service.import_reviews.list_plans(),
+                "receipts": service.import_reviews.list_receipts(),
                 "stats": service.stats(),
             }
         )
@@ -466,7 +432,7 @@ def create_application(config: GatewayConfig | None = None):
             Route("/operator/api/imports/chrome", chrome_import_preview, methods=["POST"]),
             Route("/operator/api/imports/chrome/{plan_id:str}/execute", chrome_import_execute, methods=["POST"]),
             Route("/operator/api/state", operator_state, methods=["GET"]),
-            Route("/operator/api/actions/{plan_id:str}/approve", approve, methods=["POST"]),
+            Route("/operator/api/imports/chrome/{plan_id:str}/approve", approve, methods=["POST"]),
         ]
     )
     app.state.halo_service = service
@@ -483,9 +449,3 @@ def create_application(config: GatewayConfig | None = None):
 
     app.router.lifespan_context = lifespan
     return app
-
-
-def _operator_html(csrf: str, service: HaloService) -> str:
-    health = json.dumps(service.health(), indent=2)
-    return f"""<!doctype html><html><head><meta charset=utf-8><meta name=viewport content='width=device-width'><title>Halo Research Gateway</title><style>
-body{{font-family:system-ui;background:#071018;color:#dbeafe;margin:0}}main{{max-width:1200px;margin:auto;padding:32px}}h1{{color:#67e8f9}}.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}}section{{background:#0d1b2a;border:1px solid #1e3a5f;border-radius:14px;padding:18px}}code,pre{{color:#a7f3d0;white-space:pre-wrap;overflow:auto;max-height:420px}}.ok{{color:#6ee7b7}}button{{background:#0e7490;color:white;border:0;border-radius:8px;padding:10px 14px;margin:4px}}input,select{{box-sizing:border-box;width:100%;margin:5px 0;padding:9px;background:#071018;color:#dbeafe;border:1px solid #315477;border-radius:7px}}small{{color:#93c5fd}}.plan{{border-top:1px solid #315477;padding-top:10px;margin-top:10px}}</style></head><body><main><h1>Halo Research Gateway</h1><p class=ok>Loopback service is running. Models never receive vault secrets or approval authority.</p><div class=grid><section><h2>Health</h2><pre id=health>{health}</pre></section><section><h2>Connections</h2><p><small>Secrets are encrypted with Windows DPAPI and never returned by this API.</small></p><form id=connection><input name=provider placeholder='Provider (for example GitHub)' required><input name=label placeholder='Account label' required><select name=type><option>api_key</option><option>token</option><option>password</option><option>oauth</option></select><input name=secret type=password placeholder='Secret value' required><button>Add encrypted connection</button></form><pre id=connections>Loading...</pre></section><section><h2>Actions and receipts</h2><p>Review the exact plan before approving it. Approval creates a short-lived token; execution still requires a separate MCP call.</p><div id=actionPlans>Loading...</div><pre id=receipts></pre></section><section><h2>Jobs and provider budgets</h2><p>Durable jobs are finite, visible, pausable, resumable, and cancellable.</p><pre id=jobs>Loading...</pre></section></div><script>window.HALO_CSRF={json.dumps(csrf)};const esc=s=>String(s).replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[c]));async function approvePlan(id){{let r=await fetch('/operator/api/actions/'+encodeURIComponent(id)+'/approve',{{method:'POST',headers:{{'x-halo-csrf':HALO_CSRF}}}});let v=await r.json();if(!r.ok)alert(v.error||'Plan unavailable');else alert('Approval token (copy it into the exact execution request):\n'+v.approval_token);await loadState()}}async function loadState(){{let s=await (await fetch('/operator/api/state')).json();health.textContent=JSON.stringify(s.stats.health,null,2);connections.textContent=JSON.stringify(s.connections,null,2);actionPlans.innerHTML=s.actions.length?s.actions.map(p=>'<div class=plan><pre>'+esc(JSON.stringify(p,null,2))+'</pre>'+(p.state==='prepared'?'<button onclick="approvePlan(\''+esc(p.plan_id)+'\')">Approve exact plan</button>':'')+'</div>').join(''):'No prepared actions.';receipts.textContent=JSON.stringify(s.receipts,null,2);jobs.textContent=JSON.stringify({{jobs:s.jobs,providers:s.stats.providers}},null,2)}}connection.onsubmit=async e=>{{e.preventDefault();let f=new FormData(connection);let r=await fetch('/operator/api/connections',{{method:'POST',headers:{{'content-type':'application/json','x-halo-csrf':HALO_CSRF}},body:JSON.stringify({{provider:f.get('provider'),label:f.get('label'),type:f.get('type'),secret:{{value:f.get('secret')}}}})}});if(!r.ok)alert('Connection was not saved');connection.reset();loadState()}};loadState();setInterval(loadState,5000)</script></main></body></html>"""

@@ -21,25 +21,21 @@ def fixture_profile(tmp_path: Path) -> Path:
 def test_selected_import_is_previewed_then_copied_with_redacted_receipt(tmp_path):
     source = fixture_profile(tmp_path)
     importer = ChromeImporter(tmp_path / "gateway-profiles")
-    preview = importer.preview(source, "research", ["bookmarks", "saved_passwords"])
-    assert preview["file_count"] == 3
+    preview = importer.preview(source, "research", ["cookies"])
+    assert preview["file_count"] == 2
     assert any(record["relative"] == "Local State" for record in preview["files"])
     receipt = importer.execute(preview)
     assert receipt["status"] == "imported"
-    assert (tmp_path / "gateway-profiles" / "research" / "Profile" / "Login Data").is_file()
+    assert (tmp_path / "gateway-profiles" / "research" / "Profile" / "Network" / "Cookies").is_file()
     assert "encrypted-password" not in repr(receipt)
     assert "source_profile" not in receipt
 
 
-def test_complete_import_excludes_caches_and_lock_files(tmp_path):
+def test_complete_personal_import_is_no_longer_supported(tmp_path):
     source = fixture_profile(tmp_path)
-    (source / "SingletonLock").write_text("lock")
     importer = ChromeImporter(tmp_path / "gateway-profiles")
-    preview = importer.preview(source, "complete", complete=True)
-    paths = {record["relative"] for record in preview["files"]}
-    assert "Profile/Cache/noise" not in paths
-    assert "Profile/SingletonLock" not in paths
-    assert "Profile/Login Data" in paths
+    with pytest.raises(TypeError):
+        importer.preview(source, "complete", complete=True)
 
 
 @pytest.mark.asyncio
@@ -57,13 +53,12 @@ async def test_service_import_requires_exact_approval_and_writes_redacted_receip
     plan = service.chrome_import_preview(
         source_profile=source,
         destination_name="approved",
-        categories=["bookmarks"],
-        complete=False,
+        categories=["cookies"],
         behavior="replace",
     )
-    with pytest.raises(PermissionError, match="ACTION_APPROVAL_REQUIRED"):
+    with pytest.raises(PermissionError, match="IMPORT_APPROVAL_REQUIRED"):
         await service.chrome_import_execute(plan["plan_id"], "wrong", "import-one")
-    token = service.actions.approve(plan["plan_id"])
+    token = service.import_reviews.approve(plan["plan_id"])
     receipt = await service.chrome_import_execute(plan["plan_id"], token, "import-one")
     assert receipt["outcome"]["status"] == "imported"
     assert str(source) not in repr(receipt)

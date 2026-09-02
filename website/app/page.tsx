@@ -38,12 +38,12 @@ const capabilities = [
   {
     icon: KeyRound,
     title: 'Operator-owned identity',
-    body: 'DPAPI-encrypted connections, OAuth PKCE, narrow Gmail compose, separate GitHub research/action Apps, and explicit Chrome import.',
+    body: 'Encrypted research connections, OAuth sign-in, a read-only GitHub App, and reviewed cookie-only research-session import.',
   },
   {
     icon: Workflow,
-    title: 'Actions without hidden authority',
-    body: 'Prepare, preview, approve, execute, and receipt. Plans reserve durably before upstream calls; ambiguous outcomes never auto-retry.',
+    title: 'Research, not account operations',
+    body: 'Find sources, read them, and return cited evidence. No email sending, GitHub posting, shopping, or account changes.',
   },
   {
     icon: ShieldCheck,
@@ -63,7 +63,6 @@ const toolGroups = [
     'document_extract · deep_research · github_research · transcript_fetch',
   ],
   ['Local + durable', 'local_fetch · local_crawl · research_job'],
-  ['Consequential', 'web_action_prepare · web_action_execute'],
 ];
 
 const hosts = ['DSH', 'Codex', 'Claude Code', 'OpenCode', 'LM Studio Bionic'];
@@ -226,7 +225,7 @@ export default function Home() {
             </h2>
             <p className="section-copy">
               One process owns discovery budgets, cache, browser concurrency,
-              durable jobs, encrypted connections, and action receipts. Every
+              durable research jobs, and encrypted research connections. Every
               host gets the same semantics; DSH stays in charge.
             </p>
           </div>
@@ -323,7 +322,7 @@ export default function Home() {
           <div>
             <p className="section-kicker">Tool contract</p>
             <h2 className="section-title">
-              Sixteen names. One stable mental model.
+              Fourteen tools. Find, read, and cite.
             </h2>
             <p className="section-copy">
               Small enough for local models to select correctly, complete enough
@@ -381,7 +380,7 @@ export default function Home() {
               </span>
             </div>
             {[
-              'MCP surface — 16 tools',
+              'MCP surface — 14 research tools',
               'Cursor-only continuation — 1,729 chars',
               'Exa · DDGS · Crawl4AI · Reddit · PyMuPDF',
               'Windows Job Object containment',
@@ -404,20 +403,20 @@ export default function Home() {
           <div>
             <p className="section-kicker">Authority boundary</p>
             <h2 className="section-title">
-              Research freely. Submit deliberately.
+              Find sources. Return evidence.
             </h2>
             <p className="section-copy">
               Models gather evidence across the public web and exact named local
-              targets. Consequential submission crosses an immutable preview and
-              operator approval boundary.
+              targets. Research login sessions help read restricted sources;
+              they do not turn the Gateway into an account-operation system.
             </p>
           </div>
           <ol className="space-y-3">
             {[
-              'Model prepares the exact action and fields.',
-              'Operator reviews destination, account, recipients, and price.',
-              'A short-lived token binds to the immutable plan hash.',
-              'Execution is idempotent and returns a redacted receipt.',
+              'Search for relevant sources.',
+              'Read pages, documents, transcripts, and discussions.',
+              'Compare evidence and disclose missing or partial results.',
+              'Return usable citations to DSH.',
             ].map((step, index) => (
               <li
                 key={step}

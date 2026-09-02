@@ -11,6 +11,7 @@ def main() -> None:
     if "\ndescription:" not in skill.split("---", 2)[1]:
         raise SystemExit("skill description is missing")
     references = {
+        "RESEARCH-ONLY-SCOPE.md",
         "HALO-RESEARCH-GATEWAY-SPEC.md",
         "source-selection.md",
         "citation-contract.md",
@@ -24,6 +25,9 @@ def main() -> None:
     governing = root.parents[1] / "docs" / "HALO-RESEARCH-GATEWAY-SPEC-v1.5.md"
     if spec.read_bytes() != governing.read_bytes():
         raise SystemExit("skill-bundled specification differs from governing v1.5 document")
+    current = root / "references" / "RESEARCH-ONLY-SCOPE.md"
+    if current.read_bytes() != (root.parents[1] / "docs" / "RESEARCH-ONLY-SCOPE.md").read_bytes():
+        raise SystemExit("skill-bundled research-only scope differs from current contract")
     if "TODO" in skill or "[TODO" in skill:
         raise SystemExit("unfinished skill placeholder")
     print("halo-research skill package valid")

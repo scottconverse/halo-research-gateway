@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://halo-research-gateway.sconverse.chatgpt.site'),
   title: 'Halo Research Gateway 0.2.0 — One research plane for every agent',
   description:
-    'A DSH-first local MCP gateway for deep research, crawling, GitHub, transcripts, communities, authenticated identity, durable jobs, and operator-authorized web actions.',
+    'A DSH-first local MCP gateway for search, page reading, deep research, read-only GitHub, transcripts, communities, research sessions, and cited evidence.',
   openGraph: {
     title: 'Halo Research Gateway 0.2.0',
     description:
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Halo Research Gateway 0.2.0',
     description:
-      'DSH-first research, crawling, evidence, identity, and operator-authorized actions.',
+      'DSH-first search, crawling, read-only source research, and cited evidence.',
     images: ['/og.png'],
   },
 };

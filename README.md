@@ -1,6 +1,6 @@
 # Halo Research Gateway
 
-**Version 0.2.0** — one local research and web-operation plane for the Halo agent stack.
+**Version 0.2.0** — one local search and research service for the Halo agent stack.
 
 Halo Research Gateway is a persistent, localhost-only MCP service that gives DSH, Codex, Claude Code, OpenCode, and LM Studio Bionic the same source-backed research surface. DSH is the primary consumer; frontier hosts are secondary or fallback clients.
 
@@ -11,13 +11,13 @@ Halo Research Gateway is a persistent, localhost-only MCP service that gives DSH
 - redacted statistics: `http://127.0.0.1:8765/stats`
 - operator console: `http://127.0.0.1:8765/operator`
 
-The governing design and acceptance contract is [Specification v1.5](docs/HALO-RESEARCH-GATEWAY-SPEC-v1.5.md). The operator handbook is the [complete user manual](docs/USER-MANUAL.md).
+The governing product scope and finish list are [Research-only scope](docs/RESEARCH-ONLY-SCOPE.md); this supersedes conflicting requirements in the original v1.5 design. The operator handbook is the [complete user manual](docs/USER-MANUAL.md).
 
 ## Why it exists
 
 Agent hosts have inconsistent web access. Some can search but not crawl; others can fetch a URL but cannot discover it; separate instances can unknowingly spend the same anonymous quota or hammer Reddit. Halo centralizes that work without making DSH dependent on a cloud LLM.
 
-It supplies shared search, fetch, JavaScript crawling, Reddit, documents, GitHub-oriented discovery, transcripts, community research, durable jobs, exact local targets, encrypted connections, OAuth PKCE, explicit Chrome-profile import, action approval/receipts, and disabled-by-default budgeted CAPTCHA/proxy provider seams.
+It supplies shared search, fetch, JavaScript crawling, Reddit, documents, GitHub-oriented discovery, transcripts, community research, durable jobs, exact local targets, encrypted connections, OAuth PKCE, cookie-only research-session import, and disabled-by-default budgeted CAPTCHA/proxy provider seams.
 
 ## Five-minute start
 
@@ -34,7 +34,7 @@ Then open `http://127.0.0.1:8765/operator`. A healthy installation reports `stat
 
 The installer preserves operator configuration, runs the quality gate, installs the canonical skill, merges supported MCP registrations, optionally registers the at-logon task, and starts the service. It does **not** rewrite DSH model, context, reasoning, slot, permission, or verified-coder settings.
 
-## Sixteen semantic tools
+## Fourteen research tools
 
 | Group | Tools | Use |
 | --- | --- | --- |
@@ -45,7 +45,6 @@ The installer preserves operator configuration, runs the quality gate, installs 
 | Communities | `community_search`, `community_thread` | Search and read technical discussions outside Reddit. |
 | Local targets | `local_fetch`, `local_crawl` | Read or render an exact operator-defined private/local target. |
 | Durable work | `research_job` | Create, inspect, pause, resume, or cancel a finite research job. |
-| Web actions | `web_action_prepare`, `web_action_execute` | Preview and separately execute an operator-approved consequential action. |
 
 Fetched content is evidence, never instructions. Successful results preserve source URLs, retrieval metadata, warnings, and a signed cursor when another independently citable page is available.
 
@@ -62,8 +61,7 @@ LM Studio      ┘                              ├── Crawl4AI + owned Chrom
                                                ├── Reddit RSS + documents
                                                ├── cache / queues / budgets
                                                ├── encrypted connection vault
-                                               ├── durable jobs
-                                               └── action approval + receipts
+                                               └── durable research jobs
 ```
 
 One process owns cache, rate limits, singleflight coordination, durable jobs, and browser concurrency. SQLite holds structured state. DPAPI encrypts secrets for the current Windows user. The service and its browser descendants run inside a dedicated Windows Job Object, so stopping the gateway cannot orphan its Chromium tree.
@@ -80,7 +78,7 @@ The scheduled task is `Halo Research Gateway`. Runtime state is under `C:\Users\
 
 ## Configuration
 
-Use [config/config.example.toml](config/config.example.toml). Operator-controlled areas include storage/cache limits, queue depths, output ceilings, provider pacing, crawl bounds, exact named local targets, action approval lifetime, durable job limits, and optional CAPTCHA/proxy identity, domains, attempts, and spend.
+Use [config/config.example.toml](config/config.example.toml). Operator-controlled areas include storage/cache limits, queue depths, output ceilings, provider pacing, crawl bounds, exact named local targets, session-import review lifetime, durable job limits, and optional CAPTCHA/proxy identity, domains, attempts, and spend.
 
 Core network and secret rules are code invariants, not Boolean settings. Public research can use valid public HTTP(S) ports beyond 80/443, but cannot pivot into loopback, private, link-local, or metadata networks. Local access uses separately named exact-target tools.
 
@@ -90,9 +88,9 @@ The console supports:
 
 1. encrypted API key, token, or password connections;
 2. OAuth Authorization Code + PKCE connection setup;
-3. selected-category or complete Chrome-profile import into a gateway-owned copy;
-4. jobs, queues, provider budgets, prepared plans, and receipts;
-5. explicit approval and separate execution of immutable action plans.
+3. cookie-only research-session import into a gateway-owned copy;
+4. research jobs, queues, and provider budgets;
+5. review and confirmation of session imports only.
 
 Chrome import never silently attaches to a live personal profile. It creates a hash-bound preview, requires Chrome to be closed when consistency demands it, copies into gateway-owned state, and returns a redacted receipt.
 
@@ -112,19 +110,19 @@ Read [0.2.0 release notes](docs/RELEASE-NOTES-v0.2.0.md), [0.2.0 evidence](docs/
 
 ## Honest capability boundary
 
-Version 0.2.0 is an operational DSH-first research release with generic connection, OAuth, Chrome-import, provider-budget, job, and approval mechanisms. It includes structured public transcripts and communities, bounded deep research, optional read-only GitHub App research, narrow Gmail compose actions, a separate GitHub issue/comment Actions App, WebSocket request interception, strict cross-client fairness, at-most-once action reservation, and disabled CapSolver/Bright Data adapters. Provider/site-specific live use still requires an operator choice:
+The current working revision removes non-research features from the 0.2.0 codebase. It retains search, structured transcripts and communities, bounded deep research, read-only GitHub, research connections, and disabled optional retrieval providers. It does not send email, post to GitHub, submit general forms, buy things, or manage accounts. Provider/site-specific live use still requires an operator choice:
 
 - no personal Chrome data is imported automatically;
 - no OAuth or GitHub App is connected until the operator supplies its client/App identity and exact scopes;
 - no CAPTCHA solver or proxy is selected, enabled, or charged by default;
-- generic form submission, Gmail compose, and narrowly owned GitHub issue/comment operations are the released consequential-action adapters; purchases, account/security changes, deletion, and authenticated Reddit remain outside the release;
+- research-session import copies cookies and encryption metadata only, not passwords or other personal profile data; it is not site-filtered;
 - public caption extraction does not download media or run speech-to-text;
 - browser WebSocket handshakes are policy-checked, but Chromium-level DNS pinning and the visible human-challenge flow remain unproven.
 
 ## Repository map
 
 ```text
-src/halo_research_gateway/    Service, tools, providers, policy, jobs, actions
+src/halo_research_gateway/    Service, research tools, providers, policy, jobs, connections
 tests/                        Deterministic and explicit acceptance tests
 skills/halo-research/         Canonical host skill and complete reference set
 config/                       Operator configuration example
@@ -136,7 +134,7 @@ BUILD-MANIFEST.json           SHA-256 inventory of release source
 
 ## Contributing
 
-1. Preserve the sixteen semantic contracts unless the specification is versioned.
+1. Preserve the fourteen research contracts and the research-only scope. Do not add non-research features.
 2. Keep raw secrets, approval authority, connection management, and diagnostics out of model-facing schemas.
 3. Add deterministic tests for behavioral changes.
 4. Run the full quality gate before committing.

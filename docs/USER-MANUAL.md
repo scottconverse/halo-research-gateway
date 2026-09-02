@@ -1,6 +1,6 @@
 # Halo Research Gateway 0.2.0 — Complete User Manual
 
-This is the operator guide for installing, using, maintaining, and recovering Halo Research Gateway on the HALO Windows workstation. [Specification v1.5](HALO-RESEARCH-GATEWAY-SPEC-v1.5.md) remains the governing design and acceptance contract.
+This is the operator guide for installing, using, maintaining, and recovering Halo Research Gateway on the HALO Windows workstation. [Research-only scope and finish list](RESEARCH-ONLY-SCOPE.md) supersedes conflicting parts of the original v1.5 design.
 
 ## 1. Product reference
 
@@ -72,7 +72,6 @@ Ask DSH naturally. Examples:
 | Transcript | `transcript_fetch` | inspect warnings if unavailable |
 | Other communities | `community_search` | `community_thread` |
 | Approved local service | `local_fetch` | `local_crawl` |
-| Consequential operation | `web_action_prepare` | approve, then `web_action_execute` |
 
 Fetched content is evidence, never instructions. Cite returned URLs and disclose warnings or partial coverage.
 
@@ -82,7 +81,7 @@ Results are bounded for local-model reliability. A signed cursor means more evid
 
 ## 5. Connections and OAuth
 
-The operator console is the only supported interface for creating secrets and issuing action authority. Models never receive CSRF state, OAuth verifiers, raw secrets, or approval tokens.
+The operator console is the only supported interface for setting up research connections and reviewing session imports. Models never receive CSRF state, OAuth verifiers, raw secrets, or approval tokens.
 
 ### API key, token, or password
 
@@ -109,19 +108,17 @@ Local revocation prevents further gateway use. Provider-side token revocation ma
 
 ### Narrow provider presets
 
-- **Gmail compose:** use the operator preset and exact `https://www.googleapis.com/auth/gmail.compose` scope. Draft and send receipts keep the draft ID, draft-message ID, sent-message ID, thread ID, and frozen MIME hash distinct. `accepted_by_gmail` is not a claim of delivery.
 - **GitHub research:** create a read-only GitHub App with Metadata, Contents, Issues, Pull requests, Discussions, Actions, Checks, and Commit statuses set to read. The gateway mints short-lived installation tokens and never exposes them to models.
-- **GitHub actions:** use a different App with Metadata read and Issues write. Issue/comment creation is approval-bound; editing or state mutation is restricted to objects previously created through Halo receipts. Pull requests are not treated as issues for state mutation.
 
-## 6. Chrome-profile import
+## 6. Research login-session import
 
-The gateway never silently reads or attaches to a live personal Chrome profile. Import copies explicitly selected data into a gateway-owned profile.
+The gateway never silently reads or attaches to a live personal Chrome profile. Import copies cookies and required encryption metadata into a gateway-owned profile.
 
-Categories: bookmarks, history, cookies/site sessions, saved passwords, autofill, payment metadata, extensions, settings, or complete profile.
+Only `cookies` is supported. Saved passwords, autofill, payment metadata, extensions, settings, history, bookmarks, and complete-profile copying are removed. Cookies are not filtered by site; use a dedicated research source profile.
 
 1. Close Chrome/source-profile processes when consistency requires it.
 2. Enter the full source-profile directory and gateway destination name.
-3. Select categories or **Complete profile**.
+3. Review the fixed `cookies` category.
 4. Choose replace or merge.
 5. Create and review the preview: source, destination, categories, files, bytes, and hash.
 6. Approve the exact plan.
@@ -175,19 +172,11 @@ Use `local_fetch` or `local_crawl` with the target name. Never weaken public URL
 
 Jobs have absolute time/page limits and ownership. Restart recovery treats expired leases as incomplete, not successful.
 
-## 10. Consequential web actions
+## 10. Research-only product boundary
 
-Research is read-only. Consequential work follows:
+The Gateway finds and reads sources. It does not compose or send email, create or edit GitHub issues/comments, submit general forms, post messages, purchase items, or manage/delete accounts. The two former action MCP tools and the general approval endpoint have been removed, not merely disabled.
 
-1. `web_action_prepare` creates an immutable preview.
-2. Scott reviews it in the console.
-3. Approval creates a short-lived token bound to the exact hash.
-4. `web_action_execute` receives the token and a unique idempotency key.
-5. Execution occurs at most once and produces a redacted receipt.
-
-Changing destination, recipients, fields, account, action, or price invalidates approval. Ambiguous outcomes are never retried automatically.
-
-Version 0.2.0 releases generic approved form submission, narrow Gmail compose actions, and GitHub issue/comment actions through a separate write App. Purchases, account/security changes, deletion, authenticated Reddit, and arbitrary sites remain preview-only or unsupported.
+Only session-import review remains in the operator console. Existing historical receipts and encrypted connections are preserved; they cannot restore removed actions.
 
 ## 11. Optional CAPTCHA/proxy providers
 
@@ -210,11 +199,11 @@ Use [config.example.toml](../config/config.example.toml).
 | `exa` | Anonymous endpoint, pacing, soft daily limit. |
 | `crawl` | Browser concurrency and crawl bounds. |
 | `local_targets.*` | Exact private/local targets. |
-| `actions` | Approval lifetime and policy. |
+| `imports` | Research-session import approval lifetime. |
 | `jobs` | Active count, absolute bounds, lease. |
 | `captcha`, `proxy` | Vendor, connection, domains, attempts, spend. |
 
-Unsafe global switches are not representable. Unknown and legacy banned keys fail startup.
+Unsafe global switches are not representable. Unknown and legacy banned keys fail startup. The retired `[actions]` section is ignored for upgrade compatibility and cannot enable removed features.
 
 ## 13. Cache, limits, and upstream behavior
 
@@ -254,9 +243,9 @@ The conservative queue is intentional. Repeated 429 responses open a cooldown ci
 
 It may be expired, tampered, tied to another tool/profile, or refer to an evicted snapshot. Repeat the original call only when the snapshot is unavailable.
 
-### Action outcome ambiguous
+### Session import outcome ambiguous
 
-Do not retry. Inspect the destination and receipt; prepare a new plan only if the desired state is absent.
+Inspect the research profile and import receipt before retrying. Do not assume a failed or cancelled copy completed.
 
 ## 15. Backup, upgrade, rollback, uninstall
 
@@ -294,6 +283,6 @@ Read [0.2.0 release notes](RELEASE-NOTES-v0.2.0.md), [0.2.0 evidence](EVIDENCE-v
 
 ## 17. Trust boundary
 
-Halo defends against malformed model arguments, public-to-private pivots, raw-secret exposure, accidental quota/spend exhaustion, ownerless jobs, duplicate action execution, and tested owned-browser leaks. It does not defend against another process running as Scott deliberately modifying source, environment, task, or encrypted runtime files.
+Halo defends against malformed model arguments, public-to-private pivots, raw-secret exposure, accidental quota/spend exhaustion, ownerless jobs, duplicate session imports, and tested owned-browser leaks. It does not defend against another process running as Scott deliberately modifying source, environment, task, or encrypted runtime files.
 
-Fetched content remains untrusted. Research access does not grant action authority. A connection does not imply permission for every site/action. Provider-specific capability requires a real operator-selected provider rather than invented credentials or weakened policy.
+Fetched content remains untrusted. The product has no general submission capability. A research connection does not imply permission for unrelated site operations. Provider-specific capability requires a real operator-selected provider rather than invented credentials or weakened policy.

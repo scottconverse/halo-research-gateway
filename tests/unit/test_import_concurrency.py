@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from halo_research_gateway.actions.store import ActionStore
+from halo_research_gateway.connections.import_reviews import ImportReviewStore
 from halo_research_gateway.migrations import migrate
 
 
@@ -14,8 +14,8 @@ def database(tmp_path):
 
 @pytest.mark.asyncio
 async def test_concurrent_different_keys_invoke_executor_once(tmp_path):
-    store = ActionStore(database(tmp_path))
-    prepared = store.prepare({"action": "post", "target_url": "https://example.com/post"})
+    store = ImportReviewStore(database(tmp_path))
+    prepared = store.prepare({"action": "chrome_import", "import": {"categories": ["cookies"]}})
     token = store.approve(prepared["plan_id"])
     entered = asyncio.Event()
     release = asyncio.Event()
@@ -26,7 +26,7 @@ async def test_concurrent_different_keys_invoke_executor_once(tmp_path):
         calls += 1
         entered.set()
         await release.wait()
-        return {"status": "submitted"}
+        return {"status": "imported"}
 
     first = asyncio.create_task(store.execute(prepared["plan_id"], token, "first-key", executor))
     await entered.wait()
@@ -45,9 +45,9 @@ async def test_concurrent_different_keys_invoke_executor_once(tmp_path):
 @pytest.mark.asyncio
 async def test_durable_reservation_blocks_a_second_store_instance(tmp_path):
     db_path = database(tmp_path)
-    first_store = ActionStore(db_path)
-    second_store = ActionStore(db_path)
-    prepared = first_store.prepare({"action": "post", "target_url": "https://example.com/post"})
+    first_store = ImportReviewStore(db_path)
+    second_store = ImportReviewStore(db_path)
+    prepared = first_store.prepare({"action": "chrome_import", "import": {"categories": ["cookies"]}})
     token = first_store.approve(prepared["plan_id"])
     entered = asyncio.Event()
     release = asyncio.Event()
@@ -58,11 +58,11 @@ async def test_durable_reservation_blocks_a_second_store_instance(tmp_path):
         calls += 1
         entered.set()
         await release.wait()
-        return {"status": "submitted"}
+        return {"status": "imported"}
 
     first = asyncio.create_task(first_store.execute(prepared["plan_id"], token, "first-key", executor))
     await entered.wait()
-    with pytest.raises(PermissionError, match="ACTION_ALREADY_EXECUTED"):
+    with pytest.raises(PermissionError, match="IMPORT_ALREADY_EXECUTED"):
         await second_store.execute(prepared["plan_id"], token, "second-key", executor)
     release.set()
     await first
@@ -71,8 +71,8 @@ async def test_durable_reservation_blocks_a_second_store_instance(tmp_path):
 
 @pytest.mark.asyncio
 async def test_executor_exception_records_ambiguous_receipt_without_replay(tmp_path):
-    store = ActionStore(database(tmp_path))
-    prepared = store.prepare({"action": "post", "target_url": "https://example.com/post"})
+    store = ImportReviewStore(database(tmp_path))
+    prepared = store.prepare({"action": "chrome_import", "import": {"categories": ["cookies"]}})
     token = store.approve(prepared["plan_id"])
     calls = 0
 
@@ -85,18 +85,18 @@ async def test_executor_exception_records_ambiguous_receipt_without_replay(tmp_p
     replay = await store.execute(prepared["plan_id"], token, "first-key", executor)
 
     assert first == replay
-    assert first["outcome"] == {"status": "ambiguous", "error_code": "ACTION_EXECUTION_AMBIGUOUS"}
+    assert first["outcome"] == {"status": "ambiguous", "error_code": "IMPORT_EXECUTION_AMBIGUOUS"}
     assert "secret-value" not in repr(first)
     assert store.list_receipts() == [first]
     assert calls == 1
-    with pytest.raises(PermissionError, match="ACTION_ALREADY_EXECUTED"):
+    with pytest.raises(PermissionError, match="IMPORT_ALREADY_EXECUTED"):
         await store.execute(prepared["plan_id"], token, "second-key", executor)
 
 
 @pytest.mark.asyncio
 async def test_cancelled_execution_records_ambiguous_receipt(tmp_path):
-    store = ActionStore(database(tmp_path))
-    prepared = store.prepare({"action": "post", "target_url": "https://example.com/post"})
+    store = ImportReviewStore(database(tmp_path))
+    prepared = store.prepare({"action": "chrome_import", "import": {"categories": ["cookies"]}})
     token = store.approve(prepared["plan_id"])
     entered = asyncio.Event()
     calls = 0
@@ -114,6 +114,6 @@ async def test_cancelled_execution_records_ambiguous_receipt(tmp_path):
         await task
 
     [receipt] = store.list_receipts()
-    assert receipt["outcome"] == {"status": "ambiguous", "error_code": "ACTION_EXECUTION_AMBIGUOUS"}
+    assert receipt["outcome"] == {"status": "ambiguous", "error_code": "IMPORT_EXECUTION_AMBIGUOUS"}
     assert await store.execute(prepared["plan_id"], token, "first-key", executor) == receipt
     assert calls == 1

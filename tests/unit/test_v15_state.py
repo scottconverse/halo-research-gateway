@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from halo_research_gateway.actions.store import ActionStore
+from halo_research_gateway.connections.import_reviews import ImportReviewStore
 from halo_research_gateway.connections.store import ConnectionStore
 from halo_research_gateway.connections.vault import Vault
 from halo_research_gateway.coordinator import Coordinator, QueueFullError, QueuePolicy
@@ -96,53 +96,23 @@ def test_rate_budget_and_circuit_survive_new_ledger_instance(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_action_requires_approval_and_is_idempotent(tmp_path):
-    store = ActionStore(database(tmp_path))
-    prepared = store.prepare({"action": "post", "target_url": "https://example.com/post", "fields": {"body": "hello"}})
+async def test_session_import_requires_approval_and_is_idempotent(tmp_path):
+    store = ImportReviewStore(database(tmp_path))
+    prepared = store.prepare({"action": "chrome_import", "import": {"categories": ["cookies"]}})
     calls = 0
 
     async def executor(plan):
         nonlocal calls
         calls += 1
-        return {"status": "submitted"}
+        return {"status": "imported"}
 
-    with pytest.raises(PermissionError, match="ACTION_APPROVAL_REQUIRED"):
+    with pytest.raises(PermissionError, match="IMPORT_APPROVAL_REQUIRED"):
         await store.execute(prepared["plan_id"], "wrong", "one", executor)
     token = store.approve(prepared["plan_id"])
     first = await store.execute(prepared["plan_id"], token, "one", executor)
     second = await store.execute(prepared["plan_id"], token, "one", executor)
     assert first == second
     assert calls == 1
-
-
-@pytest.mark.asyncio
-async def test_generic_form_action_executes_once_after_exact_approval(tmp_path):
-    from halo_research_gateway.config import GatewayConfig
-    from halo_research_gateway.service import HaloService
-
-    config = GatewayConfig()
-    config.storage.database = str(tmp_path / "gateway.db")
-    config.storage.backup_directory = str(tmp_path / "backups")
-    config.storage.content_directory = str(tmp_path / "content")
-    service = HaloService(config)
-    calls = 0
-
-    async def submit(url, fields):
-        nonlocal calls
-        calls += 1
-        return {"status": "submitted", "http_status": 204}
-
-    service.http.submit_form = submit
-    plan = service.web_action_prepare(
-        "form_submit", "https://example.com/contact", "Send inquiry", {"message": "hello"}
-    )
-    token = service.actions.approve(plan["plan_id"])
-    first = await service.web_action_execute(plan["plan_id"], token, "one-submit")
-    second = await service.web_action_execute(plan["plan_id"], token, "one-submit")
-    assert first == second
-    assert first["outcome"]["status"] == "submitted"
-    assert calls == 1
-    await service.close()
 
 
 @pytest.mark.asyncio

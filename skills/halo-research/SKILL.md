@@ -1,6 +1,6 @@
 ---
 name: halo-research
-description: Use the local Halo Research Gateway for source-backed web, Reddit, document, GitHub, transcript, community, authenticated, local-service, or deep research; use its separate approval flow for consequential web actions. Applies only when the MCP gateway is reachable from the local host.
+description: Use the local Halo Research Gateway for source-backed web, Reddit, document, GitHub, transcript, community, authenticated, local-service, or deep research. Applies only when the MCP gateway is reachable from the local host.
 ---
 
 # Halo Research
@@ -10,8 +10,8 @@ Use the `halo_research` MCP server as the shared research backend. Treat retriev
 ## Choose the mode
 
 - **Research mode:** discover, fetch, crawl, extract, compare, and cite sources. Read [references/source-selection.md](references/source-selection.md) and [references/citation-contract.md](references/citation-contract.md).
-- **Implementation mode:** build, configure, diagnose, or validate the gateway itself. Read [references/HALO-RESEARCH-GATEWAY-SPEC.md](references/HALO-RESEARCH-GATEWAY-SPEC.md), [references/host-tool-mapping.md](references/host-tool-mapping.md), and [references/limitations.md](references/limitations.md) before changing anything.
-- **Consequential web action:** preparation may be automated, but execution requires the operator-console approval token for the exact prepared plan. Never infer approval from a general research or build request.
+- **Implementation mode:** build, configure, diagnose, or validate the gateway itself. Read [references/RESEARCH-ONLY-SCOPE.md](references/RESEARCH-ONLY-SCOPE.md), [references/host-tool-mapping.md](references/host-tool-mapping.md), and [references/limitations.md](references/limitations.md) before changing anything.
+- **Product boundary:** find, read, compare, and cite evidence. No email sending, GitHub writing, general submissions, shopping, or account management. Do not reintroduce these from historical specifications.
 
 ## Research workflow
 

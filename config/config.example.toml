@@ -57,10 +57,8 @@ max_pages = 25
 max_depth = 3
 base_directory = "C:\\Users\\scott\\AppData\\Local\\HaloResearchGateway\\browser"
 
-[actions]
-enabled = true
+[imports]
 approval_ttl_seconds = 300
-default_policy = "always_ask"
 
 [jobs]
 max_active = 2

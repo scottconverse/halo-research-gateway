@@ -21,11 +21,10 @@ If port 8765 is occupied, identify the owning PID and command line; do not kill 
 
 The registered task is `Halo Research Gateway`. The 2026-09-01 recovery drill performed an ownership-checked stop, invoked the task, restored `status=ok`, and recorded task result `0x00000000`. A future recovery claim must repeat the drill against the current source/installer identity rather than relying on that historical receipt.
 
-## Provider and action setup
+## Research provider setup
 
-- Use the operator console's read-only GitHub App form for research. Use a separate GitHub Actions App with Metadata read and Issues write for issue/comment actions.
-- Use the Gmail preset only with `https://www.googleapis.com/auth/gmail.compose`; do not broaden to Gmail read/modify merely for reconciliation.
-- Imported Chrome profiles live under the gateway runtime browser directory and are copied capabilities. Never point Crawl4AI at the mutable source profile.
+- Use the operator console's read-only GitHub App form for research.
+- Cookie-only imported research profiles live under the gateway runtime browser directory and are copied capabilities. Never point Crawl4AI at the mutable source profile.
 - CapSolver and Bright Data remain inert until the operator config names the provider (`capsolver` or `brightdata`), encrypted connection ID, exact domains, attempt ceiling, and spend ceiling.
 
 ## Rollback
@@ -35,3 +34,7 @@ The registered task is `Halo Research Gateway`. The 2026-09-01 recovery drill pe
 3. Remove only `halo-research` host entries and skill copies; restore timestamped host config backups where applicable.
 4. Preserve database, backups, vault, receipts, and browser profiles unless Scott explicitly authorizes removal.
 5. Revert the two scoped DSH integration files; do not alter DSH model or verified-coder configuration.
+
+## Research-only upgrade
+
+See [the current scope](RESEARCH-ONLY-SCOPE.md). Old action settings are ignored. Old plans/receipts and vault entries are preserved, but email, GitHub writes, and general submissions have no executable route. Session-import approval is now under `/operator/api/imports/chrome/{plan_id}/approve`; the old actions endpoint returns 404.

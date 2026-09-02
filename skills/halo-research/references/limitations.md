@@ -1,19 +1,13 @@
 # Installed capability and limitations
 
-The service exposes the complete sixteen-tool semantic surface, but adapter depth varies.
+The current surface contains fourteen research tools. [Research-only scope](RESEARCH-ONLY-SCOPE.md) supersedes action requirements in the historical v1.5 design.
 
-Currently operational and tested locally: anonymous search with fallback, DNS-pinned direct fetch, Crawl4AI rendering, Reddit RSS search/thread, PDF extraction, signed pagination, shared cache/singleflight, bounded durable jobs, exact configured local targets, encrypted generic connections, prepared actions, and approved generic form submission.
-
-Important limitations:
-
-- Anonymous upstream search and Reddit remain externally rate limited.
-- GitHub research currently uses public web discovery rather than an authenticated GitHub API adapter.
-- Transcript retrieval may report `TRANSCRIPT_UNAVAILABLE`; site-specific caption adapters are not universal.
-- Browser modes do not guarantee bypass of every challenge. Operator-assisted managed-profile use is preferred when a challenge requires a human.
-- Browser subresource interception and complete service-worker/WebSocket hardening remain defense-in-depth work; top-level public URL policy is enforced.
-- Generic OAuth PKCE, refresh, Chrome selected/full-profile import, paid CAPTCHA, proxy adapters, and site-specific posting/messaging/purchase/account/delete adapters require operator-selected providers and additional implementation before use.
-- Only generic form submission has an execution adapter. Other prepared action types fail closed with `ACTION_ADAPTER_NOT_CONFIGURED`.
-- The operator must explicitly configure local targets and connections. The gateway does not discover or grant itself private-network or credential authority.
-- Installing this skill in a cloud runtime does not make the workstation localhost endpoint reachable.
-
-For implementation requirements, evidence gates, and the intended completed architecture, read the complete v1.5 specification bundled beside this file.
+- Anonymous search and Reddit have upstream rate limits; partial/unavailable results must be disclosed.
+- Read-only GitHub App support exists, but live credentials, cursor behavior, discussions, and non-default-ref coverage require validation.
+- Public caption adapters do not transcribe captionless media.
+- Browser request/WebSocket validation and Chromium DNS behavior still need the remaining fixes and live acceptance; do not infer safety from a registered tool.
+- Cookie-only research-session import is supported. It is not site-filtered and is not yet proof that a real imported login works with current Chrome encryption. No passwords, payment data, extensions, history, bookmarks, settings, or full-profile import.
+- OAuth and encrypted research connections remain. Live setup requires the operator's chosen account and scopes.
+- Optional CapSolver/Bright Data adapters remain disabled; complete crawl routing and live challenge/proxy acceptance are not proven.
+- No email, posting, GitHub-write, general form, purchase, account-change, or deletion tools remain. Those are removed scope, not future work.
+- A cloud-only client cannot reach workstation loopback merely by installing this skill.

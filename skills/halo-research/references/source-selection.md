@@ -14,7 +14,6 @@ Use the least expensive tool that can produce the required evidence.
 | Retrieve captions/transcripts | `transcript_fetch` |
 | Search/read technical discussions | `community_search`, `community_thread` |
 | Read an exact operator-allowed local service | `local_fetch`, `local_crawl` |
-| Prepare/execute a consequential action | `web_action_prepare`, then operator approval, then `web_action_execute` |
 
 Prefer official documentation, standards, first-party repositories, original papers, and direct records for factual claims. Use multiple independent sources for disputed, time-sensitive, high-stakes, or consequential conclusions. Search results are discovery leads; fetch or crawl the selected source before relying on its content.
 
