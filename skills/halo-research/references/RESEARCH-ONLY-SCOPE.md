@@ -96,8 +96,11 @@ was proven at adapter level. These do not complete the following work:
    A newer fresh-checkout/venv installer test now passes in PowerShell 5.1/7:
    real dependency/OCR setup, network MCP HTTP/Chrome reads, unchanged data/config
    during repair, stop and restart. No real task or installed host settings were
-   changed. See INSTALLER-EVIDENCE-2026-09-03.md. Foreground, actual logon,
-   clean-OS prerequisites and wider stress/process bounds remain separate.
+   changed. See INSTALLER-EVIDENCE-2026-09-03.md. Foreground PID management,
+   ordinary stop/child exit and successor-record preservation now pass native
+   tests in both shells; exact exit codes/identity fields also have regressions.
+   See FOREGROUND-LIFECYCLE-EVIDENCE-2026-09-03.md. Forced console closure,
+   actual logon, clean-OS prerequisites and wider stress/process bounds remain.
 5. **Close source-provider coverage gaps.** Real native MCP now proves an actual
    Exa request followed by configured-quota failover to DDGS and a fetched source.
    Authenticated MCP in a disposable instance proves a 19-comment GitHub thread,
@@ -175,8 +178,10 @@ Recorded implementation gaps still included in that list:
   See LOCAL-READER-POLICY-EVIDENCE-2026-09-03.md.
 - Background creation-time/duplicate-owner safeguards are fixed and native-tested.
   Fresh native application install/repair and actual HTTP/Chrome MCP reading now
-  pass in both supported PowerShell versions. Foreground ownership, strict
-  wall-clock startup bounds, actual logon, long-running stress and clean-OS
+  pass in both supported PowerShell versions. Foreground ownership now shares
+  the tested PID/readiness lifecycle and preserves successor records; see
+  FOREGROUND-LIFECYCLE-EVIDENCE-2026-09-03.md. Forced console closure/Ctrl+C,
+  strict wall-clock startup bounds, actual logon, long-running stress and clean-OS
   prerequisites remain separate. See INSTALLER-EVIDENCE-2026-09-03.md.
 - Two HTTP User-Agent strings still say `0.1`; package description/dependency
   metadata, contributing guidance and a licensing decision remain unfinished.

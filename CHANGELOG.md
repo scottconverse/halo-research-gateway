@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Manage foreground startup with the same PID, process identity and readiness checks as background startup. Release the lifecycle lock while waiting so normal stop and duplicate-start work; return the child's exit code and remove only this launch's exact record. Preserve a successor's record. Native isolated checks cover both PowerShell versions; forced console closure, actual logon and broad browser-tree shutdown remain separate.
+
 - Repair native installer defaults and registration: use the current user's runtime paths and configured MCP address; preserve unrelated LM Studio JSON in Windows PowerShell 5.1/7 with unique backups and staged replacement. Reject malformed/non-object input without printing it, and stop on Git hook setup failure. Existing operator configuration is not rewritten; no installed registration is changed by the isolated acceptance fixtures.
 
 - Apply configured CapSolver tokens to declared standalone Turnstile/reCAPTCHA v2 research-gate callbacks inside the guarded automatic public browser. Revalidate the page/widget, retain the observed final HTTP status, redact reflected tokens and close browsers on cancellation. Existing domain/attempt/estimated-spend policy still applies; no provider is enabled. Native Chrome with a local fake vendor proves this limited path, not real paid service or universal challenge access.

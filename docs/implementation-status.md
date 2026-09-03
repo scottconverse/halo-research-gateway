@@ -18,6 +18,14 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+September 3 foreground checkpoint: foreground startup now shares managed
+identity/readiness with background mode. Its wait releases the lifecycle lock;
+normal stop, duplicate start and child exit work in isolated native processes
+in both PowerShell versions. Exact exit-code and successor-identity checks are
+also covered by intercepted-boundary regressions. Installed service unchanged;
+Ctrl+C/forced console closure, logon, broader stress and DSH remain separate.
+See FOREGROUND-LIFECYCLE-EVIDENCE-2026-09-03.md for exact results and limits.
+
 September 3 installer checkpoint: per-user default paths, configured MCP address,
 PowerShell 5.1/7 host JSON preservation, safe parse errors and early Git failure
 handling now have 23 installer regressions. Fresh native checkout/venv installation,

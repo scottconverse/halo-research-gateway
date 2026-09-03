@@ -34,6 +34,20 @@ function New-FakeProcess([int]$Number) {
         HasExited=($global:haloFixturemode -eq 'exited'); ExitCode=7
     }
     $value | Add-Member -MemberType ScriptMethod -Name Dispose -Value {}
+    $value | Add-Member -MemberType ScriptMethod -Name WaitForExit -Value {
+        $this.HasExited = $true
+        $this.ExitCode = [int]$env:HALO_TEST_EXIT
+        $identity = Get-Content -LiteralPath $global:haloFixturerecord -Raw | ConvertFrom-Json
+        switch ($global:haloFixturemode) {
+            'successor_pid' { $identity.pid += 1 }
+            'successor_time' { $identity.started_at = '2026-09-02T00:00:00.0000001Z' }
+            'successor_repository' { $identity.repository += '-other' }
+            'successor_executable' { $identity.executable += '-other' }
+            'successor_schema' { $identity.schema = 3 }
+        }
+        $identity | ConvertTo-Json | Set-Content -LiteralPath $global:haloFixturerecord -Encoding utf8
+        Copy-Item -LiteralPath $global:haloFixturerecord -Destination (Join-Path $global:haloFixturetrace 'after-exit.json')
+    }
     return $value
 }
 function global:Get-CimInstance {
@@ -60,6 +74,8 @@ function global:Start-Process {
     param($FilePath, $ArgumentList, $WorkingDirectory, $WindowStyle, [switch]$PassThru,
           [switch]$NoNewWindow, $ErrorAction)
     Set-Content -LiteralPath (Join-Path $global:haloFixturetrace "started-$PID") -Value $FilePath
+    @{foreground=[bool]$NoNewWindow; window=$WindowStyle} | ConvertTo-Json |
+        Set-Content -LiteralPath (Join-Path $global:haloFixturetrace 'window.json')
     if ($global:haloFixturemode -eq 'concurrent') { Microsoft.PowerShell.Utility\Start-Sleep -Milliseconds 400 }
     $global:haloFixturecreated = New-FakeProcess $PID
     return $global:haloFixturecreated
@@ -91,7 +107,10 @@ function global:Invoke-RestMethod {
     if ($global:haloFixturemode -eq 'unhealthy') { throw 'fixture health unavailable' }
     return @{status='ok';version='0.2.0'}
 }
-& (Join-Path $env:HALO_TEST_REPO ('scripts\' + $env:HALO_TEST_SCRIPT))
+$options = @{}
+if ($env:HALO_TEST_FOREGROUND -eq '1') { $options.Foreground = $true }
+& (Join-Path $env:HALO_TEST_REPO ('scripts\' + $env:HALO_TEST_SCRIPT)) @options
+exit $LASTEXITCODE
 """
 
 
@@ -268,3 +287,26 @@ def test_creation_time_precision_and_legacy_window(tmp_path, shell, schema, star
     assert (result.returncode == 0) is accepted, result.stdout + result.stderr
     assert record.exists() is not accepted
     assert (tmp_path / "trace" / "stopped.json").exists() is accepted
+
+
+@pytest.mark.parametrize("shell", SHELLS)
+@pytest.mark.parametrize("exit_code", [0, 37])
+def test_foreground_preserves_exact_exit_code_and_removes_own_record(tmp_path, shell, exit_code):
+    wrapper, env, record = fixture(tmp_path, "valid", "Start-HaloResearch.ps1", record=False)
+    env.update(HALO_TEST_FOREGROUND="1", HALO_TEST_EXIT=str(exit_code))
+    result = invoke(shell, wrapper, env)
+    assert result.returncode == exit_code, result.stdout + result.stderr
+    assert not record.exists()
+    window = json.loads((tmp_path / "trace" / "window.json").read_text(encoding="utf-8-sig"))
+    assert window["foreground"] and not window["window"]
+
+
+@pytest.mark.parametrize("shell", SHELLS)
+@pytest.mark.parametrize("field", ["pid", "time", "repository", "executable", "schema"])
+def test_exiting_foreground_preserves_changed_identity_record(tmp_path, shell, field):
+    wrapper, env, record = fixture(tmp_path, f"successor_{field}", "Start-HaloResearch.ps1", record=False)
+    env.update(HALO_TEST_FOREGROUND="1", HALO_TEST_EXIT="37")
+    result = invoke(shell, wrapper, env)
+    assert result.returncode == 37, result.stdout + result.stderr
+    assert record.read_bytes() == (tmp_path / "trace" / "after-exit.json").read_bytes()
+    assert not (tmp_path / "trace" / "stopped.json").exists()

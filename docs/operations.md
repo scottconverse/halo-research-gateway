@@ -13,6 +13,14 @@
 
 Start and stop only with the repository scripts. The stop script verifies executable and command-line identity before stopping the recorded PID. Do not stop another Python, browser, LM Studio, DSH, or Ollama process by name.
 
+Foreground diagnostics (`Start-HaloResearch.ps1 -Foreground`) now use the same
+PID management. The foreground wait releases the lifecycle lock after readiness,
+so another terminal can stop it normally. Child exit returns its actual status
+and removes only the same PID/creation-time record, not a replacement's record.
+Use the stop script for tested cleanup; Ctrl+C/forced window closure and real
+logon need separate acceptance. See
+[foreground evidence](FOREGROUND-LIFECYCLE-EVIDENCE-2026-09-03.md).
+
 ## Recovery
 
 Installer repair preserves an existing runtime TOML file. New sample files leave

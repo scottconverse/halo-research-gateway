@@ -66,13 +66,24 @@ Open `http://127.0.0.1:8765/operator`. Healthy means `status: ok`, version `0.2.
 .\scripts\Test-HaloResearch.ps1
 ```
 
-Background start/stop operations share a Windows lock. The launcher uses the configured server port (8765 by default) and health path, verifies listener ancestry and health before saying "already running", and refuses to steal an unrelated listener. Stop checks this repository's executable, the exact Gateway module command, and recorded process creation time; it retains that validated process handle through termination instead of looking up the PID again. A mismatched record or process-access error leaves the record and process untouched for inspection.
+Foreground and background start/stop operations share a Windows lock. The launcher uses the configured server port (8765 by default) and health path, verifies listener ancestry and health before saying "already running", and refuses to steal an unrelated listener. Stop checks this repository's executable, the exact Gateway module command, and recorded process creation time; it retains that validated process handle through termination instead of looking up the PID again. A mismatched record or process-access error leaves the record and process untouched for inspection.
 
 New PID records use schema 2 and exact creation times. Legacy records written just after process creation are accepted only within a one-sided two-second compatibility window, with all other identity checks retained. Failed new starts stop only the process created by that invocation and remove its record after exit. Missing processes allow stale-record removal. Normal start/stop does not erase research state.
 
 A disposable native test proved background duplicate-start prevention, listener closure, restart, and preservation of an unrelated process in Windows PowerShell and PowerShell 7. The Gateway process uses a Windows Job Object for its descendants; this test did not open Chrome or prove all browser shutdown paths. No DSH, LM Studio, personal Chrome or other live stack process was stopped by that test.
 
-`-Foreground` remains the older diagnostic mode and is not PID-managed; use ordinary background start for managed lifecycle. Full foreground/logon/clean-install acceptance remains open. The readiness loop is bounded by attempts and per-request timeouts, not a strict 15-second wall-clock guarantee. See [launcher evidence](LAUNCHER-OWNERSHIP-EVIDENCE-2026-09-02.md).
+Use `.\scripts\Start-HaloResearch.ps1 -Foreground` to keep output in the calling
+console and wait for the Gateway to exit. It creates the same managed PID record
+and releases the lifecycle lock after readiness: the normal stop script works
+from another terminal, and duplicate startup does not launch a second Gateway.
+The foreground command returns the child exit code, including nonzero forced
+termination. It removes only its own exact PID/creation-time record; a successor's
+record remains. Native isolated checks cover ordinary stop and child exit in
+both PowerShell versions. Forced console closure/Ctrl+C, actual logon and broad
+browser-tree shutdown remain separately unproved. The readiness loop is bounded
+by attempts and per-request timeouts, not a strict 15-second wall-clock guarantee.
+See [foreground evidence](FOREGROUND-LIFECYCLE-EVIDENCE-2026-09-03.md) and
+[earlier background evidence](LAUNCHER-OWNERSHIP-EVIDENCE-2026-09-02.md).
 
 - Health: `http://127.0.0.1:8765/health`
 - Redacted statistics: `http://127.0.0.1:8765/stats`
@@ -621,7 +632,7 @@ Status returns checkpoint counts and a bounded evidence page instead of the whol
 
 Checkpoint size is bounded by `storage.entry_max_bytes`; overflow reports `JOB_CHECKPOINT_TOO_LARGE` and retains the previous checkpoint. Sources and extracted links with recognized sensitive query parameters are excluded from durable jobs with `SENSITIVE_SOURCE_NOT_PERSISTED`. This is pattern-based protection, not a guarantee that arbitrary page prose contains no sensitive information. Use jobs for public research.
 
-A disposable native Windows process-crash/restart fixture passed, including preserved evidence, no completed-source re-fetch, and cumulative attempts. Full DSH/live-provider job acceptance remains separate. DDGS performs synchronous work in a thread: cancellation stops the async research worker, but cannot forcibly terminate an already-running synchronous provider call. Broader provider cancellation/stress remains open. Background launcher ownership now has the separate native acceptance described in section 3; foreground/logon/clean-install acceptance remains open.
+A disposable native Windows process-crash/restart fixture passed, including preserved evidence, no completed-source re-fetch, and cumulative attempts. Full DSH/live-provider job acceptance remains separate. DDGS performs synchronous work in a thread: cancellation stops the async research worker, but cannot forcibly terminate an already-running synchronous provider call. Broader provider cancellation/stress remains open. Background and foreground launcher ownership have the separate native acceptance described in section 3; forced console closure/logon/clean-OS acceptance remains open.
 
 ## 10. Research-only product boundary
 

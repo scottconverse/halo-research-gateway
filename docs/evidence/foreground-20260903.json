@@ -1,0 +1,116 @@
+{
+  "baseCommit": "4b68816dd4ef58bf9eb8a200be5796bd65995343",
+  "runs": {
+    "foregroundBaseline": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_launcher_ownership.py tests/acceptance/test_launcher_native.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "ab9ada",
+          "wall_time_seconds": 10.0032163,
+          "session_id": 82744,
+          "original_token_count": 4,
+          "output": ".............."
+        },
+        {
+          "chunk_id": "0d03a8",
+          "wall_time_seconds": 0.0000037,
+          "exit_code": 0,
+          "original_token_count": 22,
+          "output": "................................                           [100%]\r\n46 passed in 49.50s\r\n"
+        }
+      ]
+    },
+    "foregroundRed": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/acceptance/test_launcher_native.py -k foreground -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "08c20b",
+          "wall_time_seconds": 10.0144965,
+          "session_id": 31007,
+          "original_token_count": 1,
+          "output": "FF"
+        },
+        {
+          "chunk_id": "023e19",
+          "wall_time_seconds": 3.7308424000000002,
+          "exit_code": 1,
+          "original_token_count": 1084,
+          "output": "FFFF                                                                   [100%]\r\n================================== FAILURES ===================================\r\n_______ test_native_foreground_ownership_and_exit[stop-powershell.exe] ________\r\ntests\\acceptance\\test_launcher_native.py:172: in test_native_foreground_ownership_and_exit\r\n    assert record.exists(), \"Healthy foreground Gateway has no managed PID record\"\r\nE   AssertionError: Healthy foreground Gateway has no managed PID record\r\nE   assert False\r\nE    +  where False = exists()\r\nE    +    where exists = WindowsPath('C:/Users/scott/AppData/Local/Temp/pytest-of-scott/pytest-2292/test_native_foreground_ownersh0/HaloResearchGateway/run/gateway.json').exists\r\n__________ test_native_foreground_ownership_and_exit[stop-pwsh.exe] ___________\r\ntests\\acceptance\\test_launcher_native.py:172: in test_native_foreground_ownership_and_exit\r\n    assert record.exists(), \"Healthy foreground Gateway has no managed PID record\"\r\nE   AssertionError: Healthy foreground Gateway has no managed PID record\r\nE   assert False\r\nE    +  where False = exists()\r\nE    +    where exists = WindowsPath('C:/Users/scott/AppData/Local/Temp/pytest-of-scott/pytest-2292/test_native_foreground_ownersh1/HaloResearchGateway/run/gateway.json').exists\r\n____ test_native_foreground_ownership_and_exit[child_exit-powershell.exe] _____\r\ntests\\acceptance\\test_launcher_native.py:172: in test_native_foreground_ownership_and_exit\r\n    assert record.exists(), \"Healthy foreground Gateway has no managed PID record\"\r\nE   AssertionError: Healthy foreground Gateway has no managed PID record\r\nE   assert False\r\nE    +  where False = exists()\r\nE    +    where exists = WindowsPath('C:/Users/scott/AppData/Local/Temp/pytest-of-scott/pytest-2292/test_native_foreground_ownersh2/HaloResearchGateway/run/gateway.json').exists\r\n_______ test_native_foreground_ownership_and_exit[child_exit-pwsh.exe] ________\r\ntests\\acceptance\\test_launcher_native.py:172: in test_native_foreground_ownership_and_exit\r\n    assert record.exists(), \"Healthy foreground Gateway has no managed PID record\"\r\nE   AssertionError: Healthy foreground Gateway has no managed PID record\r\nE   assert False\r\nE    +  where False = exists()\r\nE    +    where exists = WindowsPath('C:/Users/scott/AppData/Local/Temp/pytest-of-scott/pytest-2292/test_native_foreground_ownersh3/HaloResearchGateway/run/gateway.json').exists\r\n_ test_native_foreground_ownership_and_exit[replacement_record-powershell.exe] _\r\ntests\\acceptance\\test_launcher_native.py:172: in test_native_foreground_ownership_and_exit\r\n    assert record.exists(), \"Healthy foreground Gateway has no managed PID record\"\r\nE   AssertionError: Healthy foreground Gateway has no managed PID record\r\nE   assert False\r\nE    +  where False = exists()\r\nE    +    where exists = WindowsPath('C:/Users/scott/AppData/Local/Temp/pytest-of-scott/pytest-2292/test_native_foreground_ownersh4/HaloResearchGateway/run/gateway.json').exists\r\n___ test_native_foreground_ownership_and_exit[replacement_record-pwsh.exe] ____\r\ntests\\acceptance\\test_launcher_native.py:172: in test_native_foreground_ownership_and_exit\r\n    assert record.exists(), \"Healthy foreground Gateway has no managed PID record\"\r\nE   AssertionError: Healthy foreground Gateway has no managed PID record\r\nE   assert False\r\nE    +  where False = exists()\r\nE    +    where exists = WindowsPath('C:/Users/scott/AppData/Local/Temp/pytest-of-scott/pytest-2292/test_native_foreground_ownersh5/HaloResearchGateway/run/gateway.json').exists\r\n=========================== short test summary info ===========================\r\nFAILED tests/acceptance/test_launcher_native.py::test_native_foreground_ownership_and_exit[stop-powershell.exe]\r\nFAILED tests/acceptance/test_launcher_native.py::test_native_foreground_ownership_and_exit[stop-pwsh.exe]\r\nFAILED tests/acceptance/test_launcher_native.py::test_native_foreground_ownership_and_exit[child_exit-powershell.exe]\r\nFAILED tests/acceptance/test_launcher_native.py::test_native_foreground_ownership_and_exit[child_exit-pwsh.exe]\r\nFAILED tests/acceptance/test_launcher_native.py::test_native_foreground_ownership_and_exit[replacement_record-powershell.exe]\r\nFAILED tests/acceptance/test_launcher_native.py::test_native_foreground_ownership_and_exit[replacement_record-pwsh.exe]\r\n6 failed, 2 deselected in 20.63s\r\n"
+        }
+      ]
+    },
+    "foregroundGreen": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_launcher_ownership.py tests/acceptance/test_launcher_native.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "b2342d",
+          "wall_time_seconds": 10.0020024,
+          "session_id": 67347,
+          "original_token_count": 4,
+          "output": ".............."
+        },
+        {
+          "chunk_id": "4c7ddc",
+          "wall_time_seconds": 5.0144834,
+          "session_id": 67347,
+          "original_token_count": 6,
+          "output": "......................"
+        },
+        {
+          "chunk_id": "454a0e",
+          "wall_time_seconds": 5.0155525,
+          "session_id": 67347,
+          "original_token_count": 4,
+          "output": "............."
+        },
+        {
+          "chunk_id": "a8faae",
+          "wall_time_seconds": 0.0000035,
+          "exit_code": 0,
+          "original_token_count": 16,
+          "output": "...                     [100%]\r\n52 passed in 93.37s (0:01:33)\r\n"
+        }
+      ]
+    },
+    "foregroundWidened": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_launcher_ownership.py tests/acceptance/test_launcher_native.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "554ab5",
+          "wall_time_seconds": 10.0104601,
+          "session_id": 11223,
+          "original_token_count": 4,
+          "output": ".............."
+        },
+        {
+          "chunk_id": "8a36ce",
+          "wall_time_seconds": 5.0160715,
+          "session_id": 11223,
+          "original_token_count": 5,
+          "output": "................."
+        },
+        {
+          "chunk_id": "17e8d4",
+          "wall_time_seconds": 5.0064569,
+          "session_id": 11223,
+          "original_token_count": 7,
+          "output": "..........................."
+        },
+        {
+          "chunk_id": "187358",
+          "wall_time_seconds": 5.0007436,
+          "session_id": 11223,
+          "original_token_count": 1,
+          "output": ".."
+        },
+        {
+          "chunk_id": "4dc203",
+          "wall_time_seconds": 0.0000035,
+          "exit_code": 0,
+          "original_token_count": 14,
+          "output": "......       [100%]\r\n66 passed in 104.22s (0:01:44)\r\n"
+        }
+      ]
+    }
+  }
+}

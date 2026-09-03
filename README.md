@@ -143,6 +143,12 @@ rewritten. Git and PowerShell 7 are needed for the configured repository commit
 hook. Installation, real logon and existing-host deployment are separate evidence
 stages; see [installer evidence](docs/INSTALLER-EVIDENCE-2026-09-03.md).
 
+For console diagnostics, run `.\scripts\Start-HaloResearch.ps1 -Foreground`.
+It now has the same PID/readiness checks as background startup; the ordinary
+stop script can manage it from another terminal. The foreground command waits
+for exit and returns the child process's exit code. See
+[foreground lifecycle evidence and limits](docs/FOREGROUND-LIFECYCLE-EVIDENCE-2026-09-03.md).
+
 PDF reading uses the existing PyMuPDF dependency. Setup also verifies and installs pinned English OCR data and its license inside `.venv/share/tessdata`; reading scanned PDFs stays local, without WSL, a separate OCR application, or a paid service. See [document options and limits](docs/USER-MANUAL.md#pdf-text-tables-and-local-ocr) and [document verification](docs/DOCUMENT-EXTRACTION-EVIDENCE-2026-09-02.md).
 
 ## Fourteen research tools

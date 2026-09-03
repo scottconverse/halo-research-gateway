@@ -9,6 +9,7 @@ $mutex = Enter-HaloLifecycleLock $context
 $process = $null
 $createdHere = $false
 $recordWritten = $false
+$ready = $false
 try {
     if (Test-Path -LiteralPath $context.PidFile) {
         $identity = Get-Content -LiteralPath $context.PidFile -Raw | ConvertFrom-Json
@@ -23,38 +24,45 @@ try {
     $portOwner = @(Get-HaloListeners $server.port)
     if ($portOwner.Count) { throw "Port $($server.port) is already owned by PID $($portOwner.OwningProcess)." }
     if ($Foreground) {
-        # Legacy diagnostic foreground mode is not PID-managed. Never retain the
-        # lifecycle mutex for its lifetime and prevent other stop/start commands.
-        $mutex.ReleaseMutex()
-        $mutex.Dispose()
-        $mutex = $null
-        Set-Location -LiteralPath $context.Repository
-        & $context.Python -m halo_research_gateway
-        exit $LASTEXITCODE
+        $process = Start-Process -FilePath $context.Python -ArgumentList '-m','halo_research_gateway' -WorkingDirectory $context.Repository -NoNewWindow -PassThru
+    } else {
+        $process = Start-Process -FilePath $context.Python -ArgumentList '-m','halo_research_gateway' -WorkingDirectory $context.Repository -WindowStyle Hidden -PassThru
     }
-    $process = Start-Process -FilePath $context.Python -ArgumentList '-m','halo_research_gateway' -WorkingDirectory $context.Repository -WindowStyle Hidden -PassThru
     $createdHere = $true
     $null = $process.Handle
     Write-HaloPidRecord $context $process
     $recordWritten = $true
     for ($i=0; $i -lt 30; $i++) {
         if (Test-HaloReady $process $server) {
+            $ready = $true
             Write-Host "Halo Research Gateway ready (PID $($process.Id))."
-            exit 0
+            break
         }
         Start-Sleep -Milliseconds 500
     }
-    throw 'Gateway did not become ready within its startup window.'
-} catch {
-    if ($createdHere -and $process) {
-        Stop-HaloOwnedProcess $process
-        if ($recordWritten) { Remove-Item -LiteralPath $context.PidFile -Force }
-    }
-    throw
-} finally {
-    if ($process) { $process.Dispose() }
-    if ($mutex) {
+    if (-not $ready) { throw 'Gateway did not become ready within its startup window.' }
+    if ($Foreground) {
+        # Stop and duplicate-start must be able to take the lifecycle lock while
+        # this console waits. Retain the process handle, not just a reusable PID.
         $mutex.ReleaseMutex()
         $mutex.Dispose()
+        $mutex = $null
+        $process.WaitForExit()
+        exit $process.ExitCode
+    }
+    exit 0
+} finally {
+    try {
+        if ($createdHere -and $process -and ($Foreground -or -not $ready)) {
+            if (-not $mutex) { $mutex = Enter-HaloLifecycleLock $context }
+            Stop-HaloOwnedProcess $process
+            if ($recordWritten) { Remove-HaloLaunchedRecord $context $process }
+        }
+    } finally {
+        if ($process) { $process.Dispose() }
+        if ($mutex) {
+            $mutex.ReleaseMutex()
+            $mutex.Dispose()
+        }
     }
 }

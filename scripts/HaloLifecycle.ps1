@@ -121,3 +121,18 @@ function Write-HaloPidRecord($Context, $Process) {
         if (Test-Path -LiteralPath $temporary) { Remove-Item -LiteralPath $temporary -Force }
     }
 }
+
+function Remove-HaloLaunchedRecord($Context, $Process) {
+    # Caller holds the lifecycle mutex. A successor may have started while a
+    # foreground launcher waited: its record must survive the old launch's exit.
+    if (-not (Test-Path -LiteralPath $Context.PidFile)) { return }
+    $identity = Get-Content -LiteralPath $Context.PidFile -Raw | ConvertFrom-Json
+    if ($identity.schema -ne 2 -or $identity.pid -ne $Process.Id -or
+        $identity.repository -ne $Context.Repository -or $identity.executable -ne $Context.Python) { return }
+    $recorded = $identity.started_at
+    if ($recorded -is [datetime]) { $recorded = $recorded.ToUniversalTime() }
+    else { $recorded = [DateTimeOffset]::Parse([string]$recorded).UtcDateTime }
+    if ($recorded -eq $Process.StartTime.ToUniversalTime()) {
+        Remove-Item -LiteralPath $Context.PidFile -Force
+    }
+}
