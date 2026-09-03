@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Bound job question/profile/ID fields and reject unknown limit fields or misdirected job cursors before admission. Apply the requested character budget to the entire job status, with marked question previews and optional metadata omissions. Preserve full stored evidence, compatible continuation budgets and job-control identity when evidence formatting/retention fails.
+
 - Return explicit safe research-job control errors through MCP instead of generic tool failures. Preserve job state/ownership checks and sanitize unknown exceptions. Two real DSH jobs returned partial evidence and exact continuations but finished before pause; DSH pause/resume acceptance remains open.
 
 - Shorten ordinary pagination references to 51 authenticated characters while preserving immutable evidence, expiry, tool/output matching and private-result cache policy. Bound and expose reference metadata; keep existing signed layout-3 tokens compatible and use them when compact metadata cannot fit. This addresses observed DSH token-copy failures; real DSH acceptance remains a separate requirement.

@@ -23,6 +23,12 @@ Current acceptance is partial. The DSH tools-package mismatch was repaired on Se
 
 ## Why it exists
 
+Job requests now reject oversized or unknown fields before creating work, and
+the whole status reply respects the requested output size. Shortened question
+previews are marked; stored questions and evidence stay intact. Three concurrent
+native MCP clients recovered identical evidence at all supported output sizes.
+See [job bounds and limitations](docs/JOB-BOUNDS-EVIDENCE-2026-09-03.md).
+
 Research-job control failures now report specific safe codes instead of generic
 tool errors. Two real DSH jobs returned partial evidence and exact continuation
 pages, but completed before pause; DSH pause/resume remains unproved. See

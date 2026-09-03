@@ -19,6 +19,7 @@ def build_envelope(
     cursor_state=None,
     encode_cursor=None,
     warnings=None,
+    allow_empty_page=False,
 ):
     """Page complete evidence, carrying unreturned data in the cursor offset.
 
@@ -140,6 +141,8 @@ def build_envelope(
             else:
                 high = count - 1
         if partial is None or encode_cursor is None:
+            if allow_empty_page and encode_cursor and best["page"]["serialized_chars"] <= char_budget:
+                return best
             raise ValueError("OUTPUT_ITEM_TOO_LARGE")
         return partial
     if best["page"]["serialized_chars"] > char_budget:

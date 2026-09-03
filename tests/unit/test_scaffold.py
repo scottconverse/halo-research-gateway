@@ -50,7 +50,8 @@ async def _job_owner_for_header(tmp_path, header):
     config.output.profiles["known-planner"] = OutputProfile()
     app = create_application(config)
 
-    async def capture_owner(operation, owner, job_id, question, profile, limits):
+    async def capture_owner(operation, owner, job_id, question, profile, limits, *, max_chars=None, cursor=None):
+        assert max_chars is None and cursor is None
         return {"owner": owner}
 
     app.state.halo_service.research_job = capture_owner

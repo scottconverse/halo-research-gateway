@@ -201,6 +201,8 @@ class HaloService:
         max_chars: int | None,
         cursor_state: dict | None = None,
         requested: int | None = None,
+        page_budget: int | None = None,
+        allow_empty_page: bool = False,
     ) -> dict:
         now = rfc3339(self.clock.utcnow())
         budget = self._budget(max_chars)
@@ -239,13 +241,14 @@ class HaloService:
                 items,
                 requested or len(result.items),
                 result.available if result.available is not None else len(result.items),
-                budget,
+                min(budget, page_budget) if page_budget is not None else budget,
                 cache_hit=result.cache_hit,
                 cache_age_seconds=result.cache_age_seconds,
                 cache_key=result.cache_key,
                 cursor_state=cursor_state,
                 encode_cursor=encode_cursor,
                 warnings=result.warnings,
+                allow_empty_page=allow_empty_page,
             )
 
         envelope = render()
@@ -1281,16 +1284,44 @@ class HaloService:
             return self._error("local_crawl", "local-crawl4ai", exc)
 
     async def research_job(
-        self, operation: str, owner: str, job_id=None, question=None, profile="standard", limits=None
+        self,
+        operation: str,
+        owner: str,
+        job_id=None,
+        question=None,
+        profile="standard",
+        limits=None,
+        *,
+        max_chars=None,
+        cursor=None,
     ) -> dict:
+        if cursor or (job_id is not None and (not isinstance(job_id, str) or len(job_id) > 128)):
+            raise ValueError("INVALID_ARGUMENT")
+        if question is not None and (not isinstance(question, str) or len(question) > 8192):
+            raise ValueError("INVALID_ARGUMENT")
+        if not isinstance(profile, str) or not 1 <= len(profile) <= 64:
+            raise ValueError("INVALID_ARGUMENT")
+        if limits is not None and (
+            not isinstance(limits, dict) or set(limits) - {"max_sources", "max_pages", "timeout_seconds"}
+        ):
+            raise ValueError("INVALID_JOB_LIMITS")
         async with self._job_lock:
             status = await self._control_job(operation, owner, job_id, question, profile, limits)
-            return self._job_status_view(status)
+            return self._job_status_view(status, max_chars)
 
-    def _job_status_view(self, status: dict) -> dict:
+    def _job_status_view(self, status: dict, max_chars=None) -> dict:
         """Return counts and a citable page, not the entire durable evidence packet."""
-        progress = dict(status["progress"])
-        checkpoint = progress.get("checkpoint")
+        budget = self._budget(max_chars)
+        evidence_budget = self._budget(max_chars if max_chars is not None else 4000)
+        question = status.get("request", {}).get("question", "")
+        view = {**status, "request": {"question": question[:128]}}
+        if len(question) > 128:
+            view["request"].update(question_truncated=True, question_chars=len(question))
+        progress = {key: value for key, value in status["progress"].items() if key in {"result", "partial"}}
+        view["progress"] = progress
+        checkpoint = status["progress"].get("checkpoint")
+        result = None
+        format_error = "OUTPUT_ITEM_TOO_LARGE"
         if checkpoint is not None:
             items = [EvidenceItem(**item) for item in checkpoint.get("items", [])]
             progress["checkpoint"] = {
@@ -1308,11 +1339,71 @@ class HaloService:
                 encoded = self._encode_result(result)
                 key = "job-evidence:" + hashlib.sha256(encoded).hexdigest()
                 self._cache_result(result, key, self.config.output.cursor_ttl_seconds, encoded)
-                progress["result"] = self._envelope("deep_research", result, 4000)
+
+        def size():
+            return len(json.dumps(view, indent=2, ensure_ascii=False))
+
+        if result is not None:
+            page_budget = evidence_budget
+            full_page_fits = False
+            for _ in range(8):
+                try:
+                    # Fit this nested first page, but bind continuation to the
+                    # caller's normal supported budget and identical chunking.
+                    progress["result"] = self._envelope(
+                        "deep_research",
+                        result,
+                        evidence_budget,
+                        page_budget=page_budget,
+                        allow_empty_page=full_page_fits,
+                    )
+                except ValueError as exc:
+                    if str(exc) == "SNAPSHOT_TOO_LARGE":
+                        format_error = str(exc)
+                        break
+                    if str(exc) != "OUTPUT_ITEM_TOO_LARGE":
+                        raise
+                    before = size()
+                    if view["request"]["question"]:
+                        view["request"].update(question="", question_truncated=True, question_chars=len(question))
+                    elif "created_at" in view:
+                        for name in ("created_at", "updated_at", "lease_until"):
+                            view.pop(name, None)
+                        view["warnings"] = ["JOB_STATUS_METADATA_OMITTED"]
+                    elif "limits" in view or "owner" in view:
+                        view.pop("limits", None)
+                        view.pop("owner", None)
+                        view["warnings"] = ["JOB_STATUS_METADATA_OMITTED"]
+                    elif "checkpoint" in progress:
+                        progress.pop("checkpoint")
+                        view["warnings"] = ["JOB_STATUS_METADATA_OMITTED"]
+                    else:
+                        break
+                    page_budget += before - size()
+                    continue
                 progress["partial"] = bool(
-                    warnings or progress["result"]["page"]["next_cursor"] or status["state"] != "complete"
+                    result.warnings or progress["result"]["page"]["next_cursor"] or status["state"] != "complete"
                 )
-        return {**status, "progress": progress}
+                full_page_fits = True
+                overflow = size() - budget
+                if overflow <= 0:
+                    return view
+                page_budget -= overflow + 16
+        elif size() <= budget:
+            return view
+        # Preserve control identity/state even if legacy or unusually large
+        # metadata cannot fit; never report a completed control operation lost.
+        progress["result"] = self._error("deep_research", "job-status", ValueError(format_error))
+        progress["partial"] = True
+        if size() <= budget:
+            return view
+        return {
+            "job_id": status["job_id"],
+            "state": status["state"],
+            "error_code": status["error_code"],
+            "progress": {"result": progress["result"], "partial": True},
+            "warnings": ["JOB_STATUS_FIELDS_OMITTED"],
+        }
 
     async def _control_job(self, operation, owner, job_id, question, profile, limits) -> dict:
         self.jobs.recover_expired()

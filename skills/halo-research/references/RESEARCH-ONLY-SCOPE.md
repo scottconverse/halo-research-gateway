@@ -146,7 +146,9 @@ Recorded implementation gaps still included in that list:
   streaming caps and active request deadlines now pass source/native checks, and
   local fetches share HTTP admission/origin pacing. Installed identity requires a
   separate reload receipt. Whole GitHub-operation deadlines, wider shared-origin coverage,
-  decompression/JSON allocation and arbitrary job-field bounds remain.
+  decompression/JSON allocation remain. Job request fields and whole status
+  output are now bounded with source/native concurrent-client evidence;
+  installed/DSH proof remains separate. See JOB-BOUNDS-EVIDENCE-2026-09-03.md.
   See RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md.
 - Local GET permission and recognized sensitive-query citation redaction now
   pass unit/native checks, including complete continuation and Gateway output

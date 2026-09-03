@@ -531,6 +531,35 @@ See [DSH job evidence](DSH-JOB-EVIDENCE-2026-09-03.md).
 
 `research_job` operations:
 
+Request bounds: question at most 8192 characters, profile label 1–64 characters,
+and supplied job ID at most 128 characters. Only `max_sources`, `max_pages` and
+`timeout_seconds` are accepted in `limits`; unknown/nested/invalid limits fail
+before creation. The profile is a descriptive label, not a new model or
+permission setting. A nonempty `research_job.cursor` is rejected; follow evidence
+cursors with `deep_research` instead.
+
+`max_chars` limits the complete status JSON to 2000, 4000 or 6000 characters,
+subject to the existing configured ceiling. The full question stays stored;
+the status shows at most 128 characters with `question_truncated` and
+`question_chars` when shortened. The preview may be empty at a small budget.
+Optional timing, owner-label, limits or checkpoint-summary fields can be omitted
+with `JOB_STATUS_METADATA_OMITTED`; request a larger status to see more metadata.
+When the nested evidence cannot fit beside the job fields, its first page may
+contain zero items and a continuation to the first evidence item. Coverage is
+explicitly incomplete and the job remains partial; follow the cursor before
+claiming to have read any evidence. The service first verifies that a normal
+standalone evidence page can fit the continuation budget.
+Evidence continuations may omit `max_chars` or use the same requested budget;
+the default job status retains a 4000-character continuation budget.
+
+If evidence metadata or snapshot retention cannot fit, the control response
+still reports the actual job ID/state and a partial evidence error
+(`OUTPUT_ITEM_TOO_LARGE` or `SNAPSHOT_TOO_LARGE`). Particularly large legacy
+status fields may be omitted with `JOB_STATUS_FIELDS_OMITTED`. This does not
+undo a pause/cancel or delete the underlying job. A larger output budget can
+help with formatting, but cannot raise the configured retention cap. See
+[job-boundary evidence](JOB-BOUNDS-EVIDENCE-2026-09-03.md).
+
 - `create`: finite job with explicit limits;
 - `status`: owner-visible progress/results;
 - `pause`: stop the active worker before returning, without erasing the job record;

@@ -18,6 +18,13 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+Job request/status bounds now have source and native concurrent-client evidence:
+finite question/profile/ID fields, only the three numeric limits, explicit
+misdirected-cursor rejection, whole-status output sizing, marked previews and
+lossless continuation at all supported sizes. Formatting/retention failures
+retain the actual control identity/state. Installed/DSH proof is separate.
+See JOB-BOUNDS-EVIDENCE-2026-09-03.md for failures, commands and limits.
+
 September 3 DSH job trials: two real jobs completed with partial public evidence
 and exact continuation reads, but both finished before pause. No DSH lifecycle
 pass is claimed. The observed generic control errors are repaired in source:

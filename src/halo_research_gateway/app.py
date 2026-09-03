@@ -305,9 +305,10 @@ def create_application(config: GatewayConfig | None = None):
         max_chars: Literal[2000, 4000, 6000] | None = None,
         cursor: str | None = None,
     ) -> dict:
-        del max_chars, cursor
         try:
-            return await service.research_job(operation, request_client(ctx), job_id, question, profile, limits)
+            return await service.research_job(
+                operation, request_client(ctx), job_id, question, profile, limits, max_chars=max_chars, cursor=cursor
+            )
         except (ValueError, KeyError, PermissionError) as exc:
             # Only stable job-control codes may cross the MCP boundary. Unknown
             # exceptions retain the SDK's sanitization, never raw debug text.

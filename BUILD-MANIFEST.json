@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-03T09:50:40.2387343Z",
+  "generated_at": "2026-09-03T10:26:15.9128643Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -29,8 +29,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "7843e8638dc427bd78d5c7662ac2ae327c3697831c4f78e501c68d6497a63212",
-      "bytes": 12482
+      "sha256": "1af8ad28d2241ae64e4ee3ad27f6d029d8ecbca8785836931ebc51aeeb259727",
+      "bytes": 12855
     },
     {
       "path": "config/config.example.toml",
@@ -118,6 +118,11 @@
       "bytes": 4478
     },
     {
+      "path": "docs/evidence/job-bounds-20260903.json",
+      "sha256": "47c7ec94253cf9e34b898d499ba20c29369208a3cb43798cd524ae4752a2e6bc",
+      "bytes": 96265
+    },
+    {
       "path": "docs/FINISH-PROGRESS-2026-09-02.md",
       "sha256": "eb8251377cd61774842a281434690fa71f59d98b345945a670f041b46b8fda99",
       "bytes": 25305
@@ -144,8 +149,13 @@
     },
     {
       "path": "docs/implementation-status.md",
-      "sha256": "8c19bed8b4d552d9fed2fac86740e666d918137582df43d223b54b8b49c17364",
-      "bytes": 15270
+      "sha256": "350e2f0d306326441939b3243940c667326c01bd822eb18b1de8366d6e101c6e",
+      "bytes": 15729
+    },
+    {
+      "path": "docs/JOB-BOUNDS-EVIDENCE-2026-09-03.md",
+      "sha256": "86d958e00c241c703a755e634fd3c3062d61eea506fb520025dc431d0d41e5ba",
+      "bytes": 7058
     },
     {
       "path": "docs/JOB-CONTROL-EVIDENCE-2026-09-02.md",
@@ -194,8 +204,8 @@
     },
     {
       "path": "docs/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "3ccf12d87866218fb4d379558fefd885cd524733cbf15f75dd263747de35d0f1",
-      "bytes": 11273
+      "sha256": "04859ab8fad858b12ac66b0cc6ef790c29827580e054bfc30b9b73e6ba98117d",
+      "bytes": 11429
     },
     {
       "path": "docs/RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md",
@@ -234,8 +244,8 @@
     },
     {
       "path": "docs/USER-MANUAL.md",
-      "sha256": "e9e83188c781b7b92ec2b7191623db233cf706c04d779bc5ac075e708eb5f488",
-      "bytes": 48867
+      "sha256": "628a016f19aa04fe17a2a7387a08d38d254cb4cdf29c66846f34289ee873632a",
+      "bytes": 50789
     },
     {
       "path": "pyproject.toml",
@@ -244,8 +254,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "bfdecfd6157338902644aedb3b079734b9c22eeec63324ab8669c4f43ef485b7",
-      "bytes": 16838
+      "sha256": "6a4aacf4024c9923b131f02b8ae897008b9219096ae1329d5ee6966faf46249b",
+      "bytes": 17229
     },
     {
       "path": "scripts/HaloLifecycle.ps1",
@@ -319,8 +329,8 @@
     },
     {
       "path": "skills/halo-research/references/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "3ccf12d87866218fb4d379558fefd885cd524733cbf15f75dd263747de35d0f1",
-      "bytes": 11273
+      "sha256": "04859ab8fad858b12ac66b0cc6ef790c29827580e054bfc30b9b73e6ba98117d",
+      "bytes": 11429
     },
     {
       "path": "skills/halo-research/references/source-selection.md",
@@ -344,8 +354,8 @@
     },
     {
       "path": "src/halo_research_gateway/app.py",
-      "sha256": "299b051c60248b4d64e59a132df6a84f2d824aeb35069446660e0130d421538d",
-      "bytes": 20286
+      "sha256": "e5daea823fc77dabb20524b694774390c183e6b2daccf1d73b4389a32a150285",
+      "bytes": 20322
     },
     {
       "path": "src/halo_research_gateway/cache_errors.py",
@@ -414,8 +424,8 @@
     },
     {
       "path": "src/halo_research_gateway/envelope.py",
-      "sha256": "7be6df67fcd10bda1dd0058a692422c374f2c2303af6d1dbfe36c37ce0aba564",
-      "bytes": 7044
+      "sha256": "4feafe1e1f1116485511da349e240ac474ef7b771136665a475b6c12ccab4ac6",
+      "bytes": 7203
     },
     {
       "path": "src/halo_research_gateway/jobs/__init__.py",
@@ -534,8 +544,8 @@
     },
     {
       "path": "src/halo_research_gateway/service.py",
-      "sha256": "9790f759aced35c393c0ba36a83f7688ccb9acb51b4f457ce2a938814d1f65a2",
-      "bytes": 64299
+      "sha256": "1921b62cbd58140172f360d4dbb6c46ab6f5c22c4b9c01c50c6feb2e9ee1d85d",
+      "bytes": 68518
     },
     {
       "path": "src/halo_research_gateway/tools/__init__.py",
@@ -641,6 +651,11 @@
       "path": "tests/acceptance/test_human_handoff_native.py",
       "sha256": "442ad905e1c4fccc22ff9331802e0e8cc7d329f51975233cf544dc5f2693e95e",
       "bytes": 10200
+    },
+    {
+      "path": "tests/acceptance/test_job_bounds_native.py",
+      "sha256": "0273df0643797c6abfd367af893d0d8a11266dd2ce4c8e3339bd35a0feeaacc5",
+      "bytes": 6515
     },
     {
       "path": "tests/acceptance/test_job_errors_native.py",
@@ -778,6 +793,11 @@
       "bytes": 4231
     },
     {
+      "path": "tests/unit/test_job_bounds.py",
+      "sha256": "8c5ab66e8947941bb7e972027f95248f4f8f4481ae4066ddfa50ee8604b72cf6",
+      "bytes": 5959
+    },
+    {
       "path": "tests/unit/test_job_continuation.py",
       "sha256": "e816867e6ad7517e6a0416cc7c949501671893abb49237a8c7a709e37df4a2dd",
       "bytes": 11721
@@ -879,8 +899,8 @@
     },
     {
       "path": "tests/unit/test_scaffold.py",
-      "sha256": "6b0b9c20bc0e0be99c784599f76cfb6cc9866d415a5e5d370b9926b0d1578f88",
-      "bytes": 2698
+      "sha256": "038a6579b3cf02d5afc3489071dc3754cca96a7f8de101af402a266e80bdaf4b",
+      "bytes": 2782
     },
     {
       "path": "tests/unit/test_security.py",
