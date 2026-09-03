@@ -21,6 +21,12 @@ The governing product scope and finish list are [Research-only scope](docs/RESEA
 
 Current acceptance is partial. The DSH tools-package mismatch was repaired on September 3 without changing models, presets, permissions or existing conversations. Real DSH search, multiple source reads and one exact-cursor continuation now dispatch successfully. The broad run nevertheless timed out without a final answer, after repeated token-copy errors and compaction; it is not a workflow pass. The acceptance checker now requires successful returned evidence, an actually issued continuation and distinct source pages. See [DSH repair and acceptance evidence](docs/DSH-RESOLUTION-EVIDENCE-2026-09-03.md). Real login, optional paid-provider use and wider installation/stress checks remain separately unproved. The final target is `0.3.0`, but it has not been released or tagged.
 
+Later actual-model summary diagnostics also failed: a baseline and three
+evidence-preserving prompt/composition variants still reported unsupported
+source facts or progress. None was installed. The separate malformed-summary
+DSH source repair is a verified candidate, not a deployed or full-workflow pass.
+See [the diagnostic results and unchanged installed state](docs/DSH-SUMMARY-DIAGNOSTICS-2026-09-03.md).
+
 ## Why it exists
 
 GitHub research now shares one elapsed-time and decoded-response-byte budget

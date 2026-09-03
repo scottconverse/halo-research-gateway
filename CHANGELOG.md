@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Record failed actual-model DSH summary diagnostics separately from source tests and installed behavior. Reject three prompt/composition variants without deploying them; retain the open supported-answer gate and correct the suspected crawl-forwarding defect as already working. No product code, installed configuration or version changes in this documentation checkpoint.
+
 - Manage foreground startup with the same PID, process identity and readiness checks as background startup. Release the lifecycle lock while waiting so normal stop and duplicate-start work; return the child's exit code and remove only this launch's exact record. Preserve a successor's record. Native isolated checks cover both PowerShell versions; forced console closure, actual logon and broad browser-tree shutdown remain separate.
 
 - Repair native installer defaults and registration: use the current user's runtime paths and configured MCP address; preserve unrelated LM Studio JSON in Windows PowerShell 5.1/7 with unique backups and staged replacement. Reject malformed/non-object input without printing it, and stop on Git hook setup failure. Existing operator configuration is not rewritten; no installed registration is changed by the isolated acceptance fixtures.

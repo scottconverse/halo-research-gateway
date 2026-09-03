@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-03T13:44:24.7193701Z",
+  "generated_at": "2026-09-03T14:38:45.0937647Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -29,8 +29,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "5ee76eba4f7b5e809c01ad2bcb8f14596e5f0c679597b73fc9b7b2fe5281bf83",
-      "bytes": 14590
+      "sha256": "3a276feed3a404c161d50ec0161f7223a54b5a072b894c4910ac24eed7e7b34f",
+      "bytes": 14964
     },
     {
       "path": "config/config.example.toml",
@@ -101,6 +101,11 @@
       "path": "docs/DSH-RESOLUTION-EVIDENCE-2026-09-03.md",
       "sha256": "589c4728f5de479a1c49135e8f9b402566a20c085f36a4911f85615bec017b95",
       "bytes": 37356
+    },
+    {
+      "path": "docs/DSH-SUMMARY-DIAGNOSTICS-2026-09-03.md",
+      "sha256": "07e3327fd088b4443a87416a7e744d2f0fba272e77e7f6d19cf6cb3175019b91",
+      "bytes": 7541
     },
     {
       "path": "docs/DSH-WORKFLOW-CANCELLATION-2026-09-02.md",
@@ -289,8 +294,8 @@
     },
     {
       "path": "docs/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "490e6fe8f110b9096d49192c0c3f4386f9666caca9a1d5f2bc1479f6ebebeb52",
-      "bytes": 13283
+      "sha256": "8046fbc83b3a623fcecb15343255e0578ac769915850a37acb072115df461749",
+      "bytes": 13670
     },
     {
       "path": "docs/RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md",
@@ -339,8 +344,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "6b4ef678e44e71d9c888a9f4a9d9623d98c023d85e44d6c2f926f775f10ea0d7",
-      "bytes": 19061
+      "sha256": "64452c08e82ad622d47a00beb40b6a76b300ea2f7664cd445d95266efa987d1a",
+      "bytes": 19472
     },
     {
       "path": "scripts/HaloLifecycle.ps1",
@@ -414,8 +419,8 @@
     },
     {
       "path": "skills/halo-research/references/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "490e6fe8f110b9096d49192c0c3f4386f9666caca9a1d5f2bc1479f6ebebeb52",
-      "bytes": 13283
+      "sha256": "8046fbc83b3a623fcecb15343255e0578ac769915850a37acb072115df461749",
+      "bytes": 13670
     },
     {
       "path": "skills/halo-research/references/source-selection.md",

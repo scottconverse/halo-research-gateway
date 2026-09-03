@@ -61,6 +61,11 @@ was proven at adapter level. These do not complete the following work:
    after four miscopied cursor rejections and seven compactions, without a final
    answer. The strengthened acceptance checker rejects failed/unissued cursors
    and failed/duplicate source reads. See DSH-RESOLUTION-EVIDENCE-2026-09-03.md.
+   Later request-retention repair preserves the question, but supported synthesis
+   still fails. A separate malformed-summary source candidate is not installed;
+   four real local-model summary diagnostics rejected the baseline and all three
+   proposed prompt/composition variants. No variant was deployed and no workflow
+   pass is claimed. See DSH-SUMMARY-DIAGNOSTICS-2026-09-03.md.
 2. **Finish durable research jobs.** Pause/cancel, admission/argument bounds,
    state protection and honest empty/partial outcomes now pass isolated tests.
    Source checkpoints, cumulative budgets, lease renewal and bounded status now
