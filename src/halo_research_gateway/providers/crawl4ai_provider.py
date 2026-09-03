@@ -7,6 +7,7 @@ import contextlib
 import re
 from collections import deque
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from ..clock import SystemClock, rfc3339
@@ -14,11 +15,50 @@ from ..config import CrawlConfig
 from ..models import EvidenceItem, LocalTarget, ProviderResult
 from ..security import is_sensitive_url, redact_url, validate_url
 from .deep import canonical_url
+from .html import extract_html
 from .http_fetch import resolve_public
+from .optional import OptionalProviderError
 
 
 class CrawlUnavailable(RuntimeError):
     code = "CRAWL_DISABLED"
+
+
+class CrawlSourceError(RuntimeError):
+    """An actionable, non-secret retrieval failure, retained for partial crawls."""
+
+    def __init__(self, code: str):
+        self.code = code
+        super().__init__(code)
+
+
+def is_challenge_page(html: str, headers=None) -> bool:
+    """Recognize strong gate-page signals, not articles mentioning CAPTCHAs."""
+    if any(
+        str(key).lower() == "cf-mitigated" and str(value).lower() == "challenge"
+        for key, value in (headers or {}).items()
+    ):
+        return True
+    if not html:
+        return False
+    from selectolax.parser import HTMLParser
+
+    tree = HTMLParser(html[:1_000_000])
+    title = tree.css_first("title")
+    title = " ".join(title.text().lower().split()) if title else ""
+    gate_title = title in {
+        "just a moment...",
+        "just a moment",
+        "verify you are human",
+        "robot check",
+        "security verification",
+        "attention required! | cloudflare",
+    }
+    marker = tree.css_first(
+        'script[src*="/cdn-cgi/challenge-platform/"], form#challenge-form, #cf-challenge-running, '
+        '#challenge-running, iframe[src*="challenges.cloudflare.com"], .g-recaptcha, .h-captcha, .cf-turnstile'
+    )
+    return gate_title and marker is not None
 
 
 class Crawl4AIProvider:
@@ -32,6 +72,7 @@ class Crawl4AIProvider:
         self._lock = asyncio.Lock()
         self._active_policy: LocalTarget | None = None
         self._navigation_host: str | None = None
+        self.optional_providers = None
 
     async def start(
         self, profile: str | None = None, local_target: LocalTarget | None = None, *, navigation_host: str | None = None
@@ -239,7 +280,15 @@ class Crawl4AIProvider:
             finally:
                 await self._settle_close()
         if not items:
-            raise RuntimeError("CRAWL_NO_EVIDENCE")
+            precise = next(
+                (
+                    value
+                    for value in reversed(warnings)
+                    if value.startswith(("CRAWL_CHALLENGE", "OPTIONAL_PROVIDER_", "PROXY_"))
+                ),
+                None,
+            )
+            raise RuntimeError(precise or "CRAWL_NO_EVIDENCE")
         return ProviderResult("crawl4ai", items, list(dict.fromkeys(warnings)), len(items))
 
     async def _collect_pages(
@@ -289,6 +338,24 @@ class Crawl4AIProvider:
                     )
                     async with gate:
                         result = await self._crawler.arun(url=current, config=config)
+                        result_url = (
+                            canonical_url(getattr(result, "redirected_url", None) or getattr(result, "url", current))
+                            or current
+                        )
+                        await self._validate_browser_request(result_url, public, local_target)
+                        if is_challenge_page(
+                            getattr(result, "html", "") or "", getattr(result, "response_headers", None)
+                        ):
+                            if (
+                                not public
+                                or mode != "auto"
+                                or profile is not None
+                                or interaction != "none"
+                                or any(is_sensitive_url(value) for value in (root, current, result_url))
+                            ):
+                                raise CrawlSourceError("CRAWL_CHALLENGE_REQUIRED")
+                            result = await self._proxy_page(result_url, wait_for)
+                            warnings.extend(result.retrieval_warnings)
                 if not result.success or (getattr(result, "status_code", None) or 200) >= 400:
                     raise RuntimeError("CRAWL_PAGE_FAILED")
                 result_url = (
@@ -297,6 +364,9 @@ class Crawl4AIProvider:
                 await self._validate_browser_request(result_url, public, local_target)
             except TimeoutError:
                 warnings.append("CRAWL_PAGE_TIMEOUT")
+                continue
+            except CrawlSourceError as exc:
+                warnings.append(exc.code)
                 continue
             except Exception:
                 warnings.append("CRAWL_PAGE_FAILED")
@@ -329,6 +399,7 @@ class Crawl4AIProvider:
                             "interaction": interaction,
                             "depth": depth,
                             "status_code": getattr(result, "status_code", None),
+                            **getattr(result, "retrieval_metadata", {}),
                         },
                     )
                 )
@@ -362,6 +433,64 @@ class Crawl4AIProvider:
             warnings.append("CRAWL_PAGE_LIMIT_REACHED")
         for item in items:
             item.metadata.update({"attempted_pages": attempts, "returned_pages": len(items)})
+
+    async def _proxy_page(self, url: str, wait_for: str | None):
+        registry = self.optional_providers
+        if registry is None or not registry.configs["proxy"].enabled:
+            raise CrawlSourceError("CRAWL_CHALLENGE_REQUIRED")
+        if registry.configs["proxy"].provider != "brightdata":
+            raise CrawlSourceError("OPTIONAL_PROVIDER_ADAPTER_NOT_CONFIGURED")
+        target = validate_url(url)
+        try:
+            response = await registry.execute("proxy", target.host, url=url)
+        except OptionalProviderError as exc:
+            raise CrawlSourceError(str(exc)) from None
+        except TimeoutError:
+            raise
+        except Exception:
+            raise CrawlSourceError("PROXY_RETRIEVAL_FAILED") from None
+        result = response["result"]
+        if not isinstance(result, dict):
+            raise CrawlSourceError("PROXY_RESPONSE_INVALID")
+        if type(result.get("status_code")) is not int or not 200 <= result["status_code"] < 300:
+            raise CrawlSourceError("PROXY_SOURCE_HTTP_ERROR")
+        html = result.get("body")
+        if not isinstance(html, str) or not html.strip():
+            raise CrawlSourceError("PROXY_EMPTY_EVIDENCE")
+        if len(html.encode("utf-8")) > 20_971_520:
+            raise CrawlSourceError("PROXY_CONTENT_TOO_LARGE")
+        if is_challenge_page(html, result.get("headers")):
+            raise CrawlSourceError("CRAWL_CHALLENGE_REQUIRED")
+        if wait_for:
+            from selectolax.parser import HTMLParser
+
+            if HTMLParser(html).css_first(wait_for) is None:
+                raise CrawlSourceError("PROXY_SELECTOR_NOT_FOUND")
+        title, text, links = extract_html(html)
+        if not text.strip():
+            raise CrawlSourceError("PROXY_EMPTY_EVIDENCE")
+        # The documented Unlocker response does not attest a final URL. Keep the
+        # requested citation explicit; never guess a redirect base for relative links.
+        absolute = [{"href": href} for _, href in links[:250] if urlsplit(href).scheme in {"http", "https"}]
+        warnings = ["PROXY_RETRIEVAL_USED", "PROXY_FINAL_URL_UNVERIFIED"]
+        if len(absolute) < len(links):
+            warnings.append("PROXY_RELATIVE_LINKS_SKIPPED")
+        return SimpleNamespace(
+            success=True,
+            url=url,
+            html=html,
+            markdown=text,
+            status_code=result["status_code"],
+            metadata={"title": title},
+            links={"internal": absolute, "external": []},
+            retrieval_warnings=warnings,
+            retrieval_metadata={
+                "mode": "proxy",
+                "retrieval_provider": "brightdata",
+                "final_url_verified": False,
+                "citation_url_kind": "requested",
+            },
+        )
 
     def _profile_directory(self, profile: str) -> Path:
         if not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", profile) or profile in {".", ".."}:

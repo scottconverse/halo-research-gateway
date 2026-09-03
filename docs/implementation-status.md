@@ -18,6 +18,21 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+Recognized gate pages fail explicitly and auto public crawl reaches configured
+Bright Data. Estimated-cost reservations, bounded streaming/deadlines and honest
+redirect metadata have regressions. Native Chrome/network MCP with a public
+header echo and local fake vendor proves two-client routing, 25-page fixture
+reassembly and budget recovery after service reconstruction. No real vendor was
+called. Human handoff, real login and CapSolver browser-token application remain
+unfinished. Exact evidence: CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md.
+
+The first challenge-routing commit hook failed in the earlier cache concurrency
+test. A real SQLite journal-mode initialization race was reproduced and repaired
+without changing that test or the frozen cache/migration tests. Cache construction
+now prepares WAL with bounded busy retries; requests do not reconfigure it. The
+failure and subsequent verification belong to the challenge-routing evidence,
+not the earlier cache checkpoint's green receipt.
+
 Shared disk-cache capacity now applies atomically to every Gateway write, with
 expiry/lowered-limit pruning on ordinary reads. Oversized source/job evidence stays
 readable without advertising disk recovery. Positive limits and visible caps have

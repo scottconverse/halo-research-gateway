@@ -147,6 +147,7 @@ class OptionalProviderConfig(StrictModel):
     allowed_domains: list[str] = Field(default_factory=list)
     daily_attempt_limit: int = Field(0, ge=0, le=10000)
     daily_spend_limit_usd: float = Field(0, ge=0, le=10000)
+    request_cost_usd: float = Field(0, ge=0, le=10000, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def enabled_provider_is_complete(self):

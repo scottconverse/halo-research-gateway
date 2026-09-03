@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import inspect
+import math
 import sqlite3
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
+from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
 from typing import Any
 
 from ..config import OptionalProviderConfig
@@ -56,9 +58,13 @@ class OptionalProviderRegistry:
             "attempt_limit": policy.daily_attempt_limit,
             "spend_usd_today": spend / 1_000_000,
             "spend_limit_usd": policy.daily_spend_limit_usd,
+            "request_cost_usd": policy.request_cost_usd,
+            "spend_is_estimated": True,
         }
 
-    async def execute(self, kind: str, domain: str, estimated_cost_usd: float = 0, **values) -> dict[str, Any]:
+    async def execute(
+        self, kind: str, domain: str, estimated_cost_usd: float | None = None, **values
+    ) -> dict[str, Any]:
         policy = self.configs.get(kind)
         if policy is None:
             raise OptionalProviderError("OPTIONAL_PROVIDER_KIND_UNKNOWN")
@@ -72,7 +78,10 @@ class OptionalProviderRegistry:
         allowed = {item.rstrip(".").lower() for item in policy.allowed_domains}
         if normalized not in allowed:
             raise OptionalProviderError("OPTIONAL_PROVIDER_DOMAIN_NOT_ALLOWED")
-        estimated_microusd = round(estimated_cost_usd * 1_000_000)
+        cost = policy.request_cost_usd if estimated_cost_usd is None else estimated_cost_usd
+        if type(cost) not in {int, float} or not math.isfinite(cost) or not 0 < cost <= 10000:
+            raise OptionalProviderError("OPTIONAL_PROVIDER_COST_REQUIRED")
+        estimated_microusd = int((Decimal(str(cost)) * 1_000_000).to_integral_value(rounding=ROUND_CEILING))
         self._admit(kind, policy, estimated_microusd)
         secret = self.connections.secret(policy.connection_id)
         result = adapter(domain=normalized, secret=secret, **values)
@@ -88,7 +97,9 @@ class OptionalProviderRegistry:
 
     def _admit(self, kind: str, policy: OptionalProviderConfig, estimated_microusd: int) -> None:
         today = datetime.now(UTC).date().isoformat()
-        limit_microusd = round(policy.daily_spend_limit_usd * 1_000_000)
+        limit_microusd = int(
+            (Decimal(str(policy.daily_spend_limit_usd)) * 1_000_000).to_integral_value(rounding=ROUND_FLOOR)
+        )
         with sqlite3.connect(self.db_path) as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute(

@@ -235,6 +235,12 @@ In-memory cursor continuation and statistics reads alone do not prune disk rows.
 Least-recently-used evidence is discarded first. Other tables, including jobs,
 connections, provider limits and historical receipts, are not deleted.
 
+The cache prepares its database journal before serving requests. Another process
+holding the database may delay that setup by up to five seconds; if it stays
+locked, startup fails instead of passing the setup problem to a research request.
+Do not delete the shared database to resolve a lock. Identify the other owner
+first. Ordinary reads and writes no longer try to change the journal mode.
+
 When a result cannot fit either cache limit, the source evidence remains readable
 and pageable within the existing snapshot limits. It includes
 `RESULT_NOT_CACHED_TOO_LARGE` and an empty `cache.key`. That warning means the
@@ -316,8 +322,11 @@ pagination-button/site-search interactions, screenshot/PDF captures, stealth and
 undetected modes are **not yet implemented**; requesting them returns
 `CRAWL_INTERACTION_UNAVAILABLE`, `CRAWL_CAPTURE_UNAVAILABLE` or
 `CRAWL_MODE_UNAVAILABLE`. They remain research acceptance work, not removed scope.
-`auto` currently runs standard mode; returned metadata states both requested and
-actual modes. Automatic anti-bot escalation and human challenge handoff are open.
+`auto` begins with standard browsing; recognized challenges can use configured
+Bright Data fallback. Metadata says `mode=proxy` when used. Managed profiles,
+named local targets, recognized sensitive URLs and explicit scroll interactions
+are not outsourced. `standard` stays on the local browser path. Visible human
+handoff and CapSolver browser-token application remain unfinished.
 
 `managed_profile` requires an existing Gateway-owned profile. Supplying a profile
 with another mode fails explicitly instead of silently browsing anonymously.
@@ -419,7 +428,55 @@ Only session-import review remains in the operator console. Existing historical 
 
 The release includes tested CapSolver and Bright Data Web Unlocker adapters behind the durable provider-budget policy. Both are disabled by default.
 
-Enabling requires an encrypted connection ID, exact allowed domains, daily attempt ceiling, and daily spend ceiling. CapSolver is limited to exact-domain tasks with no callback and at most 40 polls/120 seconds. Bright Data is limited to the fixed Unlocker API and exact-domain requests. The gateway refuses disabled, incomplete, unknown-adapter, wrong-domain, attempt-exhausted, and spend-exhausted calls. Status reveals aggregate usage, never secrets. The visible operator-assisted challenge flow is not yet acceptance-proven.
+Using a provider requires an encrypted connection ID, exact allowed requested
+domains, daily attempt ceiling, estimated-spend ceiling, and positive operator
+`request_cost_usd`. Its default zero refuses automatic paid calls. Existing
+enabled policies without an estimate load but cannot execute a default-cost
+request. The model does not set the price. Reservations round up to the next
+microdollar; failed/cancelled attempts retain them because the request may have
+already reached the vendor.
+
+`spend_usd_today` reports **reserved estimated cost**, not a reconciled invoice
+or guaranteed vendor charge ceiling. Statistics also show `spend_is_estimated`
+and `request_cost_usd`. Supply a conservative estimate for the vendor product
+and use vendor-side controls for a real billing ceiling. This checkpoint does
+not authorize paid calls.
+
+A recognized gate in `web_crawl(mode="auto")` can trigger one Bright Data request
+for that page. Returned HTML is extracted without executing its scripts, then
+uses normal bounded pagination. The requested URL is revalidated before dispatch.
+No imported cookies, browser headers, passwords or local targets are forwarded.
+Unsupported modes/interactions, managed/sensitive requests and disabled providers
+produce `CRAWL_CHALLENGE_REQUIRED`, not gate-page evidence. Ordinary 404/500 errors
+and articles discussing CAPTCHAs do not themselves trigger paid fallback.
+
+Bright Data requests structured JSON by default; explicit raw adapter responses
+are also supported. HTTP errors, empty/invalid results and still-challenged pages
+are not successful research. The API does not attest its final redirect URL:
+`PROXY_FINAL_URL_UNVERIFIED`, `citation_url_kind=requested` and
+`final_url_verified=false` disclose that limit. Do not call that URL independently
+verified canonical. Relative links are not resolved against an unknown final
+base. The vendor controls its own DNS, redirects and subresources; local
+requested-domain checks cannot prove the domain of every vendor-side hop.
+
+CapSolver remains an adapter, not automatic browser-token integration. Its entire
+create/poll sequence has a 120-second deadline and at most 40 polls, with no
+callback. Each fixed-API request has a 45-second total I/O deadline and 20 MiB
+decoded response ceiling. Crawl fallback also stays inside page/job deadlines.
+These limits are not hard native-memory or CPU-parser guarantees.
+
+Earlier evidence survives later challenge/provider failures with visible warnings.
+Fresh crawl/forum requests bypass old cache namespaces that could contain gate
+pages. Historical data and existing cursors are preserved; start a fresh request
+to apply the new classification. Recognition is deliberately specific, not a
+universal login/paywall/challenge detector.
+
+The native test uses actual Chrome, network MCP, a public header-echo signal and
+a local fake vendor. It proves routing, pagination, shared requests/cache,
+durable reservations and browser cleanup—not a real CAPTCHA bypass, live vendor
+success or operator login. No paid endpoint was contacted. Human handoff, real
+login/app-bound-cookie acceptance and CapSolver token application remain open.
+See [complete evidence](CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md).
 
 ## 12. Configuration reference
 

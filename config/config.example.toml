@@ -76,8 +76,11 @@ lease_seconds = 30
 # put a token in this file. Implemented provider names are `capsolver` and
 # `brightdata`; live enablement still requires an operator-selected account,
 # exact domains, attempt ceiling, spend ceiling, and acceptance receipt.
+# request_cost_usd is an operator reservation estimate, not a vendor billing cap.
+# Zero or missing refuses automatic paid requests.
 [captcha]
 enabled = false
+request_cost_usd = 0
 # provider = "capsolver"
 # connection_id = "operator-created-opaque-id"
 # allowed_domains = ["example.com"]
@@ -86,6 +89,7 @@ enabled = false
 
 [proxy]
 enabled = false
+request_cost_usd = 0
 # provider = "brightdata"
 # connection_id = "operator-created-opaque-id"
 # allowed_domains = ["example.com"]

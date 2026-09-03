@@ -17,12 +17,21 @@ Current acceptance is partial. Local regression, disposable native background-la
 
 ## Why it exists
 
+Recognized challenge pages no longer count as research evidence. Auto public
+crawling can use configured Bright Data retrieval with exact requested-domain
+checks and reserved attempt/cost budgets. Native Chrome/two-client MCP tests
+use a public header echo and local fake vendor, not a paid endpoint. Human
+handoff remains unfinished. See [challenge routing evidence](docs/CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md).
+
 Ordinary research traffic now keeps the shared disk cache within its configured
 compressed-payload limits. Expired or over-limit entries are removed atomically;
 results too large to save remain readable with an explicit uncached warning.
 Two native clients and restart/lowered-limit tests pass. This does not bound the
 physical database file or total process memory. See
 [cache-limit evidence and operating limits](docs/CACHE-LIMITS-EVIDENCE-2026-09-02.md).
+The later challenge-routing commit gate exposed a cache journal-initialization
+race. Cache setup now completes before requests, with bounded startup contention;
+ordinary reads and writes no longer attempt to change the journal mode.
 
 Transcript timing metadata now continues across bounded pages instead of making
 short captions fail or repeating every segment. Native MCP returns identical
@@ -48,7 +57,7 @@ Browser crawling now follows a bounded page/depth frontier, returns each source
 with its own citation, distinguishes scrolling from page traversal, and retains
 usable pages when another fails. Native Chrome fixtures cover redirect checks,
 exact local paths, scrolling, cookie reuse, WebSockets and cancellation cleanup.
-Advanced interactions/captures and automatic challenge escalation remain open;
+Advanced interactions/captures and visible human challenge handoff remain open;
 unimplemented options return explicit errors. See [crawl evidence and limits](docs/CRAWL-TRAVERSAL-EVIDENCE-2026-09-02.md).
 
 Agent hosts have inconsistent web access. Some can search but not crawl; others can fetch a URL but cannot discover it; separate instances can unknowingly spend the same anonymous quota or hammer Reddit. Halo centralizes that work without making DSH dependent on a cloud LLM.

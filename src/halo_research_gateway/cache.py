@@ -2,6 +2,7 @@
 
 import gzip
 import sqlite3
+import time
 from contextlib import closing
 from datetime import UTC, datetime, timedelta
 
@@ -10,6 +11,8 @@ from halo_research_gateway.cache_errors import EntryTooLargeError
 
 class Cache:
     """SQLite-backed cache with TTL and LRU eviction."""
+
+    journal_timeout_seconds = 5.0
 
     def __init__(self, db_path: str, max_bytes: int, entry_max_bytes: int, clock=None, *, enforce_limits: bool = False):
         """
@@ -28,6 +31,29 @@ class Cache:
         self.entry_max_bytes = entry_max_bytes
         self.clock = clock or (lambda: datetime.now(UTC))
         self.enforce_limits = enforce_limits
+        self._initialize_journal()
+
+    def _initialize_journal(self) -> None:
+        """Prepare persistent WAL before requests, with bounded startup contention.
+
+        Simultaneous first owners can lose SQLite's read-to-exclusive journal
+        transition immediately, even with a busy timeout. Retry only SQLITE_BUSY
+        on a fresh connection; never reconfigure the journal in the request path.
+        """
+        deadline = time.monotonic() + self.journal_timeout_seconds
+        while True:
+            try:
+                with closing(sqlite3.connect(self.db_path, timeout=max(0, deadline - time.monotonic()))) as conn:
+                    if conn.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal":
+                        return
+                    if conn.execute("PRAGMA journal_mode=WAL").fetchone()[0].lower() != "wal":
+                        raise sqlite3.OperationalError("Cache database does not support WAL journal mode")
+                    return
+            except sqlite3.OperationalError as exc:
+                remaining = deadline - time.monotonic()
+                if getattr(exc, "sqlite_errorcode", 0) & 0xFF != sqlite3.SQLITE_BUSY or remaining <= 0:
+                    raise
+                time.sleep(min(0.01, remaining))
 
     def put(self, key: str, value: bytes, ttl_seconds: int) -> None:
         """
@@ -52,7 +78,6 @@ class Cache:
             raise EntryTooLargeError(f"Entry size {len(compressed_value)} exceeds maximum allowed {limit} bytes")
 
         with closing(sqlite3.connect(self.db_path)) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
             if self.enforce_limits:
                 conn.execute("BEGIN IMMEDIATE")
 
@@ -106,7 +131,6 @@ class Cache:
             The original bytes if found and not expired, otherwise None
         """
         with closing(sqlite3.connect(self.db_path)) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("BEGIN IMMEDIATE")
 
             # Get the cache entry
@@ -165,7 +189,6 @@ class Cache:
     def evict(self) -> None:
         now = self.clock().isoformat()
         with closing(sqlite3.connect(self.db_path)) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("BEGIN IMMEDIATE")
             self._evict_in_transaction(conn, now)
             conn.commit()
@@ -183,8 +206,6 @@ class Cache:
             Dict with "entries" and "total_compressed_bytes"
         """
         with closing(sqlite3.connect(self.db_path)) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-
             cursor = conn.execute("""
                 SELECT COUNT(*), SUM(compressed_bytes) FROM cache_entries
             """)

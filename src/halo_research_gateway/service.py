@@ -97,6 +97,7 @@ class HaloService:
         )
         self.optional_providers.register("captcha", "capsolver", CapSolverAdapter(self.clock))
         self.optional_providers.register("proxy", "brightdata", BrightDataUnlockerAdapter())
+        self.crawler.optional_providers = self.optional_providers
         self.oauth = OAuthManager(self.connections)
         self.chrome_importer = ChromeImporter(runtime_root / "browser" / "profiles")
         self.cursors = CursorCodec(
@@ -510,7 +511,7 @@ class HaloService:
         if not url:
             return self._error("web_crawl", "policy", ValueError("URL_REQUIRED"))
         key = (
-            "crawl:v2:"
+            "crawl:v3:"
             + hashlib.sha256(
                 json.dumps(
                     [url, max_pages, max_depth, same_site_only, mode, profile, interaction, capture, wait_for]
@@ -1010,7 +1011,7 @@ class HaloService:
                 result = await self._cached_run(
                     "crawl",
                     client,
-                    key,
+                    "forum-challenge:v1:" + key,
                     1800,
                     lambda: self.crawler.crawl(url, max_pages=1, mode="standard"),
                 )
@@ -1116,7 +1117,7 @@ class HaloService:
             url = policy.build_url(path)
             cacheable = configured.cache_authenticated
             key = (
-                "local-crawl:v2:"
+                "local-crawl:v3:"
                 + hashlib.sha256(
                     json.dumps([target, path, max_pages, max_depth, profile, interaction]).encode()
                 ).hexdigest()

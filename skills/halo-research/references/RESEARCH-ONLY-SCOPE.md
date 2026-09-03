@@ -71,8 +71,10 @@ was proven at adapter level. These do not complete the following work:
    an already-running synchronous DDGS request cannot be forcibly cancelled.
 3. **Finish research login/challenge access.** A real Chrome v10 cookie fixture
    passes; app-bound cookies and an operator-chosen real login are unproven.
-   Complete visible human challenge handling and actual optional-provider crawl
-   routing. Use fixtures for paid adapters unless paid use is separately approved.
+   Bright Data auto-crawl routing passes native Chrome/network MCP/local fake-
+   vendor checks; paid use is neither proved nor authorized. Complete visible
+   human handoff, real login and CapSolver token application. Use fixtures for
+   paid adapters unless paid use is separately approved.
 4. **Finish reliability acceptance.** Verify shared concurrent clients, active
    cancellation, browser/process cleanup, startup/PID identity, restart recovery,
    response/time bounds and installation. Unit tests alone are not host acceptance.
@@ -105,8 +107,10 @@ Recorded implementation gaps still included in that list:
   option-specific cache keys, profile cache policy and cleanup have regression/
   native Chrome evidence. See CRAWL-TRAVERSAL-EVIDENCE-2026-09-02.md.
 - Consent/load-more/pagination-button/site-search interactions, capture artifacts,
-  stealth/undetected modes and automatic anti-bot escalation remain unfinished.
-  Their absent behavior is now explicit, not silently claimed successful.
+  stealth/undetected modes, human handoff and CapSolver token application remain
+  unfinished. Recognized challenges fail explicitly or use configured Bright Data
+  auto fallback for eligible public reads. Native fake-vendor evidence passes;
+  no paid call or universal bypass is claimed. See CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md.
 - Browser subresource/redirect-origin scheduling, response-byte/peak-memory bounds,
   Chromium DNS pinning and cross-origin out-of-process iframe coverage remain open.
 - `document_extract` table/OCR forwarding, page-cited native tables, isolated

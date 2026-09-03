@@ -37,6 +37,14 @@ also reconcile expiry and lowered limits. `/stats.cache` exposes both caps.
 Only `cache_entries` rows are pruned. Never delete the shared database to clear
 research cache: it also contains durable jobs, connections and provider state.
 
+Cache construction prepares SQLite WAL before request handling. Simultaneous
+initializers retry only SQLite busy errors for at most five seconds; failure
+stops initialization instead of leaving the first research request to configure
+the journal. An existing database transaction can therefore delay startup.
+Ordinary request connections do not change journal mode. This fixes the race
+recorded in [challenge-routing evidence](CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md);
+it does not promise that all database contention or storage errors disappear.
+
 This is not a physical SQLite/WAL/log/backup size cap or idle cleanup timer.
 The database may retain allocated free pages; no VACUUM is performed. SQLite I/O
 and gzip remain synchronous and do not yet have a strict event-loop deadline or
@@ -50,7 +58,9 @@ validation and exact bounds: [cache-limit evidence](CACHE-LIMITS-EVIDENCE-2026-0
 
 - Use the operator console's read-only GitHub App form for research.
 - Cookie-only imported research profiles live under the gateway runtime browser directory and are copied capabilities. Never point Crawl4AI at the mutable source profile.
-- CapSolver and Bright Data remain inert until the operator config names the provider (`capsolver` or `brightdata`), encrypted connection ID, exact domains, attempt ceiling, and spend ceiling.
+- Provider use requires a vendor name, encrypted connection, exact requested domains, attempt/estimated-spend limits and positive `request_cost_usd`. Installed defaults remain disabled. Estimates are reserved, not reconciled vendor charges; use vendor-side billing controls.
+- Auto public crawl can route recognized challenges to Bright Data. Local/managed/sensitive reads and explicit standard/scroll modes are not outsourced; browser cookies/headers are not sent. Human handoff and CapSolver token application remain unfinished.
+- Requested-domain checks cannot independently enforce vendor-side redirects/DNS. Native proof uses a fake vendor, not paid acceptance. See [challenge routing evidence](CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md) and the user manual.
 
 ## Local document OCR data
 

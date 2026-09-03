@@ -4,6 +4,10 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Fix a cache-locking race exposed by the challenge-routing commit gate: prepare SQLite WAL before requests instead of changing journal mode during normal traffic. Bound simultaneous initialization waits; preserve existing eviction/concurrency assertions and database migration behavior.
+
+- Reject recognized challenge pages as evidence and connect auto public crawling to the existing disabled-by-default Bright Data adapter. Preserve earlier sources on later failures; do not outsource managed/private/sensitive sessions. Require positive operator request-cost estimates, reserve rounded-up cost atomically and label it estimated. Request structured JSON by default while retaining raw support; bound streaming responses and total API/solver time. Native Chrome/network MCP/local fake-vendor checks pass without paid calls. Human handoff, CapSolver browser-token application and live paid acceptance remain unfinished; unverified vendor final redirects are explicit.
+
 - Enforce shared compressed cache capacity atomically on every Gateway write; ordinary cache hits/misses also remove expired and over-limit rows. Reject nonpositive limits, expose configured limits in statistics, and reconcile previously oversized entries after lowering limits. Oversized research/job results remain readable with `RESULT_NOT_CACHED_TOO_LARGE` and no disk-recovery key. Native two-client/restart/lowered-limit checks pass. Physical SQLite/WAL size, synchronous cache I/O, broader source bounds and DSH acceptance remain separate.
 
 - Page retained transcript timing metadata and long caption text without loss or repeated segments. Preserve citations, timestamp values, empty timing records and explicit fragment offsets at every supported output size. Native public-source MCP and process/client restart prove identical evidence at 2000/4000/6000 characters. Cursor layout 3 rejects older cursors explicitly; restart the original request. Provider collection limits and unrelated oversized metadata remain unchanged.
