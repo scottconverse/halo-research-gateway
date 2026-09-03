@@ -1,22 +1,24 @@
-# Host integration matrix — 2026-09-01
+# Host integration matrix — 2026-09-03
 
-This is a historical September 1 registration snapshot, not current acceptance or
-DSH capability policy. The Gateway now exposes fourteen research tools. Current
-DSH dispatch repair and workflow limits are recorded in
-[September 3 evidence](DSH-RESOLUTION-EVIDENCE-2026-09-03.md); a one-search canary
-does not prove a complete research workflow. DSH's current native permissions and
-operator-selected models remain outside Gateway configuration ownership.
+Halo Research Gateway is Windows-only and agent/model-neutral. Every client uses
+the standard Streamable HTTP MCP endpoint at `http://127.0.0.1:8765/mcp` and the
+same fourteen research tools. DSH is the first client, not a core dependency.
 
-| Host/runtime | Registration | Current disposition |
+| Client/runtime | Registration | Current evidence |
 |---|---|---|
-| DSH Halo planner | `halo_research` MCP insert in canonical and live web composition; persona routes to `mcp__halo_research__*` | Passed: real Qwen3.6 35B planner called `web_search` and completed `HALO-GATEWAY-DSH-OK` |
-| DSH verified worker | Gateway remains available only through DSH's selected worker surface; gateway did not alter the verified-coder boundary | Configured by DSH policy; no separate full sixteen-tool worker claim |
-| Claude Code local | User MCP `halo-research` at `http://127.0.0.1:8765/mcp` | Registered and health check reports connected; model-selected call still to be captured |
-| OpenCode local | MCP `halo-research` at the same endpoint | Registered and health check reports connected; model-selected call still to be captured |
-| Codex Desktop/CLI local | `[mcp_servers.halo_research]` in `C:\Users\scott\.codex\config.toml` | Installed for a new process; this running app cannot dynamically reload it |
-| LM Studio Bionic local | `halo-research.url` in `C:\Users\scott\.lmstudio\mcp.json`; canonical skill in `.lmstudio\skills` | Registered without removing its filesystem MCP; Bionic UI/model call still to be captured |
-| Cloud-only MCP clients | Cannot reach workstation loopback | Architecturally out of scope; installing the skill alone does not bridge localhost |
+| DSH Halo planner | `halo_research` MCP insert in the canonical/live web composition; DSH maps the server to `mcp__halo_research__*` | Full bounded workflow passed: eight successful calls, three distinct required sources, continuation, two automatic compactions and a supported final answer |
+| DSH verified worker | Gateway remains available according to DSH's selected worker surface | Optional integration does not alter the verified-coder boundary; no broader worker-tool claim |
+| Cowork / Claude Desktop or Code | User MCP `halo-research` at the canonical endpoint | Registered/connected where configured; a fresh model-selected live call remains separate acceptance |
+| Codex Desktop/CLI | `[mcp_servers.halo_research]` at the canonical endpoint | Installed for a new process; a running client must reload before use, and a fresh model-selected live call remains separate acceptance |
+| OpenCode Desktop | MCP `halo-research` at the canonical endpoint | Registered/connected where configured; a fresh model-selected live call remains separate acceptance |
+| LM Studio Bionic | `halo-research.url` in LM Studio MCP configuration; canonical skill may also be installed | Registered without removing the filesystem MCP; Bionic UI/model selection remains separate acceptance |
+| Other local MCP clients | Standard Streamable HTTP MCP | Compatible when they can reach workstation loopback and support the protocol |
+| Cloud-only clients | Cannot reach workstation loopback | Out of scope unless the operator separately supplies a secure transport; installing a skill does not bridge loopback |
 
-The canonical endpoint is `http://127.0.0.1:8765/mcp`. Host naming may normalize the server label; DSH's proven prefix is `mcp__halo_research__`.
+The optional DSH package under `integrations/dsh` contains DSH state/acceptance
+logic and two reproducible upstream patches. It is not required by Codex,
+Cowork/Claude, OpenCode, Bionic or another MCP client.
 
-DSH remains primary. Gateway integration does not own or change model IDs, 32K contexts, reasoning, slot count, permissions, planner/worker routing, reduced worker tools, protected acceptance inputs, or verifier receipts.
+Gateway integration does not own or change client model IDs, context windows,
+reasoning, slot count, permissions, planner/worker routing, sandboxes or verifier
+policy. See [DSH workflow evidence](DSH-VERIFIED-WORKFLOW-EVIDENCE-2026-09-03.md).

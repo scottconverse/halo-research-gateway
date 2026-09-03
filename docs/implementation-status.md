@@ -1,6 +1,23 @@
-# Implementation status — 2026-09-02
+# Implementation status — 2026-09-03
 
-Current scope is [research-only](RESEARCH-ONLY-SCOPE.md). Previous 0.2.0 receipts describe older code, not proof of full current acceptance.
+Current scope is [research-only](RESEARCH-ONLY-SCOPE.md). Previous 0.2.0 receipts and earlier September 3 failure records are historical checkpoints, not the current acceptance result.
+
+## 0.3.0 current checkpoint
+
+The Gateway core remains a Windows-only, agent/model-neutral standard MCP
+service with fourteen research tools. DSH is the first client. Its optional
+state/verifier adapter and the two exact upstream repair patches are now packaged
+under `integrations/dsh`; no DSH model, preset, permission or verified-coder
+policy is part of the Gateway core.
+
+The final DSH workflow made eight successful Gateway calls, read three distinct
+required sources, used continuation, survived two automatic compactions and
+returned a citation-supported answer within six minutes and 250 words. Strict
+history verification and manual evidence review passed. See
+[DSH verified workflow evidence](DSH-VERIFIED-WORKFLOW-EVIDENCE-2026-09-03.md).
+Other hosts share the same MCP contract; their registration state and remaining
+model-selected live-call proof are recorded in [host integration](host-integration.md).
+The 0.3.0 Git tag is pending owner approval.
 
 ## Current code
 

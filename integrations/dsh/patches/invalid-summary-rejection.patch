@@ -1,0 +1,389 @@
+From a040de5b778c6a7efdb866fd383fce63c555a27f Mon Sep 17 00:00:00 2001
+From: Scott Converse <scottconverse@users.noreply.github.com>
+Date: Thu, 3 Sep 2026 08:08:09 -0600
+Subject: [PATCH] fix(compaction): reject tool-call summaries before replacing
+ evidence
+
+---
+ ...ction-summary-prefix-cache-reuse.i18n.yaml |  4 +-
+ ...1-compaction-summary-prefix-cache-reuse.md |  6 +-
+ ...ompaction-summary-prefix-cache-reuse.zh.md |  6 +-
+ .../invalid-summary.cordis.snapshot.yml       | 19 ++++++
+ .../compaction-invalid-summary.snapshot.ts    | 59 +++++++++++++++++++
+ .../tests/fixtures/invalid-summary-model.ts   | 39 ++++++++++++
+ .../compaction-basic/README.i18n.yaml         |  4 +-
+ .../compaction/compaction-basic/README.md     |  6 +-
+ .../compaction/compaction-basic/README.zh.md  |  6 +-
+ .../compaction-basic/src/summarizer.ts        | 10 +++-
+ .../tests/compaction-basic.spec.ts            | 27 ++++++++-
+ 11 files changed, 167 insertions(+), 19 deletions(-)
+ create mode 100644 examples/headless-agent/invalid-summary.cordis.snapshot.yml
+ create mode 100644 examples/headless-agent/tests/compaction-invalid-summary.snapshot.ts
+ create mode 100644 examples/headless-agent/tests/fixtures/invalid-summary-model.ts
+
+diff --git a/.agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.i18n.yaml b/.agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.i18n.yaml
+index f234acb..b957758 100644
+--- a/.agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.i18n.yaml
++++ b/.agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.i18n.yaml
+@@ -2,5 +2,5 @@
+ # side as of the last confirmed-consistent state. Both languages carry equal authority;
+ # after editing either side, bring the other along and re-record with:
+ #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.md
+-2026-07-21-compaction-summary-prefix-cache-reuse.md: 08ceb820ee415cbac9aded7a6b4f55933dc64cf3
+-2026-07-21-compaction-summary-prefix-cache-reuse.zh.md: 2d796c8518c703d872ebcec4f548a0e52d91994b
++2026-07-21-compaction-summary-prefix-cache-reuse.md: c245bf8314ffb79fb71d6775873a78814b27b1c4
++2026-07-21-compaction-summary-prefix-cache-reuse.zh.md: 3d60fb0a817c8af2cd949f124e1d61ade9d4885d
+diff --git a/.agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.md b/.agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.md
+index 08ceb82..c245bf8 100644
+--- a/.agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.md
++++ b/.agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.md
+@@ -14,7 +14,7 @@ The summarization directive moves from the **front** of the request (a fresh `sy
+ 
+ ### `SummarizationInput` carries the replayed prefix, not a rendered string
+ 
+-`summarize()` (and the internal `summarizeWithLlm`) take a `SummarizationInput` — `{ system?, tools?, messages }` — instead of a flat transcript string. `region.ts` builds it from `session.requestHeader()` (the durable `system` and `tools`) plus the shadowed region mapped through `session.deriveEventMessage`, which yields byte-identical `Message` objects to what `deriveMessages()` folded into the routed request. `summarizeWithLlm` forwards `system` and `tools` onto `GenerateOptions` and sends `[...input.messages, { role: 'user', content: COMPACTION_INSTRUCTION }]`. `tools` ride along even though the summarizer never calls one: dropping them would shorten the token sequence and break alignment with the cached request.
++`summarize()` (and the internal `summarizeWithLlm`) take a `SummarizationInput` — `{ system?, tools?, messages }` — instead of a flat transcript string. `region.ts` builds it from `session.requestHeader()` (the durable `system` and `tools`) plus the shadowed region mapped through `session.deriveEventMessage`, which yields byte-identical `Message` objects to what `deriveMessages()` folded into the routed request. `summarizeWithLlm` forwards `system` and `tools` onto `GenerateOptions` and sends `[...input.messages, { role: 'user', content: COMPACTION_INSTRUCTION }]`. Tool schemas remain present for cache alignment, but auxiliary tool calls are never executed. A `tool-call` output block or `tool-calls` finish rejects the entire summary with `INVALID_SUMMARY`, including accompanying text, before checkpoint replacement. Treating that text as a completed summary could replace source evidence with a plan to fetch it. This validation does not establish the factual quality of a text-only summary.
+ 
+ ### The instruction is a trailing user message
+ 
+@@ -28,7 +28,7 @@ Auto-compaction always anchors at the surface head, so the shadowed region is th
+ 
+ - **Keep the summarizer system prompt but reuse the rest** — rejected: the system slot is the very first token region a provider caches on, so a distinct summarizer system prompt invalidates the whole prefix regardless of what follows. Only moving the directive off the front recovers the cache.
+ - **Send only the shadowed region without the `system`/`tools` head** — rejected: a differently-headed sequence still diverges from the cached request at the first token, so it caches no better while losing the framing the summary needs.
+-- **Omit `tools` from the summarization request** (the model never calls one) — rejected: tool schemas are part of the cached token sequence; omitting them misaligns every following token and defeats reuse.
++- **Omit `tools` from the summarization request** (auxiliary tool calls are not executed) — rejected: tool schemas are part of the cached token sequence; omitting them misaligns every following token and defeats reuse.
+ - **A dedicated `assistant/chunk`-emitting summarization sub-session for snapshot replay** — rejected: the durable `compaction/summary` event records the successful local call's position and complete output, while its explicit call marker prevents replay from treating template or remote output as a local stream.
+ 
+ ## Consequences
+@@ -42,4 +42,4 @@ Auto-compaction always anchors at the surface head, so the shadowed region is th
+ 
+ - **Unit:** `compaction-basic.spec.ts` asserts the auxiliary call forwards `system`/`tools`/leading messages and appends the compaction instruction as the final message, and that `compactRegion` replays the latest routed header prefix. Existing content assertions read the summarizer input through the replayed messages rather than a transcript string.
+ - **Loop:** `compact-loop-repro.spec.ts` classifies the summarization request by the compaction instruction in its trailing user message, and the overflow-recovery tests continue to pin conversation-vs-summary request counts across the real loop.
+-- **Snapshot:** keyless replay reconstructs one canonical successful stream from a marked `compaction/summary`; the [compaction-seam note](../feature/2026-06-18-compaction-capability-seam.md) owns the durable marker contract.
++- **Snapshot:** the assembled [invalid-summary example](../../../../examples/headless-agent/tests/compaction-invalid-summary.snapshot.ts) pins source-result preservation and the absence of checkpoint replacement or auxiliary tool execution when the provider emits tool calls. Keyless replay reconstructs one canonical successful stream from a marked `compaction/summary`; the [compaction-seam note](../feature/2026-06-18-compaction-capability-seam.md) owns the durable marker contract.
+diff --git a/.agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.zh.md b/.agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.zh.md
+index 2d796c8..3d60fb0 100644
+--- a/.agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.zh.md
++++ b/.agents/notes/implemented/bug-fix/2026-07-21-compaction-summary-prefix-cache-reuse.zh.md
+@@ -14,7 +14,7 @@ Status: implemented
+ 
+ ### `SummarizationInput` 携带回放的前缀，而非渲染后的字符串
+ 
+-`summarize()`（以及内部的 `summarizeWithLlm`）接受一个 `SummarizationInput`（`{ system?, tools?, messages }`）而不是一个扁平的 transcript 字符串。`region.ts` 用 `session.requestHeader()`（持久的 `system` 和 `tools`）加上经 `session.deriveEventMessage` 映射的被遮蔽区域来构建它，后者产出与 `deriveMessages()` 折叠进已路由请求的内容字节级一致的 `Message` 对象。`summarizeWithLlm` 把 `system` 和 `tools` 转发到 `GenerateOptions`，并发送 `[...input.messages, { role: 'user', content: COMPACTION_INSTRUCTION }]`。`tools` 会一同带上，即便摘要器从不调用任何工具：丢弃它们会缩短 token 序列，破坏与已缓存请求的对齐。
++`summarize()`（以及内部的 `summarizeWithLlm`）接受一个 `SummarizationInput`（`{ system?, tools?, messages }`）而不是一个扁平的 transcript 字符串。`region.ts` 用 `session.requestHeader()`（持久的 `system` 和 `tools`）加上经 `session.deriveEventMessage` 映射的被遮蔽区域来构建它，后者产出与 `deriveMessages()` 折叠进已路由请求的内容字节级一致的 `Message` 对象。`summarizeWithLlm` 把 `system` 和 `tools` 转发到 `GenerateOptions`，并发送 `[...input.messages, { role: 'user', content: COMPACTION_INSTRUCTION }]`。工具 schema 会保留以对齐缓存，但辅助工具调用绝不会执行。`tool-call` 输出块或 `tool-calls` 结束原因会在替换检查点前以 `INVALID_SUMMARY` 拒绝整个摘要，包括伴随文本。若将这些文本当成完整摘要，源证据可能被获取证据的计划取代。这项验证并不能确定纯文本摘要的事实质量。
+ 
+ ### 指令是一条尾部 user 消息
+ 
+@@ -28,7 +28,7 @@ Status: implemented
+ 
+ - **保留摘要器系统提示词但复用其余部分**——否决：system 槽位正是提供方最先做缓存的 token 区域，因此一个不同的摘要器系统提示词无论后面跟着什么都会使整个前缀失效。只有把指令移离前端才能恢复缓存。
+ - **只发送被遮蔽区域而不带 `system`/`tools` 头部**——否决：头部不同的序列在第一个 token 处仍然与已缓存请求分叉，因此缓存效果并不更好，反而丢失了摘要所需的框架。
+-- **从摘要请求中省略 `tools`**（模型从不调用任何工具）——否决：工具 schema 是已缓存 token 序列的一部分；省略它们会让后续每个 token 失去对齐，破坏复用。
++- **从摘要请求中省略 `tools`**（辅助工具调用不执行）——否决：工具 schema 是已缓存 token 序列的一部分；省略它们会让后续每个 token 失去对齐，破坏复用。
+ - **为快照回放专门建立一个发出 `assistant/chunk` 的摘要子会话**——否决：持久的 `compaction/summary` 事件会记录成功本地调用的位置和完整输出，而显式调用标记可防止回放把模板或远程输出当作本地流。
+ 
+ ## 后果
+@@ -42,4 +42,4 @@ Status: implemented
+ 
+ - **单元：** `compaction-basic.spec.ts` 断言辅助调用转发 `system`/`tools`/前导消息，并把压缩指令作为最后一条消息追加，且 `compactRegion` 回放最新的已路由 header 前缀。现有的内容断言通过回放的消息而非 transcript 字符串来读取摘要器输入。
+ - **循环：** `compact-loop-repro.spec.ts` 依据摘要请求尾部 user 消息中的压缩指令对其分类，溢出恢复测试则继续在真实循环中固定对话请求与摘要请求的数量。
+-- **快照：** 无密钥回放会从带标记的 `compaction/summary` 重建一条规范成功流；[compaction-seam Agent Note](../feature/2026-06-18-compaction-capability-seam.zh.md) 负责持久标记约定。
++- **快照：** 完整组合的[无效摘要示例](../../../../examples/headless-agent/tests/compaction-invalid-summary.snapshot.ts) 验证提供方发出工具调用时保留源结果、不替换检查点且不执行辅助工具。无密钥回放会从带标记的 `compaction/summary` 重建一条规范成功流；[compaction-seam Agent Note](../feature/2026-06-18-compaction-capability-seam.zh.md) 负责持久标记约定。
+diff --git a/examples/headless-agent/invalid-summary.cordis.snapshot.yml b/examples/headless-agent/invalid-summary.cordis.snapshot.yml
+new file mode 100644
+index 0000000..be180e4
+--- /dev/null
++++ b/examples/headless-agent/invalid-summary.cordis.snapshot.yml
+@@ -0,0 +1,19 @@
++- id: compaction-context-fixture
++  name: './tests/fixtures/compaction-context.ts'
++
++- id: base
++  name: '@deepseek-ai/cordis-plugin-include'
++  config:
++    path: ./cordis.yml
++    patches:
++      - id: llm-deepseek
++        name: '@deepseek-ai/dsh-llm-deepseek'
++        disabled: true
++      - id: compaction-basic
++        name: '@deepseek-ai/dsh-compaction-basic'
++        config:
++          thresholdRatio: 0.99
++          retainTokens: 20
++      - insert:
++          - id: invalid-summary-model
++            name: './tests/fixtures/invalid-summary-model.ts'
+diff --git a/examples/headless-agent/tests/compaction-invalid-summary.snapshot.ts b/examples/headless-agent/tests/compaction-invalid-summary.snapshot.ts
+new file mode 100644
+index 0000000..b70c55d
+--- /dev/null
++++ b/examples/headless-agent/tests/compaction-invalid-summary.snapshot.ts
+@@ -0,0 +1,59 @@
++import { writeFile } from 'node:fs/promises'
++import { join } from 'node:path'
++import { fileURLToPath } from 'node:url'
++import { expect, it } from 'vitest'
++import { LOADER_SMOKE_TEST_TIMEOUT_MS, runLoaderSmoke } from '@deepseek-ai/dsh-loader-smoke'
++import type { SessionEvent } from '@deepseek-ai/dsh-session'
++import { isReplacementSurfaceEvent } from '@deepseek-ai/dsh-session/surface'
++
++it('preserves research input when the assembled summarizer returns a tool call', async () => {
++  const configPath = fileURLToPath(new URL('../invalid-summary.cordis.snapshot.yml', import.meta.url))
++  const binScript = fileURLToPath(new URL('./fixtures/headless-driver.ts', import.meta.url))
++  const result = await runLoaderSmoke({
++    label: 'invalid summary preserves source history',
++    tempDirPrefix: 'dsh-invalid-summary-',
++    binScript,
++    libBinScript: binScript,
++    configPath,
++    binArgs: [configPath, 'Read marker.txt and preserve the research evidence.'],
++    tsconfigPath: fileURLToPath(new URL('../../../tsconfig.json', import.meta.url)),
++    env: { DSH_SNAPSHOT: 'replay' },
++    prepare: async (cwd) => { await writeFile(join(cwd, 'marker.txt'), 'SOURCE_EVIDENCE_MUST_SURVIVE\n') },
++  })
++  const records = result.stdout.trim().split('\n').map(line => JSON.parse(line) as {
++    type: string
++    event?: SessionEvent
++    output?: string
++  })
++  const events = records.flatMap(record => record.event === undefined ? [] : [record.event])
++  const calls = events.filter(event => event.type === 'tool/call')
++  const results = events.filter(event => event.type === 'tool/result')
++  const end = events.findLast(event => event.type === 'compaction/end')
++  expect(calls).toHaveLength(1)
++  expect(calls[0]?.data).toMatchObject({ name: 'read', arguments: '{"file_path":"marker.txt"}' })
++  expect(JSON.stringify(results)).toContain('SOURCE_EVIDENCE_MUST_SURVIVE')
++  expect(events.some(event => event.type === 'compaction/summary')).toBe(false)
++  expect(events.some(isReplacementSurfaceEvent)).toBe(false)
++  expect(end?.data.error).toContain('tool calls instead of a completed checkpoint')
++  expect({
++    toolCalls: calls.map(event => event.data.name),
++    compactionError: end?.data.error,
++    terminalReason: events.findLast(event => event.type === 'turn/end')?.data.reason,
++    output: records.at(-1)?.output,
++  }).toMatchInlineSnapshot(`
++    {
++      "compactionError": "summarization returned tool calls instead of a completed checkpoint",
++      "output": "",
++      "terminalReason": {
++        "error": {
++          "code": "CONTEXT_WINDOW_EXCEEDED",
++          "message": "fixture requires compaction before continuation",
++        },
++        "kind": "error",
++      },
++      "toolCalls": [
++        "read",
++      ],
++    }
++  `)
++}, LOADER_SMOKE_TEST_TIMEOUT_MS)
+diff --git a/examples/headless-agent/tests/fixtures/invalid-summary-model.ts b/examples/headless-agent/tests/fixtures/invalid-summary-model.ts
+new file mode 100644
+index 0000000..f872395
+--- /dev/null
++++ b/examples/headless-agent/tests/fixtures/invalid-summary-model.ts
+@@ -0,0 +1,39 @@
++/** Keyless malformed-summary provider; tool execution remains the real file reader. */
++import type { Context } from '@deepseek-ai/cordis'
++import { CallId, LlmAdapter, type GenerateOptions, type LlmResolvedModelInfo, type StreamChunk } from '@deepseek-ai/dsh-llm'
++
++class InvalidSummaryAdapter extends LlmAdapter {
++  override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
++    return { provider, id: model, name: model, context: { contextWindow: 128000 } }
++  }
++
++  override async * stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
++    if (options.purpose !== 'compaction'
++      && options.messages.some(message => message.content.some(block => block.type === 'tool-result'))) {
++      yield { type: 'finish', reason: { kind: 'error', failure: {
++        code: 'CONTEXT_WINDOW_EXCEEDED', message: 'fixture requires compaction before continuation',
++      } } }
++      return
++    }
++    if (options.purpose === 'compaction') {
++      yield { type: 'block-start', index: 0, blockType: 'text' }
++      yield { type: 'text-delta', index: 0, text: 'The page is incomplete. Let me continue fetching.' }
++      yield { type: 'block-end', index: 0, block: { type: 'text', text: 'The page is incomplete. Let me continue fetching.' } }
++    }
++    const index = options.purpose === 'compaction' ? 1 : 0
++    const id = CallId(options.purpose === 'compaction' ? 'summary-must-not-execute' : 'source-read')
++    const args = JSON.stringify({ file_path: options.purpose === 'compaction' ? 'never-read.txt' : 'marker.txt' })
++    yield { type: 'block-start', index, blockType: 'tool-call' }
++    yield { type: 'tool-call-delta', index, id, name: 'read', argumentsDelta: args }
++    yield { type: 'block-end', index, block: { type: 'tool-call', id, name: 'read', arguments: args } }
++    yield { type: 'finish', reason: { kind: 'tool-calls' } }
++  }
++}
++
++export const name = 'invalid-summary-model'
++export const inject = ['llm']
++
++/** Register only the deterministic provider in this test composition. */
++export function apply(ctx: Context): void {
++  ctx.llm.registerAdapter(['deepseek-official'], new InvalidSummaryAdapter())
++}
+diff --git a/packages/compaction/compaction-basic/README.i18n.yaml b/packages/compaction/compaction-basic/README.i18n.yaml
+index f1fdda1..460721b 100644
+--- a/packages/compaction/compaction-basic/README.i18n.yaml
++++ b/packages/compaction/compaction-basic/README.i18n.yaml
+@@ -2,5 +2,5 @@
+ # side as of the last confirmed-consistent state. Both languages carry equal authority;
+ # after editing either side, bring the other along and re-record with:
+ #   pnpm run verify-translation-pairing --write packages/compaction/compaction-basic/README.md
+-README.md: d2527db6225a1989031c0a1dbd7e0cd9c1d1bca5
+-README.zh.md: afcb958e38ede5b453934c4e402e51bd9ada3872
++README.md: ce3141631cccd58d97755d38dccf64fcc372c6b3
++README.zh.md: 83e9f7df80548c21cae2a96c2b22169eacc5f624
+diff --git a/packages/compaction/compaction-basic/README.md b/packages/compaction/compaction-basic/README.md
+index d2527db..ce31416 100644
+--- a/packages/compaction/compaction-basic/README.md
++++ b/packages/compaction/compaction-basic/README.md
+@@ -15,7 +15,7 @@ This backend owns the compaction policy:
+ - **Model-free pruning** — after pressure or canonical overflow qualifies, the optional [`ctx.toolResultPruner`](../compaction-tool-result-pruner/README.md) service rewrites oversized tool results before range selection. Compact-basic remeasures through `ctx.tokenMeter`, skips summarization when pressure becomes safe, and otherwise summarizes the pruned surface. Below-pressure step checks never prune.
+ - **Retention** — compact the oldest whole surface units while preserving a recent tail and balanced tool-call/result cuts through the [`dsh-compaction` boundary helpers](../compaction/README.md#tool-pairing-boundaries). Turn boundaries do not protect old steps inside a runaway turn. An open indivisible tail declines until it closes. The optional pruner can repair an oversized closed tool unit when its text-bearing result is the removable bulk; indivisible non-tool units and non-prunable tool remainders remain out of scope.
+ - **Convergence** — retry head-checkpoint compaction up to `compactionRetries`; reject a summary that does not shrink its source, and throw if retries cannot return below threshold.
+-- **Summarization** — a direct `llm/stream` call uses the configured provider/model pair and cap, falling back to the latest logged request target and then the agent target, without running the loop-only `agent/request` extension point. The call replays the conversation's own system prompt, tools, and shadowed-region messages verbatim, including image references, and appends the compaction instruction as the final user message, so it reuses the provider's warm prefix cache instead of invalidating it. The selected adapter must resolve or explicitly reject those images. It sets `GenerateOptions.purpose` to `compaction`, which adapters may forward as request attribution (the DeepSeek adapter sends `x-deepseek-harness-compact: 1`) without touching the model-visible body. Only returned text enters the checkpoint, excluding reasoning and tool calls that would leak private reasoning or create an orphaned call; image output fails with `UNSUPPORTED_CONTENT` rather than disappearing.
++- **Summarization** — a direct `llm/stream` call uses the configured provider/model pair and cap, falling back to the latest logged request target and then the agent target, without running the loop-only `agent/request` extension point. The call replays the conversation's own system prompt, tools, and shadowed-region messages verbatim, including image references, and appends the compaction instruction as the final user message, so it reuses the provider's warm prefix cache instead of invalidating it. The selected adapter must resolve or explicitly reject those images. It sets `GenerateOptions.purpose` to `compaction`, which adapters may forward as request attribution (the DeepSeek adapter sends `x-deepseek-harness-compact: 1`) without touching the model-visible body. Only returned text enters the checkpoint; reasoning is excluded. A tool-call block or `tool-calls` finish rejects the whole summary with `INVALID_SUMMARY` before checkpoint replacement, even when the output also contains text. Auxiliary tool calls are never executed. Image output fails with `UNSUPPORTED_CONTENT` rather than disappearing.
+ - **Framing** — the replacement user message marks established checkpoint context with `<compacted-summary>` tags. The raw summary remains on the `compaction/summary` event, and later automatic cycles merge the prior checkpoint.
+ - **Active request retention** — when the selected range contains the open turn's latest admitted user request or its checkpoint descendant, the replacement also retains that request's exact content blocks and the recorded tool-call count since it. The text comes from the original `user/message`, not the summary. A newer request outside the range remains in place without duplication; closed-turn requests remain summarizable. The complete replacement, including retained content, must pass the existing shrink check.
+ - **Lifecycle** — all entry points share one bracket-first region transaction. It validates the range and live lock, appends `compaction/start` synchronously, prepares and awaits the summary, revalidates, appends `compaction/summary` plus the replacement, and makes exactly one closing attempt. Automatic and explicit-region calls require a numeric open-turn owner and whole-surface stability; the serial `agent/pre-step` listener checks pressure before request derivation, while canonical provider overflow enters through `agent/request-error` and authorizes retry only after durable surface progress. `compactNow()` reserves idle admission, uses `turn: null`, accepts append-only context outside its selected span, flushes every closed attempt, and releases admission in `finally`.
+@@ -117,7 +117,7 @@ Replacing rather than append-only. Each checkpoint invalidates reuse from the fi
+ 
+ #### What the model sees
+ 
+-The summarization model receives the conversation replayed verbatim — the same system prompt, tool schemas, and messages the last routed request sent for the shadowed region — followed by one final user message: the compaction instruction below. The conversation model never sees this private request or its reasoning; only returned text is stored.
++The summarization model receives the conversation replayed verbatim — the same system prompt, tool schemas, and messages the last routed request sent for the shadowed region — followed by one final user message: the compaction instruction below. The conversation model never sees this private request or its reasoning. Accepted checkpoint content contains only returned text; complete successful auxiliary output is retained separately in the durable `compaction/summary` event.
+ 
+ ##### Compaction instruction (final user message)
+ 
+@@ -173,4 +173,4 @@ The replayed system prompt, tools, and shadowed-region messages match the conver
+ - **Some indivisible-unit and envelope-only overflow remains outside surface compaction** — recovery cannot shrink system/tools/prefix, split an indivisible non-tool node, or repair a tool unit whose non-prunable remainder still exceeds the window. The optional pruner can shrink text-bearing tool-result bulk inside an otherwise indivisible pair.
+ - **`compactRegion` requires an open turn** — a manual call on a fully-closed session throws ("no open turn") rather than compacting.
+ - **Summarization failure preserves the latest durable surface** — before any replacement, the auto path logs a warning and proceeds with full over-budget history. If pruning already landed, a later summarization failure proceeds from that durable pruned surface. Summarization truncation at `maxTokens`, which hidden reasoning tokens can consume, follows the same rule.
+-- **Retention is limited to the latest actual user input in the open turn** — older goals and evidence still depend on the generated summary, whose factual quality and instruction compliance are not validated. Retaining a large request can prevent compaction from shrinking the selected range. Preserved instructions do not guarantee model compliance or completion.
++- **Retention is limited to the latest actual user input in the open turn** — older goals and evidence still depend on the generated summary, whose factual quality and prose-only instruction compliance are not validated. Retaining a large request can prevent compaction from shrinking the selected range. Preserved instructions do not guarantee model compliance or completion.
+diff --git a/packages/compaction/compaction-basic/README.zh.md b/packages/compaction/compaction-basic/README.zh.md
+index afcb958..83e9f7d 100644
+--- a/packages/compaction/compaction-basic/README.zh.md
++++ b/packages/compaction/compaction-basic/README.zh.md
+@@ -15,7 +15,7 @@
+ - **不依赖模型的剪枝**：在压力或规范溢出符合条件后，可选的 [`ctx.toolResultPruner`](../compaction-tool-result-pruner/README.zh.md) 服务会在选择范围之前改写超大工具结果。Compact-basic 通过 `ctx.tokenMeter` 重新测量；如果压力已回到安全范围，就跳过摘要，否则对已剪枝的表层进行摘要。低于压力的步骤检查绝不剪枝。
+ - **保留**：压缩最旧的完整表层单元，同时保留近期尾部，并通过 [`dsh-compaction` 边界 helper](../compaction/README.zh.md#tool-pairing-boundaries) 将切分点调整到工具调用／结果配对平衡的位置。轮次边界不会保护失控轮次内的旧步骤。尚未闭合且不可分的尾部会在闭合前拒绝压缩。当闭合的超大工具单元以文本型结果为可移除主体时，可选 pruner 可以修复它；不可分的非工具单元与不可剪枝的工具剩余部分不在范围内。
+ - **收敛**：最多按 `compactionRetries` 重试头部检查点压缩；拒绝不能缩小源内容的摘要，如果重试仍无法回到阈值以下，则抛出异常。
+-- **摘要**：直接 `llm/stream` 调用使用已配置的提供方／模型对与上限，回退到最新已记录请求目标，然后再回退到 agent（智能体）目标，而不运行仅用于 agent loop 的 `agent/request` 扩展点。该调用会逐字回放会话自身的系统提示词、工具与已遮蔽区域消息（包括图片引用），并将压缩指令作为最后一条 user 消息追加，从而复用提供方的热前缀 cache，而非使它失效。所选适配器必须解析或明确拒绝这些图片。它将 `GenerateOptions.purpose` 设为 `compaction`，适配器可将其作为请求归因转发（DeepSeek 适配器发送 `x-deepseek-harness-compact: 1`），但不会触碰模型可见的请求体。只有返回的文本会进入检查点；推理（reasoning）和工具调用都会被排除，以免泄露私有推理或产生遗留调用；图片输出会以 `UNSUPPORTED_CONTENT` 失败，而不是消失。
++- **摘要**：直接 `llm/stream` 调用使用已配置的提供方／模型对与上限，回退到最新已记录请求目标，然后再回退到 agent（智能体）目标，而不运行仅用于 agent loop 的 `agent/request` 扩展点。该调用会逐字回放会话自身的系统提示词、工具与已遮蔽区域消息（包括图片引用），并将压缩指令作为最后一条 user 消息追加，从而复用提供方的热前缀 cache，而非使它失效。所选适配器必须解析或明确拒绝这些图片。它将 `GenerateOptions.purpose` 设为 `compaction`，适配器可将其作为请求归因转发（DeepSeek 适配器发送 `x-deepseek-harness-compact: 1`），但不会触碰模型可见的请求体。只有返回的文本会进入检查点；推理（reasoning）会被排除。工具调用块或 `tool-calls` 结束原因会在替换检查点前以 `INVALID_SUMMARY` 拒绝整个摘要，即使输出中同时包含文本。辅助工具调用绝不会执行。图片输出会以 `UNSUPPORTED_CONTENT` 失败，而不是消失。
+ - **框定**：替换 user 消息使用 `<compacted-summary>` 标签标记已建立的检查点上下文。原始摘要保留在 `compaction/summary` 事件上，后续自动周期会合并之前的检查点。
+ - **保留当前请求**：当所选范围包含未结束轮次中最新接纳的用户请求或其后继检查点时，替换消息还会保留该请求的原始内容块，以及自该请求以来已记录的工具调用次数。文本取自原始 `user/message`，而非摘要。范围之外的较新请求保持原位，不会重复；已结束轮次的请求仍可被摘要。包括保留内容在内的完整替换消息必须通过现有缩减检查。
+ - **生命周期**：所有入口点共享一个先记录标记的区域事务。它会验证范围与活动锁，同步追加 `compaction/start`，准备并等待摘要，重新验证，再追加 `compaction/summary` 和替换，最后恰好进行一次闭合尝试。自动调用和显式范围调用要求数字标识的开放轮次归属，并要求整个表层保持稳定；串行 `agent/pre-step` listener 会在派生请求之前检查压力，而规范提供方溢出则经由 `agent/request-error` 进入，并且只在表层取得持久进展后才允许重试。`compactNow()` 会预留空闲接纳，使用 `turn: null`，允许所选 span 之外追加仅追加上下文，flush 每次已闭合尝试，并在 `finally` 中释放接纳预留。
+@@ -117,7 +117,7 @@ Recorded tool calls since this request: {count} (all tools through checkpoint pr
+ 
+ #### 模型看到的内容
+ 
+-摘要模型会接收逐字回放的会话：与上次已路由请求为已遮蔽区域发送的相同系统提示词、工具 schema 与消息，后面跟随一条最终 user 消息，即下方压缩指令。会话模型绝不会看到该私有请求或其推理；只有返回文本会被存储。
++摘要模型会接收逐字回放的会话：与上次已路由请求为已遮蔽区域发送的相同系统提示词、工具 schema 与消息，后面跟随一条最终 user 消息，即下方压缩指令。会话模型绝不会看到该私有请求或其推理。接纳的检查点内容只包含返回文本；成功辅助调用的完整输出单独保留在持久的 `compaction/summary` 事件中。
+ 
+ ##### 压缩指令（最终 user 消息）
+ 
+@@ -173,4 +173,4 @@ Rules:
+ - **部分不可分单元与仅 envelope 溢出仍不在表层压缩范围内**：恢复无法缩减系统／工具／前缀、拆分不可分的非工具节点，或修复不可剪枝剩余部分仍超出窗口的工具单元。可选 pruner 可以缩减原本不可分工具对内的文本型工具结果主体。
+ - **`compactRegion` 要求存在未结束的轮次**：在完全关闭的会话上手动调用会抛出异常（「no open turn」），而不是执行压缩。
+ - **摘要失败会保留最新持久表层**：任何替换前，自动路径会记录警告，并携带完整超预算历史继续。如果剪枝已落地，后续摘要失败会从该持久剪枝表层继续。因达到 `maxTokens` 而发生的摘要截断（隐藏推理 token 可能会耗尽该额度）遵循同一规则。
+-- **只保留未结束轮次中最新的实际用户输入**：较早的目标和证据仍依赖生成的摘要，系统不验证其事实质量或指令遵循情况。保留大型请求可能使所选范围无法缩减。保留指令并不保证模型遵循指令或完成任务。
++- **只保留未结束轮次中最新的实际用户输入**：较早的目标和证据仍依赖生成的摘要，系统不验证其事实质量或纯文本的指令遵循情况。保留大型请求可能使所选范围无法缩减。保留指令并不保证模型遵循指令或完成任务。
+diff --git a/packages/compaction/compaction-basic/src/summarizer.ts b/packages/compaction/compaction-basic/src/summarizer.ts
+index e77d9ec..0baa53d 100644
+--- a/packages/compaction/compaction-basic/src/summarizer.ts
++++ b/packages/compaction/compaction-basic/src/summarizer.ts
+@@ -117,6 +117,9 @@ export type SummaryResult = {
+  * @param agent - supplies routed-model history, fallback model, and session id.
+  * @param signal - optional cancellation forwarded to the adapter.
+  * @returns safe text-only summary blocks and the exact call envelope and output.
++ * @throws when the target is unavailable, generation fails or is incomplete,
++ * returns tool calls (`INVALID_SUMMARY`), contains images (`UNSUPPORTED_CONTENT`),
++ * or has no nonempty text. Rejected output must not replace source history.
+  */
+ export async function summarizeWithLlm(
+   ctx: Context,
+@@ -197,6 +200,8 @@ export function frameSummary(summary: readonly ContentBlock[]): ContentBlock[] {
+ /** Map a terminal summarization finish to its fail-closed error. */
+ function finishError(finish: FinishReason): Error | undefined {
+   switch (finish.kind) {
++    case 'tool-calls':
++      return new LlmError('summarization returned tool calls instead of a completed checkpoint', 'INVALID_SUMMARY')
+     case 'error':
+     case 'aborted': {
+       const error = new Error(finish.failure.message) as Error & { code?: string }
+@@ -213,12 +218,15 @@ function finishError(finish: FinishReason): Error | undefined {
+   }
+ }
+ 
+-/** Reject visual output and keep only text before synthesizing a user message. */
++/** Reject visual output and tool calls before projecting checkpoint text. */
+ function summaryText(
+   blocks: readonly ContentBlock[],
+ ): Array<Extract<ContentBlock, { type: 'text' }>> {
+   if (contentHasImage(blocks)) {
+     throw new LlmError('compaction summary cannot contain image output', 'UNSUPPORTED_CONTENT')
+   }
++  if (blocks.some(block => block.type === 'tool-call')) {
++    throw new LlmError('summarization returned tool calls instead of a completed checkpoint', 'INVALID_SUMMARY')
++  }
+   return blocks.filter((block): block is Extract<ContentBlock, { type: 'text' }> => block.type === 'text')
+ }
+diff --git a/packages/compaction/compaction-basic/tests/compaction-basic.spec.ts b/packages/compaction/compaction-basic/tests/compaction-basic.spec.ts
+index 2cf07d3..cc28878 100644
+--- a/packages/compaction/compaction-basic/tests/compaction-basic.spec.ts
++++ b/packages/compaction/compaction-basic/tests/compaction-basic.spec.ts
+@@ -1183,7 +1183,6 @@ describe('default one-shot summarizer', () => {
+     const { adapter, compact } = await summarizerHarness([
+       { type: 'reasoning', text: 'private' },
+       { type: 'text', text: 'public summary' },
+-      { type: 'tool-call', id: CallId('unexpected'), name: 'x', arguments: '{}' },
+     ], undefined, MODEL, {
+       auto: false,
+       summarizationProvider: MODEL,
+@@ -1199,7 +1198,6 @@ describe('default one-shot summarizer', () => {
+       rawOutput: [
+         { type: 'reasoning', text: 'private' },
+         { type: 'text', text: 'public summary' },
+-        { type: 'tool-call', id: CallId('unexpected'), name: 'x', arguments: '{}' },
+       ],
+       llmStreamCall: true,
+       provider: MODEL,
+@@ -1396,6 +1394,31 @@ describe('default one-shot summarizer', () => {
+       .rejects.toThrow(/no text summary content/)
+   })
+ 
++  it.each(['stop', 'tool-calls'] as const)('preserves source history when summarization emits tool calls with %s finish', async (kind) => {
++    const { compact } = await summarizerHarness([
++      { type: 'text', text: 'The page is incomplete. Let me continue fetching.' },
++      { type: 'tool-call', id: CallId('not-a-summary'), name: 'web_fetch', arguments: '{"cursor":"next"}' },
++    ], { kind })
++    const session = conversation(3, 'Source evidence excludes cancellation exceptions. '.repeat(100))
++    const before = session.deriveMessages()
++    const nodes = [...session.surface.nodes]
++    await expect(compact.compactRegion(nodes[0]!, nodes[3]!, agent(session, MODEL)))
++      .rejects.toMatchObject({ code: 'INVALID_SUMMARY' })
++    expect(session.deriveMessages()).toEqual(before)
++    expect(session.surface.nodes).toEqual(nodes)
++    expect(session.events.some(event => event.type === 'compaction/summary')).toBe(false)
++    expect(session.events.at(-1)).toMatchObject({
++      type: 'compaction/end',
++      data: { error: 'summarization returned tool calls instead of a completed checkpoint' },
++    })
++  })
++
++  it('rejects a tool-calls finish even when an adapter supplies only text blocks', async () => {
++    const { compact } = await summarizerHarness([{ type: 'text', text: 'Continue reading.' }], { kind: 'tool-calls' })
++    await expect(compact.runSummarize(promptInput('actual source findings'), agent(conversation(1), MODEL)))
++      .rejects.toMatchObject({ code: 'INVALID_SUMMARY' })
++  })
++
+   it('rejects image summary output instead of silently dropping it', async () => {
+     const { compact } = await summarizerHarness([
+       {
+-- 
+2.55.0.windows.3
+

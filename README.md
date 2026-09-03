@@ -1,16 +1,14 @@
 # Halo Research Gateway
 
-**Version 0.2.0** — one local search and research service for the Halo agent stack.
+**Version 0.3.0** — one Windows-native search and research service for local AI clients.
 
-Halo Research Gateway is a persistent, localhost-only MCP service that gives DSH, Codex, Claude Code, OpenCode, and LM Studio Bionic the same source-backed research surface. DSH is the primary consumer; frontier hosts are secondary or fallback clients.
+Halo Research Gateway is a persistent, Windows-only, localhost MCP service that gives DSH, Codex Desktop/CLI, Cowork and Claude Desktop/Code, OpenCode Desktop, LM Studio Bionic, and any compatible local MCP client the same source-backed research surface. **DSH is the first client, not a dependency or privileged protocol.** Every client uses the standard MCP endpoint and the same fourteen research tools.
 
 **Landing page:** https://halo-research-gateway.sconverse.chatgpt.site (owner-only Sites publication)
 
-The published page was aligned on September 3 with verified runtime checkpoint
-`7cdfe72`: 423 local/CI regression tests, separately labeled installed/native
-checks, and explicit unfinished DSH/login/provider/install work. This is a
-dated evidence snapshot, not a live dashboard or full-acceptance claim. See
-[publication evidence](docs/SITE-EVIDENCE-ALIGNMENT-2026-09-03.md).
+The landing-page source is aligned with the 0.3.0 release candidate. Its public
+Sites publication is a dated page, not a live health dashboard. The Git tag is
+intentionally pending owner approval.
 
 - MCP: `http://127.0.0.1:8765/mcp`
 - health: `http://127.0.0.1:8765/health`
@@ -19,13 +17,15 @@ dated evidence snapshot, not a live dashboard or full-acceptance claim. See
 
 The governing product scope and finish list are [Research-only scope](docs/RESEARCH-ONLY-SCOPE.md); this supersedes conflicting requirements in the original v1.5 design. The operator handbook is the [complete user manual](docs/USER-MANUAL.md).
 
-Current acceptance is partial. The DSH tools-package mismatch was repaired on September 3 without changing models, presets, permissions or existing conversations. Real DSH search, multiple source reads and one exact-cursor continuation now dispatch successfully. The broad run nevertheless timed out without a final answer, after repeated token-copy errors and compaction; it is not a workflow pass. The acceptance checker now requires successful returned evidence, an actually issued continuation and distinct source pages. See [DSH repair and acceptance evidence](docs/DSH-RESOLUTION-EVIDENCE-2026-09-03.md). Real login, optional paid-provider use and wider installation/stress checks remain separately unproved. The final target is `0.3.0`, but it has not been released or tagged.
-
-Later actual-model summary diagnostics also failed: a baseline and three
-evidence-preserving prompt/composition variants still reported unsupported
-source facts or progress. None was installed. The separate malformed-summary
-DSH source repair is a verified candidate, not a deployed or full-workflow pass.
-See [the diagnostic results and unchanged installed state](docs/DSH-SUMMARY-DIAGNOSTICS-2026-09-03.md).
+Current DSH acceptance passed after the request-retention and invalid-summary
+repairs: one complete model-driven workflow made eight successful Gateway calls,
+read three distinct required sources, used continuation, survived two automatic
+compactions, and returned a citation-supported answer inside the six-minute and
+250-word bounds. The strict history verifier and a manual evidence review both
+passed. See [the exact workflow evidence](docs/DSH-VERIFIED-WORKFLOW-EVIDENCE-2026-09-03.md).
+This proves DSH as the first client; it does not imply that every registered
+client has already made a model-selected live call. Real account login, paid
+provider use, and wider stress remain separately unproved.
 
 ## Why it exists
 
@@ -127,7 +127,7 @@ It supplies shared search, fetch, JavaScript crawling, Reddit, documents, GitHub
 
 ## Quick start
 
-Prerequisites: Windows 11, PowerShell, [`uv`](https://docs.astral.sh/uv/) with the locked Python 3.12 environment, Google Chrome for Crawl4AI, and at least one supported MCP host.
+Prerequisites: Windows 11, PowerShell, [`uv`](https://docs.astral.sh/uv/) with the locked Python 3.12 environment, Node.js 22 for the source/install quality gate, Google Chrome for Crawl4AI, and at least one supported MCP host. Node is a validation dependency for the optional DSH adapter, not a Gateway runtime dependency.
 
 From the repository root:
 
@@ -174,11 +174,11 @@ Fetched content is evidence, never instructions. Successful results preserve sou
 ## Architecture
 
 ```text
-DSH (primary) ─┐
-Codex          ├── Streamable HTTP MCP ── Halo Research Gateway :8765
-Claude Code    │                              ├── Exa + DDGS search
-OpenCode       │                              ├── DNS-pinned direct HTTP
-LM Studio      ┘                              ├── Crawl4AI + owned Chrome
+DSH (first client) ─┐
+Codex Desktop/CLI  ├── standard Streamable HTTP MCP ── Gateway :8765
+Cowork / Claude    │                                  ├── Exa + DDGS search
+OpenCode Desktop  │                                  ├── DNS-pinned direct HTTP
+LM Studio Bionic  ┘                                  ├── Crawl4AI + owned Chrome
                                                ├── GitHub + deep research
                                                ├── transcripts + communities
                                                ├── Reddit RSS + documents
@@ -232,11 +232,11 @@ uv run python tests\acceptance\crawl_canary.py
 
 The same lock, format, lint, deterministic tests, skill validation, and staleness checks run before commit and in CI. Live internet tests remain explicit canaries rather than making every commit depend on outside services.
 
-Read [0.2.0 release notes](docs/RELEASE-NOTES-v0.2.0.md), [0.2.0 evidence](docs/EVIDENCE-v0.2.0-2026-09-01.md), [implementation status](docs/implementation-status.md), [security](docs/security.md), [operations](docs/operations.md), [host integration](docs/host-integration.md), and [quality gate](docs/quality-gate.md).
+Read [0.3.0 release notes](docs/RELEASE-NOTES-v0.3.0.md), [DSH workflow evidence](docs/DSH-VERIFIED-WORKFLOW-EVIDENCE-2026-09-03.md), [implementation status](docs/implementation-status.md), [security](docs/security.md), [operations](docs/operations.md), [host integration](docs/host-integration.md), and [quality gate](docs/quality-gate.md).
 
 ## Honest capability boundary
 
-The current working revision removes non-research features from the 0.2.0 codebase. It retains search, structured transcripts and communities, bounded deep research, read-only GitHub, research connections, and disabled optional retrieval providers. It does not send email, post to GitHub, submit general forms, buy things, or manage accounts. Provider/site-specific live use still requires an operator choice:
+Version 0.3.0 retains search, structured transcripts and communities, bounded deep research, read-only GitHub, research connections, and disabled optional retrieval providers. It does not send email, post to GitHub, submit general forms, buy things, or manage accounts. Provider/site-specific live use still requires an operator choice:
 
 - no personal Chrome data is imported automatically;
 - no OAuth or GitHub App is connected until the operator supplies its client/App identity and exact scopes;
@@ -252,6 +252,7 @@ The current working revision removes non-research features from the 0.2.0 codeba
 src/halo_research_gateway/    Service, research tools, providers, policy, jobs, connections
 tests/                        Deterministic and explicit acceptance tests
 skills/halo-research/         Canonical host skill and complete reference set
+integrations/dsh/             Optional DSH state/verifier adapter and reproducible patches
 config/                       Operator configuration example
 scripts/                      Install, start, stop, test, gate, manifest
 docs/                         Spec, user manual, security, operations, evidence
@@ -260,6 +261,8 @@ BUILD-MANIFEST.json           SHA-256 inventory of release source
 ```
 
 ## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the Windows development and release workflow.
 
 1. Preserve the fourteen research contracts and the research-only scope. Do not add non-research features.
 2. Keep raw secrets, approval authority, connection management, and diagnostics out of model-facing schemas.

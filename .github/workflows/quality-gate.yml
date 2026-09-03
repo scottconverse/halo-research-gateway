@@ -9,7 +9,18 @@ jobs:
         with:
           version: '0.12.3'
           enable-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: website/package-lock.json
       - run: uv python install 3.12
       - run: uv sync --locked --extra crawl --extra documents --group dev
       - shell: pwsh
         run: ./scripts/Invoke-QualityGate.ps1 -Scope CI
+      - working-directory: website
+        run: npm ci
+      - working-directory: website
+        run: npm run lint
+      - working-directory: website
+        run: npm run build

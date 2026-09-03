@@ -17,6 +17,7 @@ import httpx
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
+from .. import __version__
 from ..clock import SystemClock, rfc3339
 from ..connections.store import ConnectionStore
 from ..models import EvidenceItem, ProviderResult
@@ -149,7 +150,7 @@ class GitHubProvider:
         headers = {
             "Accept": ACCEPT,
             "X-GitHub-Api-Version": API_VERSION,
-            "User-Agent": "halo-research-gateway/0.1",
+            "User-Agent": f"halo-research-gateway/{__version__}",
         }
         if token:
             headers["Authorization"] = f"Bearer {token}"

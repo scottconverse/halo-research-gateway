@@ -1,0 +1,743 @@
+From f709c7bd81249fdb5fcc98a951684d1328387b7a Mon Sep 17 00:00:00 2001
+From: Scott Converse <scottconverse@users.noreply.github.com>
+Date: Thu, 3 Sep 2026 05:50:21 -0600
+Subject: [PATCH] fix(compaction): retain active requests and recorded tool
+ progress
+
+---
+ ...paction-active-request-retention.i18n.yaml |   6 +
+ ...-03-compaction-active-request-retention.md |  29 +++
+ ...-compaction-active-request-retention.zh.md |  29 +++
+ .../compaction.cordis.snapshot.yml            |   3 +
+ .../tests/fixtures/compaction-context.ts      |  23 ++
+ .../headless-agent/tests/headless.snapshot.ts |  19 +-
+ .../snapshots/compaction-recovery/input.json  |   2 +-
+ .../compaction-recovery/session.jsonl         |  26 +--
+ .../stream-json.expected.jsonl                |  26 +--
+ .../compaction-basic/README.i18n.yaml         |   4 +-
+ .../compaction/compaction-basic/README.md     |  14 +-
+ .../compaction/compaction-basic/README.zh.md  |  14 +-
+ .../compaction/compaction-basic/src/region.ts |  61 ++++-
+ .../tests/request-retention.spec.ts           | 209 ++++++++++++++++++
+ scripts/project-doc-site.spec.ts              |   7 +-
+ 15 files changed, 433 insertions(+), 39 deletions(-)
+ create mode 100644 .agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.i18n.yaml
+ create mode 100644 .agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.md
+ create mode 100644 .agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.zh.md
+ create mode 100644 examples/headless-agent/tests/fixtures/compaction-context.ts
+ create mode 100644 packages/compaction/compaction-basic/tests/request-retention.spec.ts
+
+diff --git a/.agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.i18n.yaml b/.agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.i18n.yaml
+new file mode 100644
+index 0000000..9e13940
+--- /dev/null
++++ b/.agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.i18n.yaml
+@@ -0,0 +1,6 @@
++# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
++# side as of the last confirmed-consistent state. Both languages carry equal authority;
++# after editing either side, bring the other along and re-record with:
++#   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.md
++2026-09-03-compaction-active-request-retention.md: ab2045815b527ceee8182b1f26a719851acd0431
++2026-09-03-compaction-active-request-retention.zh.md: eabc2f636964a537f1175cf0b6c6ea654218959e
+diff --git a/.agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.md b/.agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.md
+new file mode 100644
+index 0000000..ab20458
+--- /dev/null
++++ b/.agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.md
+@@ -0,0 +1,29 @@
++# Agent Note: Preserve the active user request across compaction
++
++Status: implemented
++
++English | [中文](2026-09-03-compaction-active-request-retention.zh.md)
++
++## Problem
++
++Repeated model-written checkpoints can lose the current research question and stopping constraints. A live three-source research run retained its twelve-call and 250-word instructions in the first summary, then lost both in subsequent summaries and continued fetching instead of answering. The event log still contained the original request, but the request sent to the model did not. Nonempty summarizer output alone does not establish that it preserves user intent.
++
++## Decision
++
++The [basic compaction transaction](../../../../packages/compaction/compaction-basic/README.md) preserves the open turn's latest admitted `source.kind: user` content blocks independently of the generated summary. Retention applies only when the selected range contains that input or a prior compaction checkpoint derived from it. Original provenance, not text tags supplied by a tool or plugin, identifies the request. The replacement cites the original event and is reconstructable from the durable log.
++
++The transaction captures request content and the count of actual `tool/call` events before awaiting the summarizer. The count covers all tools since that request, including failed attempts and calls retained outside the replaced span; it is not an enforcement policy. A later request outside the span remains later input. Closed turns remain compressible. The complete framed replacement must shrink under the existing meter, so oversized retained inputs fail without removing their original history.
++
++## Alternatives considered
++
++**Prompt-only repair.** The summarizer already asks for explicit instructions to be preserved. Repeating that demand does not prevent lossy recursive summaries from discarding the exact request.
++
++**Changing model routes or context sizes.** Those changes would alter the operator's configuration and would not establish request preservation. This repair changes neither those settings nor tool permissions.
++
++**Retaining all historical user inputs.** This prevents ordinary closed-turn history compaction and can leave no reducible context. The retained input is limited to the latest one in the current open turn; older intent remains part of the summary.
++
++## Consequences
++
++Every affected checkpoint spends additional tokens on the unchanged request and progress framing. It can refuse a compaction that previously succeeded by discarding that request. It does not verify summary facts, reject all summarizer refusals, enforce call limits, or guarantee that the model answers. No session format or public configuration changes are required.
++
++Package regressions cover recursive lossy summaries, replay, source provenance, call accounting, steering, unrelated spans, closed turns, and shrink failure. The keyless headless overflow snapshot runs the real Loader and built package with compressible background context and asserts that the exact request and count survive. Deterministic preservation evidence is separate from live research-answer acceptance.
+diff --git a/.agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.zh.md b/.agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.zh.md
+new file mode 100644
+index 0000000..eabc2f6
+--- /dev/null
++++ b/.agents/notes/implemented/bug-fix/2026-09-03-compaction-active-request-retention.zh.md
+@@ -0,0 +1,29 @@
++# Agent Note: 在压缩过程中保留当前用户请求
++
++Status: implemented
++
++[English](2026-09-03-compaction-active-request-retention.md) | 中文
++
++## 问题
++
++模型反复生成检查点时，可能丢失当前研究问题和停止条件。一次使用三个来源的真实研究运行，在首份摘要中保留了十二次调用和 250 词限制，却在后续摘要中丢失了这两项要求，并持续抓取而没有回答。事件日志仍保存原始请求，但发给模型的请求已不包含它。摘要器返回非空文本，并不能证明它保留了用户意图。
++
++## 决定
++
++[基础压缩事务](../../../../packages/compaction/compaction-basic/README.zh.md) 独立于生成的摘要，保留未结束轮次中最新接纳且来源为 `source.kind: user` 的原始内容块。只有所选范围包含该输入或由它派生的先前压缩检查点时，才进行保留。请求身份由原始来源信息确定，而非工具或插件提供的文本标签。替换消息引用原始事件，并可从持久日志重建。
++
++事务在等待摘要器之前捕获请求内容及实际 `tool/call` 事件的计数。该计数涵盖自请求以来的所有工具，包括失败尝试和位于替换范围之外的保留调用；它不是强制执行策略。范围之外的较新请求仍作为后续输入。已结束轮次仍可压缩。包含完整框定文本的替换消息必须通过现有计量器的缩减检查，因此过大的保留输入会使压缩失败，但不会删除其原始历史。
++
++## 考虑过的替代方案
++
++**仅修正提示词。** 摘要器已被要求保留明确指令。重复该要求无法防止有损的递归摘要丢弃原始请求。
++
++**更改模型路由或上下文大小。** 这些更改会改变操作员的配置，却不能保证请求得到保留。本修复不更改这些设置或工具权限。
++
++**保留所有历史用户输入。** 这样会阻止已结束轮次的普通历史压缩，并可能不再有可缩减的上下文。保留范围仅限当前未结束轮次中的最新输入；较早的意图仍由摘要承载。
++
++## 影响
++
++每个受影响的检查点都会额外使用 token 来保存未改动的请求和进度框定文本。它可能拒绝此前通过丢弃该请求而成功的压缩。它不验证摘要事实、不拒绝所有摘要器拒绝文本、不强制执行调用限制，也不保证模型作答。不需要更改会话格式或公开配置。
++
++包级回归测试覆盖递归有损摘要、回放、来源信息、调用计数、steering（中途引导）、无关范围、已结束轮次以及缩减失败。无需密钥的 headless 溢出快照使用真实 Loader 和已构建包，提供可压缩的背景上下文，并断言原始请求和计数得到保留。确定性的保留证据与真实研究回答验收分开记录。
+diff --git a/examples/headless-agent/compaction.cordis.snapshot.yml b/examples/headless-agent/compaction.cordis.snapshot.yml
+index e97e43d..68d8b2f 100644
+--- a/examples/headless-agent/compaction.cordis.snapshot.yml
++++ b/examples/headless-agent/compaction.cordis.snapshot.yml
+@@ -1,4 +1,7 @@
+ # Keyless context-overflow composition for the assembled compaction snapshot.
++- id: compaction-context-fixture
++  name: './tests/fixtures/compaction-context.ts'
++
+ - id: base
+   name: '@deepseek-ai/cordis-plugin-include'
+   config:
+diff --git a/examples/headless-agent/tests/fixtures/compaction-context.ts b/examples/headless-agent/tests/fixtures/compaction-context.ts
+new file mode 100644
+index 0000000..6fb2543
+--- /dev/null
++++ b/examples/headless-agent/tests/fixtures/compaction-context.ts
+@@ -0,0 +1,23 @@
++/** Logged background material for the keyless compaction recovery scenario. */
++import type { Context } from '@deepseek-ai/cordis'
++import type { PreStepDecision } from '@deepseek-ai/dsh-agent'
++import { createUserMessage } from '@deepseek-ai/dsh-llm'
++
++export const name = 'compaction-context-fixture'
++export const inject = ['agents']
++
++/** Add reducible context without inflating or replacing the user's request. */
++export function apply(ctx: Context): void {
++  ctx.on('agent/pre-step', async ({ step }, next): Promise<PreStepDecision> => {
++    const decision = await next()
++    if (decision.kind === 'reject' || step !== 1) return decision
++    return {
++      kind: 'enter',
++      messages: [...decision.messages, createUserMessage({
++        content: [{ type: 'text', text: Array.from({ length: 24 }, (_, index) =>
++          `Background record ${index + 1}: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.`).join('\n') }],
++        source: { kind: 'plugin', plugin: name },
++      })],
++    }
++  }, { prepend: true })
++}
+diff --git a/examples/headless-agent/tests/headless.snapshot.ts b/examples/headless-agent/tests/headless.snapshot.ts
+index 5a55493..f322448 100644
+--- a/examples/headless-agent/tests/headless.snapshot.ts
++++ b/examples/headless-agent/tests/headless.snapshot.ts
+@@ -370,7 +370,10 @@ describe('headless stream-json snapshots', () => {
+         DSH_SNAPSHOT_FILE: compactionSessionFixture,
+         NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' '),
+       },
+-      prepare: (cwd) => { runCwd = cwd },
++      prepare: async (cwd) => {
++        runCwd = cwd
++        await writeFile(join(cwd, 'marker.txt'), 'alpha\n')
++      },
+       inspect: async (cwd) => {
+         const logs = await persistedLogs(cwd)
+         expect(logs).toHaveLength(1)
+@@ -392,6 +395,14 @@ describe('headless stream-json snapshots', () => {
+         expect(start).toBeLessThan(summary)
+         expect(summary).toBeLessThan(replacement)
+         expect(replacement).toBeLessThan(end)
++        const checkpoint = records[replacement]?.data as JsonObject | undefined
++        const checkpointText = JSON.stringify(checkpoint?.content)
++        expect(checkpointText).toContain(JSON.stringify(prompt).slice(1, -1))
++        expect(checkpointText).toContain('Recorded tool calls since this request: 1')
++        expect(checkpointText).not.toContain('Background record 24:')
++        const toolResults = records.filter(record => record.type === 'tool/result')
++        expect(toolResults).toHaveLength(1)
++        expect(JSON.stringify(toolResults)).toContain('1: alpha')
+         const summaryRecord = records[summary]
+         const summaryData = summaryRecord?.data as JsonObject | undefined
+         expect(summaryData?.shadowedSeqs).toEqual(expect.arrayContaining([expect.any(Number)]))
+@@ -406,8 +417,10 @@ describe('headless stream-json snapshots', () => {
+             content: actual.content,
+           }
+           const replacements = refreshFixtureReplacements([harvested], [expectedSession])
+-          expectedSession = projectSessionFixture(tokenizeSessionFixtureCwd(
+-            stabilizeRefreshLog(actual.content, expectedSession, replacements, actualContext),
++          // Tokenize before refresh replaces the header cwd: read results can
++          // use a slash spelling different from the native Windows header.
++          expectedSession = projectSessionFixture(stabilizeRefreshLog(
++            tokenizeSessionFixtureCwd(actual.content), expectedSession, replacements, actualContext,
+           ))
+           await writeFile(compactionSessionFixture, expectedSession)
+         }
+diff --git a/examples/headless-agent/tests/snapshots/compaction-recovery/input.json b/examples/headless-agent/tests/snapshots/compaction-recovery/input.json
+index 1400d28..0f9879b 100644
+--- a/examples/headless-agent/tests/snapshots/compaction-recovery/input.json
++++ b/examples/headless-agent/tests/snapshots/compaction-recovery/input.json
+@@ -2,7 +2,7 @@
+   "steps": [
+     {
+       "op": "prompt",
+-      "text": "Establish a durable compaction premise before continuing. Record every part of this historical evidence: the snapshot uses keyless replay; persistence uses JSONL; the assembled headless application loads its real Cordis composition; model-visible inputs remain logged; tool calls and results remain paired and ordered; context overflow retains the original failure while recovery is attempted; compaction opens with compaction/start and closes with compaction/end; a successful auxiliary summary records compaction/summary provenance; the replacement surface shadows only an older balanced range; the checkpoint remains smaller than the history it replaces; the newest tool result remains verbatim; the retried request sees that checkpoint; the final response proves the same turn continued; deterministic snapshot evidence stays separate from the live-provider smoke; and no external API key is needed. Emit one alpha marker through bash, then finish the task after any required recovery with the exact words COMPACTION RECOVERED."
++      "text": "Read marker.txt with the native read tool, then finish after any required context recovery with the exact words COMPACTION RECOVERED. Keep the original request and tool evidence available throughout the turn."
+     }
+   ]
+ }
+diff --git a/examples/headless-agent/tests/snapshots/compaction-recovery/session.jsonl b/examples/headless-agent/tests/snapshots/compaction-recovery/session.jsonl
+index 575bbc5..0ace79c 100644
+--- a/examples/headless-agent/tests/snapshots/compaction-recovery/session.jsonl
++++ b/examples/headless-agent/tests/snapshots/compaction-recovery/session.jsonl
+@@ -1,32 +1,32 @@
+ {"type":"session","version":0,"id":"{{sessionId}}","createdAt":0,"cwd":"{{cwd}}","delegationDepth":0}
+-{"type":"agent/inbox/spliced","data":{"target":"next-turn","start":0,"inserted":[{"content":[{"type":"text","text":"Establish a durable compaction premise before continuing. Record every part of this historical evidence: the snapshot uses keyless replay; persistence uses JSONL; the assembled headless application loads its real Cordis composition; model-visible inputs remain logged; tool calls and results remain paired and ordered; context overflow retains the original failure while recovery is attempted; compaction opens with compaction/start and closes with compaction/end; a successful auxiliary summary records compaction/summary provenance; the replacement surface shadows only an older balanced range; the checkpoint remains smaller than the history it replaces; the newest tool result remains verbatim; the retried request sees that checkpoint; the final response proves the same turn continued; deterministic snapshot evidence stays separate from the live-provider smoke; and no external API key is needed. Emit one alpha marker through bash, then finish the task after any required recovery with the exact words COMPACTION RECOVERED."}],"source":{"kind":"user"},"role":"user","id":"10eb2388-2d40-4564-af27-e7a5419fc14e"}]}}
++{"type":"agent/inbox/spliced","data":{"target":"next-turn","start":0,"inserted":[{"content":[{"type":"text","text":"Read marker.txt with the native read tool, then finish after any required context recovery with the exact words COMPACTION RECOVERED. Keep the original request and tool evidence available throughout the turn."}],"source":{"kind":"user"},"role":"user","id":"33a0833d-46aa-4114-9691-6476c11bb3dd"}]}}
+ {"type":"turn/start","data":{"turn":1}}
+ {"type":"agent/inbox/spliced","data":{"target":"next-turn","start":0,"removedCount":1,"inserted":[]}}
+ {"type":"step/start","data":{"turn":1,"step":1}}
+-{"type":"user/message","data":{"content":[{"type":"text","text":"Establish a durable compaction premise before continuing. Record every part of this historical evidence: the snapshot uses keyless replay; persistence uses JSONL; the assembled headless application loads its real Cordis composition; model-visible inputs remain logged; tool calls and results remain paired and ordered; context overflow retains the original failure while recovery is attempted; compaction opens with compaction/start and closes with compaction/end; a successful auxiliary summary records compaction/summary provenance; the replacement surface shadows only an older balanced range; the checkpoint remains smaller than the history it replaces; the newest tool result remains verbatim; the retried request sees that checkpoint; the final response proves the same turn continued; deterministic snapshot evidence stays separate from the live-provider smoke; and no external API key is needed. Emit one alpha marker through bash, then finish the task after any required recovery with the exact words COMPACTION RECOVERED."}],"source":{"kind":"user"},"role":"user","id":"10eb2388-2d40-4564-af27-e7a5419fc14e"},"surfaceOp":"append"}
+-{"type":"session/title","data":{"title":"Establish a durable compaction premise","messageSeqs":[4],"source":{"kind":"fallback"}}}
++{"type":"user/message","data":{"content":[{"type":"text","text":"Read marker.txt with the native read tool, then finish after any required context recovery with the exact words COMPACTION RECOVERED. Keep the original request and tool evidence available throughout the turn."}],"source":{"kind":"user"},"role":"user","id":"33a0833d-46aa-4114-9691-6476c11bb3dd"},"surfaceOp":"append"}
++{"type":"user/message","data":{"content":[{"type":"text","text":"Background record 1: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 2: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 3: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 4: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 5: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 6: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 7: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 8: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 9: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 10: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 11: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 12: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 13: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 14: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 15: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 16: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 17: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 18: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 19: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 20: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 21: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 22: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 23: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 24: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request."}],"source":{"kind":"plugin","plugin":"compaction-context-fixture"},"role":"user","id":"5c1b1952-8b39-487c-bf77-10d773e2679c"},"surfaceOp":"append"}
++{"type":"session/title","data":{"title":"Read marker.txt with the native","messageSeqs":[4],"source":{"kind":"fallback"}}}
+ {"type":"request/header","data":{"header":{"config":{"provider":"deepseek-official","model":"deepseek-v4-flash"},"system":"You are an AI agent powered by DeepSeek Harness.\n\nYou are headless-agent, a coding assistant powered by the deepseek-v4-flash model.\n\nVerify your work by running the code or tests. Keep answers brief and\nfactual.\n\n\nUse the read tool — not shell commands like cat — to inspect text files. Results include line numbers. Use offset and limit to continue reading large files.\n\nUse the write tool to create files or completely replace file contents. Existing files are overwritten, so read an existing file first (the default fs-observation-policy requires it) and prefer edit for targeted changes.\n\nUse the edit tool for targeted changes to existing UTF-8 text files. It replaces literal old_string with new_string; by default old_string must appear exactly once. If old_string appears multiple times, provide a more specific old_string or set replace_all to true. Read the file first (the default fs-observation-policy requires it), unless you just created or edited it in this session.\n\nCheck the [exit code: N] marker on every bash result; investigate failures before moving on.\n\nTrack every background job id you start. You are notified in-session when a job finishes — do not busy-poll or sleep on one; keep working on independent steps and do not duplicate a running job's work. Before giving a final answer, collect every still-relevant job with job_output (set wait: true only when you are genuinely blocked on it), and job_kill jobs that stopped mattering.\n\nUse the workflow tool ONLY when the user explicitly asks for a workflow or for large multi-agent orchestration: you write a JavaScript script (the tool description documents the exact format) that fans work out across many subagents with phases and structured results. For one or two delegations, prefer plain subagent calls.\n\nUse the ralph tool ONLY when the direct human explicitly asks for a Ralph loop or fresh-agent iterative execution. Each Ralph round starts a fresh child with no conversation seed and uses the shared workspace as durable memory. Completion and blockers are worker reports, not independent evaluation. Use same-session goal tools for ordinary long-running objectives, and plain subagents or workflows for bounded delegation and fan-out.\n\nUse subagent in the background by default. Start independent delegations together in one assistant message and continue useful work while they run. Set `run_in_background: false` only when your next action depends on that subagent's result. When a background run settles, the runtime sends you a notice containing its outcome and any final assistant message.","tools":[{"name":"bash","description":"Execute a bash command (`bash -c`) and return its stdout/stderr. Each call runs in a fresh shell: no state (cwd, variables, functions) persists between calls — pass `workdir` instead of using `cd`. Non-zero exits are reported as `[exit code: N]`. Current harness environment facts are exposed through managed `$DSH_*` variables; inspect them when needed. Commands may run under a file sandbox; a blocked file operation is reported as `[sandbox: file access denied under <mode> mode]` — a policy denial, not a bug in the command; do not retry another way. Long output is truncated to its tail; the full output is saved to a file whose path is reported when available. Set `run_in_background: true` for long-running commands: the call returns a job id immediately; read its output with `job_output` and stop it with `job_kill`.","parameters":{"type":"object","properties":{"command":{"type":"string","description":"The bash command to execute."},"description":{"type":"string","description":"Clear, concise description of what this command does in active voice, 5-10 words (shown in the UI). Examples: \"ls\" → \"List files in current directory\"; \"git status\" → \"Show working tree status\"; \"npm install\" → \"Install package dependencies\"."},"timeoutMs":{"type":"number","description":"Timeout in milliseconds. The executor applies its configured default and cap, and kills the command on expiry."},"workdir":{"type":"string","description":"Working directory for this command. Defaults to the session workspace; a relative path is resolved against it."},"run_in_background":{"type":"boolean","description":"Run in the background and return a job id immediately (collect with job_output, stop with job_kill). No timeout applies."}},"required":["command","description"]}},{"name":"edit","description":"Edit an existing UTF-8 text file by replacing literal text.","parameters":{"type":"object","properties":{"file_path":{"type":"string","description":"Path to edit, resolved by the filesystem backend."},"old_string":{"type":"string","description":"Literal text to replace. Must match exactly."},"new_string":{"type":"string","description":"Literal replacement text. Use an empty string to delete the match."},"replace_all":{"type":"boolean","description":"Replace all matches. Defaults to false; when false, old_string must appear exactly once."}},"required":["file_path","old_string","new_string"]}},{"name":"interrupt_agent","description":"Request cancellation of a background agent's current turn by its agent id. The target may be your direct child or a deeper agent created under you. Only the current turn stops: messages already queued for the agent stay parked until a later send_message, agents it started keep running, and the agent itself stays available for follow-ups. This call returns as soon as the stop request is accepted, so the target may keep running briefly; interrupting an agent that already finished is an accepted no-op.","parameters":{"type":"object","properties":{"agent_id":{"type":"string","description":"The agent id of the running agent to interrupt."}},"required":["agent_id"]}},{"name":"job_kill","description":"Request cancellation of a running background job by job id. Returns immediately; the job settles as killed once its work actually stops.","parameters":{"type":"object","properties":{"job_id":{"type":"string","description":"Job id returned by the tool that started the background work."},"reason":{"type":"string","description":"Optional short reason, recorded in the log and forwarded to the job."}},"required":["job_id"]}},{"name":"job_list","description":"List your background jobs (running and finished) with their ids, kinds, and statuses.","parameters":{"type":"object","properties":{}}},{"name":"job_output","description":"Read a background job. Stream jobs return only output since the previous read; final-output jobs return their result after settlement. Every response ends with `[status: ...]`. Reads are non-blocking unless `wait: true`, which waits up to the configured cap.","parameters":{"type":"object","properties":{"job_id":{"type":"string","description":"Job id returned by the tool that started the background work."},"wait":{"type":"boolean","description":"Block until the job reaches a terminal status or the timeout expires. A timed-out wait returns [status: running] and leaves the job alive."},"timeout_ms":{"type":"number","description":"Max wait in milliseconds (only meaningful with wait: true). Defaults to the configured wait timeout; capped by the configured maximum."}},"required":["job_id"]}},{"name":"ralph","description":"Run a foreground fresh-agent Ralph loop toward one immutable objective. Use only when the direct human explicitly asks for Ralph or fresh-agent iteration. Each round opens a new child with no parent conversation or prior child session; the shared workspace is long-term memory, and only a bounded structured report crosses rounds. The call returns when a worker reports completion or a concrete blocker, or at the round limit. Ordinary long-running same-session work belongs to goal tools.","parameters":{"type":"object","properties":{"objective":{"type":"string","description":"The immutable completion objective for every fresh Ralph round."},"maxRounds":{"type":"number","description":"Optional positive safe-integer round cap, bounded by the deployment ceiling."}},"required":["objective"]}},{"name":"read","description":"Read a UTF-8 text file and return line-numbered content.","parameters":{"type":"object","properties":{"file_path":{"type":"string","description":"Path to read, resolved by the filesystem backend."},"offset":{"type":"number","description":"1-based first line to return. Defaults to 1."},"limit":{"type":"number","description":"Maximum number of lines to return. Defaults to 2000."}},"required":["file_path"]}},{"name":"send_message","description":"Send a message to a background subagent by its subagent id, continuing the same conversation. It becomes the subagent's next turn: if it is still working, the message waits until its current turn finishes, so it cannot redirect work already underway. This call returns no answer from the subagent — only confirmation that the message was delivered — so use it to give it more work. A failure means the message was NOT delivered.","parameters":{"type":"object","properties":{"subagent_id":{"type":"string","description":"The subagent id returned when the background subagent was started."},"message":{"type":"string","description":"The message to deliver to the subagent."}},"required":["subagent_id","message"]}},{"name":"skill","description":"Load the full instructions for an available skill. Call this with the exact skill name from the session skill catalog before acting on a task that names or clearly matches that skill.","parameters":{"type":"object","properties":{"name":{"type":"string","description":"The exact skill name from the available skills list."}},"required":["name"]}},{"name":"subagent","description":"Delegate a self-contained task to a subagent (a separate agent that works in its own context) to offload focused, independent work — research, a scoped implementation, an analysis — so it does not consume this conversation's context. The subagent returns its result, not its intermediate steps. Give it a complete, standalone prompt: it does not see this conversation. This tool runs in the background by default, immediately returns a durable subagent id, and keeps the child conversation available for later turns. When that run settles, the runtime sends the parent a notice containing its outcome and any final assistant message; `send_message` starts a later turn in the same child conversation. Set `run_in_background: false` only when your next action depends on receiving the result.","parameters":{"type":"object","properties":{"description":{"type":"string","description":"A short (3-5 word) description of the delegated task, for display."},"prompt":{"type":"string","description":"The complete, self-contained task for the subagent. It does not share this conversation's context, so include everything it needs."},"run_in_background":{"type":"boolean","description":"Whether to run in the background and return a durable subagent id immediately. Defaults to true. Set false to wait for the result when your next action depends on it."}},"required":["description","prompt"]}},{"name":"subagent_fork","description":"Delegate a task to a subagent that inherits this conversation: a child agent seeded with all completed turns so far (it does not see the current in-flight turn). Use this when the subtask builds on this conversation's context — a follow-up analysis, a review, a continuation — without consuming this conversation's context for the work itself. You receive its result, not its intermediate steps. This call waits for the subagent and returns its result.","parameters":{"type":"object","properties":{"description":{"type":"string","description":"A short (3-5 word) description of the delegated task, for display."},"prompt":{"type":"string","description":"The task for the subagent. It already sees this conversation's completed turns, so build on them freely and state only what is new."}},"required":["description","prompt"]}},{"name":"todo_write","description":"Record and update a structured task list for the current work. Send the ENTIRE list every call — it REPLACES the previous list (there are no partial updates, no per-item edits). Use it to plan multi-step work and show progress: add one todo per concrete step before you start. Mark every todo being actively worked on `in_progress` — several at once when work genuinely runs in parallel (e.g. concurrent subagents or background commands), one for sequential work; while work remains, at least one task should be `in_progress`. Mark a todo `completed` the moment it is done (do not batch completions), and allow no `in_progress` item only once all work is complete. Skip the list for trivial single-step tasks. Statuses: `pending` (not started), `in_progress` (being worked on now), `completed` (finished).","parameters":{"type":"object","properties":{"todos":{"type":"array","description":"The COMPLETE task list, replacing any previous list.","items":{"type":"object","additionalProperties":false,"properties":{"content":{"type":"string","description":"What the task is — a short imperative line."},"status":{"type":"string","description":"pending (not started) | in_progress (now) | completed (done).","enum":["pending","in_progress","completed"]}},"required":["content","status"]}}},"required":["todos"]}},{"name":"workflow","description":"Run a JavaScript workflow script that orchestrates subagents at scale. Use this for work that fans out across many independent pieces — an audit over many files, a migration, multi-angle research, adversarial verification of findings — where you write the orchestration as a script instead of delegating turn by turn.\n\nThe workflow's identity rides the `meta` parameter as JSON: required `name` (short kebab-case) and `description` strings, optional `whenToUse` string and `phases` array (`{title, detail?, provider?, model?}`). The `script` parameter is the plain JavaScript body ONLY (NOT TypeScript, and NO `export const meta` statement — meta is a parameter, not code), running with top-level await; end with `return <value>` — the value must be JSON-serializable and is this tool's result.\n\nScript-body hooks:\n- `agent(prompt, opts?): Promise<any>` — run one subagent to completion. Without `opts.schema` it resolves to the child's final text; with `opts.schema` (an object-rooted JSON Schema using ONLY type/properties/required/additionalProperties/items/enum/const/oneOf — no pattern/format/numeric bounds) it resolves to the validated object. Resolves `null` when the child fails (filter with `.filter(Boolean)`). Other opts: `label` (display), `phase` (progress group), and independent `provider`/`model` LLM target overrides (either may be provided alone). Anything else (`effort`/`isolation`/`agentType`) is rejected loudly.\n- `pipeline(items, ...stages): Promise<any[]>` — run each item through the stages independently with NO barrier between stages (prefer this for multi-stage work). Each stage receives `(prev, item, index)`. An ordinary stage throw drops that ITEM to `null` and skips its remaining stages.\n- `parallel(thunks): Promise<any[]>` — run zero-argument functions concurrently and await ALL of them (a barrier; use only when a stage genuinely needs every prior result together). A throwing thunk resolves to `null`.\n- `phase(title)` — start a progress phase; `log(message)` — narrate progress; `args` — the tool call's `args` input, verbatim.\n\nMisused hooks (bad arguments, unknown options, unsupported schemas, tripped caps) throw errors that ALWAYS kill the script — they never dissolve into a per-item `null`.\n\nConstraints: concurrency and total-agent caps apply; no filesystem, network, timers, or Node.js APIs are provided — the agents do the work, the script only coordinates them. The run executes in the foreground: this call returns when the whole script finishes.","parameters":{"type":"object","properties":{"script":{"type":"string","description":"The plain-JS workflow script body (top-level await allowed; NO `export const meta` statement; end with `return <json-value>`)."},"meta":{"type":"object","description":"The workflow identity block (plain JSON — never code).","additionalProperties":true,"properties":{"name":{"type":"string","description":"Short kebab-case workflow name."},"description":{"type":"string","description":"One-line description of what the workflow does."},"whenToUse":{"type":"string","description":"Optional guidance on when this workflow applies."},"phases":{"type":"array","description":"Optional phase declarations matched by phase() calls.","items":{"type":"object","additionalProperties":true,"properties":{"title":{"type":"string","description":"The phase title phase() calls match by exact string."},"detail":{"type":"string","description":"Optional one-line description of the phase."},"provider":{"type":"string","description":"Optional provider override this phase is expected to use."},"model":{"type":"string","description":"Optional model override this phase is expected to use."}},"required":["title"]}}},"required":["name","description"]},"args":{"type":"object","description":"Optional JSON input exposed to the script as the `args` global (wrap a bare list as a field, e.g. {\"files\": [...]}).","additionalProperties":true}},"required":["script","meta"]}},{"name":"write","description":"Create or fully replace a UTF-8 text file.","parameters":{"type":"object","properties":{"file_path":{"type":"string","description":"Path to write, resolved by the filesystem backend."},"content":{"type":"string","description":"Full UTF-8 text content to write."}},"required":["file_path","content"]}}]},"reason":"initial"}}
+ {"type":"request/context","data":{"provider":"deepseek-official","model":"deepseek-v4-flash","contextWindow":128000}}
+ {"type":"assistant/chunk","data":{"turn":1,"step":1,"chunk":{"type":"block-start","index":0,"blockType":"tool-call"}}}
+-{"type":"assistant/chunk","data":{"turn":1,"step":1,"chunk":{"type":"tool-call-delta","index":0,"id":"call_compaction_marker","name":"bash","argumentsDelta":"{\"command\":\"printf 'alpha\\n'\",\"description\":\"Emit compaction premise marker\"}"}}}
+-{"type":"assistant/chunk","data":{"turn":1,"step":1,"chunk":{"type":"block-end","index":0,"block":{"type":"tool-call","id":"call_compaction_marker","name":"bash","arguments":"{\"command\":\"printf 'alpha\\n'\",\"description\":\"Emit compaction premise marker\"}"}}}}
++{"type":"assistant/chunk","data":{"turn":1,"step":1,"chunk":{"type":"block-end","index":0,"block":{"type":"tool-call","id":"call_compaction_marker","name":"read","arguments":"{\"file_path\":\"marker.txt\"}"}}}}
+ {"type":"assistant/chunk","data":{"turn":1,"step":1,"chunk":{"type":"usage","usage":{"inputTokens":24,"outputTokens":6}}}}
+ {"type":"assistant/chunk","data":{"turn":1,"step":1,"chunk":{"type":"finish","reason":{"kind":"tool-calls"}}}}
+-{"type":"assistant/message","data":{"turn":1,"step":1,"message":{"role":"assistant","content":[{"type":"tool-call","id":"call_compaction_marker","name":"bash","arguments":"{\"command\":\"printf 'alpha\\n'\",\"description\":\"Emit compaction premise marker\"}"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"a71b2cfd-c18f-4a1b-82f6-e89fb371a87e"},"usage":{"inputTokens":24,"outputTokens":6}},"sourceEventSeqs":[8,9,10,11,12],"surfaceOp":"append"}
+-{"type":"tool/call","data":{"turn":1,"step":1,"callId":"call_compaction_marker","name":"bash","arguments":"{\"command\":\"printf 'alpha\\n'\",\"description\":\"Emit compaction premise marker\"}"}}
+-{"type":"tool/result","data":{"turn":1,"step":1,"message":{"source":{"kind":"tool","callId":"call_compaction_marker"},"content":[{"type":"tool-result","toolCallId":"call_compaction_marker","content":[{"type":"text","text":"alpha\n"}],"isError":false}],"role":"user","id":"c9e68608-2dff-44bc-a344-b01006272378"}},"sourceEventSeqs":[14],"surfaceOp":"append"}
++{"type":"assistant/message","data":{"turn":1,"step":1,"message":{"role":"assistant","content":[{"type":"tool-call","id":"call_compaction_marker","name":"read","arguments":"{\"file_path\":\"marker.txt\"}"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"6371745a-ce25-4b3f-9755-1c479b1105d1"},"usage":{"inputTokens":24,"outputTokens":6}},"sourceEventSeqs":[9,10,11,12],"surfaceOp":"append"}
++{"type":"tool/call","data":{"turn":1,"step":1,"callId":"call_compaction_marker","name":"read","arguments":"{\"file_path\":\"marker.txt\"}"}}
++{"type":"tool/result","data":{"turn":1,"step":1,"message":{"source":{"kind":"tool","callId":"call_compaction_marker"},"content":[{"type":"tool-result","toolCallId":"call_compaction_marker","content":[{"type":"text","text":"<path>{{cwd}}\\marker.txt</path>\n<type>file</type>\n<content>\n1: alpha\n\n(End of file - total 1 lines)\n</content>"}],"isError":false}],"role":"user","id":"fe41f668-fd9a-475e-aa31-d3bc564906e1"},"meta":{"path":"{{cwd}}\\marker.txt","offset":1,"lines":[{"number":1,"text":"alpha"}],"totalLines":1}},"sourceEventSeqs":[14],"surfaceOp":"append"}
+ {"type":"step/end","data":{"turn":1,"step":1}}
+ {"type":"step/start","data":{"turn":1,"step":2}}
+ {"type":"assistant/chunk","data":{"turn":1,"step":2,"chunk":{"type":"finish","reason":{"kind":"error","failure":{"message":"snapshot request exceeded the model context window","code":"CONTEXT_WINDOW_EXCEEDED"}}}}}
+-{"type":"compaction/start","data":{"compactionId":"338e88fa-e78b-4d49-bd38-8f919e85f5e1","turn":1}}
+-{"type":"compaction/summary","data":{"compactionId":"338e88fa-e78b-4d49-bd38-8f919e85f5e1","summary":[{"type":"text","text":"The request established a durable compaction premise."}],"rawOutput":[{"type":"text","text":"The request established a durable compaction premise."}],"llmStreamCall":true,"shadowedRange":{"start":4,"end":4},"shadowedSeqs":[4],"shadowedTokenCount":266,"provider":"deepseek-official","model":"deepseek-v4-flash","maxTokens":32,"usage":{"inputTokens":20,"outputTokens":4}}}
+-{"type":"user/message","data":{"content":[{"type":"text","text":"This is an automatically generated checkpoint condensing an earlier span of the conversation to free up context. Treat the captured context as established background and build on it without restating it. Continue the task directly from the messages that follow, without acknowledging this checkpoint.\n\n<compacted-summary>"},{"type":"text","text":"The request established a durable compaction premise."},{"type":"text","text":"</compacted-summary>"}],"source":{"kind":"plugin","plugin":"compact","compactionId":"338e88fa-e78b-4d49-bd38-8f919e85f5e1"},"role":"user","id":"3668b957-07a2-4cb7-96b1-98a23ac8cdb8"},"sourceEventSeqs":[19,20,4],"surfaceOp":{"op":"replace","start":4,"end":4}}
+-{"type":"compaction/end","data":{"compactionId":"338e88fa-e78b-4d49-bd38-8f919e85f5e1","turn":1}}
++{"type":"compaction/start","data":{"compactionId":"1c3e60a0-9a42-45b6-ba70-e0c9e992c422","turn":1}}
++{"type":"compaction/summary","data":{"compactionId":"1c3e60a0-9a42-45b6-ba70-e0c9e992c422","summary":[{"type":"text","text":"The request established a durable compaction premise."}],"rawOutput":[{"type":"text","text":"The request established a durable compaction premise."}],"llmStreamCall":true,"shadowedRange":{"start":4,"end":5},"shadowedSeqs":[4,5],"shadowedTokenCount":1512,"provider":"deepseek-official","model":"deepseek-v4-flash","maxTokens":32,"usage":{"inputTokens":20,"outputTokens":4}}}
++{"type":"user/message","data":{"content":[{"type":"text","text":"This is an automatically generated checkpoint condensing an earlier span of the conversation to free up context. Treat the captured context as established background and build on it without restating it. Continue the task directly from the messages that follow, without acknowledging this checkpoint.\n\n<compacted-summary>"},{"type":"text","text":"The request established a durable compaction premise."},{"type":"text","text":"</compacted-summary>"},{"type":"text","text":"Current-turn user request (verbatim; overrides summary):\n<retained-user-request>"},{"type":"text","text":"Read marker.txt with the native read tool, then finish after any required context recovery with the exact words COMPACTION RECOVERED. Keep the original request and tool evidence available throughout the turn."},{"type":"text","text":"</retained-user-request>\nRecorded tool calls since this request: 1 (all tools through checkpoint preparation, including retained-history calls and failed attempts). Later user messages take precedence."}],"source":{"kind":"plugin","plugin":"compact","compactionId":"1c3e60a0-9a42-45b6-ba70-e0c9e992c422"},"role":"user","id":"e36e36fc-6a3d-4ee7-8dca-56f2c54c8604"},"sourceEventSeqs":[19,20,4,5],"surfaceOp":{"op":"replace","start":4,"end":5}}
++{"type":"compaction/end","data":{"compactionId":"1c3e60a0-9a42-45b6-ba70-e0c9e992c422","turn":1}}
+ {"type":"assistant/chunk","data":{"turn":1,"step":2,"chunk":{"type":"block-start","index":0,"blockType":"text"}}}
+ {"type":"assistant/chunk","data":{"turn":1,"step":2,"chunk":{"type":"text-delta","index":0,"text":"COMPACTION RECOVERED"}}}
+ {"type":"assistant/chunk","data":{"turn":1,"step":2,"chunk":{"type":"block-end","index":0,"block":{"type":"text","text":"COMPACTION RECOVERED"}}}}
+ {"type":"assistant/chunk","data":{"turn":1,"step":2,"chunk":{"type":"usage","usage":{"inputTokens":20,"outputTokens":4}}}}
+ {"type":"assistant/chunk","data":{"turn":1,"step":2,"chunk":{"type":"finish","reason":{"kind":"stop"}}}}
+-{"type":"assistant/message","data":{"turn":1,"step":2,"message":{"role":"assistant","content":[{"type":"text","text":"COMPACTION RECOVERED"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"bcbfd4ff-60e5-4634-ae39-4de3708a8abc"},"usage":{"inputTokens":20,"outputTokens":4}},"sourceEventSeqs":[23,24,25,26,27],"surfaceOp":"append"}
++{"type":"assistant/message","data":{"turn":1,"step":2,"message":{"role":"assistant","content":[{"type":"text","text":"COMPACTION RECOVERED"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"7b10653b-4b05-48f1-9c34-a09c2ccc8ea6"},"usage":{"inputTokens":20,"outputTokens":4}},"sourceEventSeqs":[23,24,25,26,27],"surfaceOp":"append"}
+ {"type":"step/end","data":{"turn":1,"step":2}}
+ {"type":"turn/end","data":{"turn":1,"reason":{"kind":"completed"}}}
+diff --git a/examples/headless-agent/tests/snapshots/compaction-recovery/stream-json.expected.jsonl b/examples/headless-agent/tests/snapshots/compaction-recovery/stream-json.expected.jsonl
+index 73e5bbd..622aa40 100644
+--- a/examples/headless-agent/tests/snapshots/compaction-recovery/stream-json.expected.jsonl
++++ b/examples/headless-agent/tests/snapshots/compaction-recovery/stream-json.expected.jsonl
+@@ -1,25 +1,25 @@
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"agent/inbox/spliced","seq":0,"time":0,"data":{"target":"next-turn","start":0,"inserted":[{"content":[{"type":"text","text":"Establish a durable compaction premise before continuing. Record every part of this historical evidence: the snapshot uses keyless replay; persistence uses JSONL; the assembled headless application loads its real Cordis composition; model-visible inputs remain logged; tool calls and results remain paired and ordered; context overflow retains the original failure while recovery is attempted; compaction opens with compaction/start and closes with compaction/end; a successful auxiliary summary records compaction/summary provenance; the replacement surface shadows only an older balanced range; the checkpoint remains smaller than the history it replaces; the newest tool result remains verbatim; the retried request sees that checkpoint; the final response proves the same turn continued; deterministic snapshot evidence stays separate from the live-provider smoke; and no external API key is needed. Emit one alpha marker through bash, then finish the task after any required recovery with the exact words COMPACTION RECOVERED."}],"source":{"kind":"user"},"role":"user","id":"{{sessionId}}"}]}}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"agent/inbox/spliced","seq":0,"time":0,"data":{"target":"next-turn","start":0,"inserted":[{"content":[{"type":"text","text":"Read marker.txt with the native read tool, then finish after any required context recovery with the exact words COMPACTION RECOVERED. Keep the original request and tool evidence available throughout the turn."}],"source":{"kind":"user"},"role":"user","id":"{{sessionId}}"}]}}}
+ {"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"turn/start","seq":1,"time":0,"data":{"turn":1}}}
+ {"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"agent/inbox/spliced","seq":2,"time":0,"data":{"target":"next-turn","start":0,"removedCount":1,"inserted":[]}}}
+ {"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"step/start","seq":3,"time":0,"data":{"turn":1,"step":1}}}
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"user/message","seq":4,"time":0,"data":{"content":[{"type":"text","text":"Establish a durable compaction premise before continuing. Record every part of this historical evidence: the snapshot uses keyless replay; persistence uses JSONL; the assembled headless application loads its real Cordis composition; model-visible inputs remain logged; tool calls and results remain paired and ordered; context overflow retains the original failure while recovery is attempted; compaction opens with compaction/start and closes with compaction/end; a successful auxiliary summary records compaction/summary provenance; the replacement surface shadows only an older balanced range; the checkpoint remains smaller than the history it replaces; the newest tool result remains verbatim; the retried request sees that checkpoint; the final response proves the same turn continued; deterministic snapshot evidence stays separate from the live-provider smoke; and no external API key is needed. Emit one alpha marker through bash, then finish the task after any required recovery with the exact words COMPACTION RECOVERED."}],"source":{"kind":"user"},"role":"user","id":"{{sessionId}}"},"surfaceOp":"append"}}
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"session/title","seq":5,"time":0,"data":{"title":"Establish a durable compaction premise","messageSeqs":[4],"source":{"kind":"fallback"}}}}
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"request/header","seq":6,"time":0,"data":{"header":{"config":{"provider":"deepseek-official","model":"deepseek-v4-flash"},"system":"{{system}}","tools":"{{tools}}"},"reason":"initial"}}}
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"request/context","seq":7,"time":0,"data":{"provider":"deepseek-official","model":"deepseek-v4-flash","contextWindow":128000}}}
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"assistant/chunk","seq":8,"time":0,"data":{"turn":1,"step":1,"chunk":{"type":"block-start","index":0,"blockType":"tool-call"}}}}
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"assistant/chunk","seq":9,"time":0,"data":{"turn":1,"step":1,"chunk":{"type":"tool-call-delta","index":0,"id":"call_compaction_marker","name":"bash","argumentsDelta":"{\"command\":\"printf 'alpha\\n'\",\"description\":\"Emit compaction premise marker\"}"}}}}
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"assistant/chunk","seq":10,"time":0,"data":{"turn":1,"step":1,"chunk":{"type":"block-end","index":0,"block":{"type":"tool-call","id":"call_compaction_marker","name":"bash","arguments":"{\"command\":\"printf 'alpha\\n'\",\"description\":\"Emit compaction premise marker\"}"}}}}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"user/message","seq":4,"time":0,"data":{"content":[{"type":"text","text":"Read marker.txt with the native read tool, then finish after any required context recovery with the exact words COMPACTION RECOVERED. Keep the original request and tool evidence available throughout the turn."}],"source":{"kind":"user"},"role":"user","id":"{{sessionId}}"},"surfaceOp":"append"}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"user/message","seq":5,"time":0,"data":{"content":[{"type":"text","text":"Background record 1: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 2: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 3: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 4: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 5: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 6: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 7: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 8: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 9: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 10: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 11: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 12: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 13: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 14: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 15: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 16: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 17: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 18: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 19: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 20: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 21: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 22: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 23: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request.\nBackground record 24: the fixture stores tool evidence separately from user instructions. Completed tool results remain paired with their calls, and checkpoint replacement can summarize these background records without changing the request."}],"source":{"kind":"plugin","plugin":"compaction-context-fixture"},"role":"user","id":"{{sessionId}}"},"surfaceOp":"append"}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"session/title","seq":6,"time":0,"data":{"title":"Read marker.txt with the native","messageSeqs":[4],"source":{"kind":"fallback"}}}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"request/header","seq":7,"time":0,"data":{"header":{"config":{"provider":"deepseek-official","model":"deepseek-v4-flash"},"system":"{{system}}","tools":"{{tools}}"},"reason":"initial"}}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"request/context","seq":8,"time":0,"data":{"provider":"deepseek-official","model":"deepseek-v4-flash","contextWindow":128000}}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"assistant/chunk","seq":9,"time":0,"data":{"turn":1,"step":1,"chunk":{"type":"block-start","index":0,"blockType":"tool-call"}}}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"assistant/chunk","seq":10,"time":0,"data":{"turn":1,"step":1,"chunk":{"type":"block-end","index":0,"block":{"type":"tool-call","id":"call_compaction_marker","name":"read","arguments":"{\"file_path\":\"marker.txt\"}"}}}}}
+ {"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"assistant/chunk","seq":11,"time":0,"data":{"turn":1,"step":1,"chunk":{"type":"usage","usage":{"inputTokens":24,"outputTokens":6}}}}}
+ {"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"assistant/chunk","seq":12,"time":0,"data":{"turn":1,"step":1,"chunk":{"type":"finish","reason":{"kind":"tool-calls"}}}}}
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"assistant/message","seq":13,"time":0,"data":{"turn":1,"step":1,"message":{"role":"assistant","content":[{"type":"tool-call","id":"call_compaction_marker","name":"bash","arguments":"{\"command\":\"printf 'alpha\\n'\",\"description\":\"Emit compaction premise marker\"}"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"{{sessionId}}"},"usage":{"inputTokens":24,"outputTokens":6}},"sourceEventSeqs":[8,9,10,11,12],"surfaceOp":"append"}}
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"tool/call","seq":14,"time":0,"data":{"turn":1,"step":1,"callId":"call_compaction_marker","name":"bash","arguments":"{\"command\":\"printf 'alpha\\n'\",\"description\":\"Emit compaction premise marker\"}"}}}
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"tool/result","seq":15,"time":0,"data":{"turn":1,"step":1,"message":{"source":{"kind":"tool","callId":"call_compaction_marker"},"content":[{"type":"tool-result","toolCallId":"call_compaction_marker","content":[{"type":"text","text":"alpha\n"}],"isError":false}],"role":"user","id":"{{sessionId}}"}},"sourceEventSeqs":[14],"surfaceOp":"append"}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"assistant/message","seq":13,"time":0,"data":{"turn":1,"step":1,"message":{"role":"assistant","content":[{"type":"tool-call","id":"call_compaction_marker","name":"read","arguments":"{\"file_path\":\"marker.txt\"}"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"{{sessionId}}"},"usage":{"inputTokens":24,"outputTokens":6}},"sourceEventSeqs":[9,10,11,12],"surfaceOp":"append"}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"tool/call","seq":14,"time":0,"data":{"turn":1,"step":1,"callId":"call_compaction_marker","name":"read","arguments":"{\"file_path\":\"marker.txt\"}"}}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"tool/result","seq":15,"time":0,"data":{"turn":1,"step":1,"message":{"source":{"kind":"tool","callId":"call_compaction_marker"},"content":[{"type":"tool-result","toolCallId":"call_compaction_marker","content":[{"type":"text","text":"<path>{{cwd}}/marker.txt</path>\n<type>file</type>\n<content>\n1: alpha\n\n(End of file - total 1 lines)\n</content>"}],"isError":false}],"role":"user","id":"{{sessionId}}"},"meta":{"path":"{{cwd}}/marker.txt","offset":1,"lines":[{"number":1,"text":"alpha"}],"totalLines":1}},"sourceEventSeqs":[14],"surfaceOp":"append"}}
+ {"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"step/end","seq":16,"time":0,"data":{"turn":1,"step":1}}}
+ {"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"step/start","seq":17,"time":0,"data":{"turn":1,"step":2}}}
+ {"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"assistant/chunk","seq":18,"time":0,"data":{"turn":1,"step":2,"chunk":{"type":"finish","reason":{"kind":"error","failure":{"message":"snapshot request exceeded the model context window","code":"CONTEXT_WINDOW_EXCEEDED"}}}}}}
+ {"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"compaction/start","seq":19,"time":0,"data":{"compactionId":"{{sessionId}}","turn":1}}}
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"compaction/summary","seq":20,"time":0,"data":{"compactionId":"{{sessionId}}","summary":[{"type":"text","text":"The request established a durable compaction premise."}],"rawOutput":[{"type":"text","text":"The request established a durable compaction premise."}],"llmStreamCall":true,"shadowedRange":{"start":4,"end":4},"shadowedSeqs":[4],"shadowedTokenCount":266,"provider":"deepseek-official","model":"deepseek-v4-flash","maxTokens":32,"usage":{"inputTokens":20,"outputTokens":4}}}}
+-{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"user/message","seq":21,"time":0,"data":{"content":[{"type":"text","text":"This is an automatically generated checkpoint condensing an earlier span of the conversation to free up context. Treat the captured context as established background and build on it without restating it. Continue the task directly from the messages that follow, without acknowledging this checkpoint.\n\n<compacted-summary>"},{"type":"text","text":"The request established a durable compaction premise."},{"type":"text","text":"</compacted-summary>"}],"source":{"kind":"plugin","plugin":"compact","compactionId":"{{sessionId}}"},"role":"user","id":"{{sessionId}}"},"sourceEventSeqs":[19,20,4],"surfaceOp":{"op":"replace","start":4,"end":4}}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"compaction/summary","seq":20,"time":0,"data":{"compactionId":"{{sessionId}}","summary":[{"type":"text","text":"The request established a durable compaction premise."}],"rawOutput":[{"type":"text","text":"The request established a durable compaction premise."}],"llmStreamCall":true,"shadowedRange":{"start":4,"end":5},"shadowedSeqs":[4,5],"shadowedTokenCount":1512,"provider":"deepseek-official","model":"deepseek-v4-flash","maxTokens":32,"usage":{"inputTokens":20,"outputTokens":4}}}}
++{"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"user/message","seq":21,"time":0,"data":{"content":[{"type":"text","text":"This is an automatically generated checkpoint condensing an earlier span of the conversation to free up context. Treat the captured context as established background and build on it without restating it. Continue the task directly from the messages that follow, without acknowledging this checkpoint.\n\n<compacted-summary>"},{"type":"text","text":"The request established a durable compaction premise."},{"type":"text","text":"</compacted-summary>"},{"type":"text","text":"Current-turn user request (verbatim; overrides summary):\n<retained-user-request>"},{"type":"text","text":"Read marker.txt with the native read tool, then finish after any required context recovery with the exact words COMPACTION RECOVERED. Keep the original request and tool evidence available throughout the turn."},{"type":"text","text":"</retained-user-request>\nRecorded tool calls since this request: 1 (all tools through checkpoint preparation, including retained-history calls and failed attempts). Later user messages take precedence."}],"source":{"kind":"plugin","plugin":"compact","compactionId":"{{sessionId}}"},"role":"user","id":"{{sessionId}}"},"sourceEventSeqs":[19,20,4,5],"surfaceOp":{"op":"replace","start":4,"end":5}}}
+ {"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"compaction/end","seq":22,"time":0,"data":{"compactionId":"{{sessionId}}","turn":1}}}
+ {"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"assistant/chunk","seq":23,"time":0,"data":{"turn":1,"step":2,"chunk":{"type":"block-start","index":0,"blockType":"text"}}}}
+ {"type":"session_event","sessionId":"{{sessionId}}","event":{"type":"assistant/chunk","seq":24,"time":0,"data":{"turn":1,"step":2,"chunk":{"type":"text-delta","index":0,"text":"COMPACTION RECOVERED"}}}}
+diff --git a/packages/compaction/compaction-basic/README.i18n.yaml b/packages/compaction/compaction-basic/README.i18n.yaml
+index 382d77a..f1fdda1 100644
+--- a/packages/compaction/compaction-basic/README.i18n.yaml
++++ b/packages/compaction/compaction-basic/README.i18n.yaml
+@@ -2,5 +2,5 @@
+ # side as of the last confirmed-consistent state. Both languages carry equal authority;
+ # after editing either side, bring the other along and re-record with:
+ #   pnpm run verify-translation-pairing --write packages/compaction/compaction-basic/README.md
+-README.md: 82df7b7e399cef80d92611819e9e58f13babf175
+-README.zh.md: d79ea39ad8db7e2ab7f0a5b2ef52b61ab054d01b
++README.md: d2527db6225a1989031c0a1dbd7e0cd9c1d1bca5
++README.zh.md: afcb958e38ede5b453934c4e402e51bd9ada3872
+diff --git a/packages/compaction/compaction-basic/README.md b/packages/compaction/compaction-basic/README.md
+index 82df7b7..d2527db 100644
+--- a/packages/compaction/compaction-basic/README.md
++++ b/packages/compaction/compaction-basic/README.md
+@@ -17,6 +17,7 @@ This backend owns the compaction policy:
+ - **Convergence** — retry head-checkpoint compaction up to `compactionRetries`; reject a summary that does not shrink its source, and throw if retries cannot return below threshold.
+ - **Summarization** — a direct `llm/stream` call uses the configured provider/model pair and cap, falling back to the latest logged request target and then the agent target, without running the loop-only `agent/request` extension point. The call replays the conversation's own system prompt, tools, and shadowed-region messages verbatim, including image references, and appends the compaction instruction as the final user message, so it reuses the provider's warm prefix cache instead of invalidating it. The selected adapter must resolve or explicitly reject those images. It sets `GenerateOptions.purpose` to `compaction`, which adapters may forward as request attribution (the DeepSeek adapter sends `x-deepseek-harness-compact: 1`) without touching the model-visible body. Only returned text enters the checkpoint, excluding reasoning and tool calls that would leak private reasoning or create an orphaned call; image output fails with `UNSUPPORTED_CONTENT` rather than disappearing.
+ - **Framing** — the replacement user message marks established checkpoint context with `<compacted-summary>` tags. The raw summary remains on the `compaction/summary` event, and later automatic cycles merge the prior checkpoint.
++- **Active request retention** — when the selected range contains the open turn's latest admitted user request or its checkpoint descendant, the replacement also retains that request's exact content blocks and the recorded tool-call count since it. The text comes from the original `user/message`, not the summary. A newer request outside the range remains in place without duplication; closed-turn requests remain summarizable. The complete replacement, including retained content, must pass the existing shrink check.
+ - **Lifecycle** — all entry points share one bracket-first region transaction. It validates the range and live lock, appends `compaction/start` synchronously, prepares and awaits the summary, revalidates, appends `compaction/summary` plus the replacement, and makes exactly one closing attempt. Automatic and explicit-region calls require a numeric open-turn owner and whole-surface stability; the serial `agent/pre-step` listener checks pressure before request derivation, while canonical provider overflow enters through `agent/request-error` and authorizes retry only after durable surface progress. `compactNow()` reserves idle admission, uses `turn: null`, accepts append-only context outside its selected span, flushes every closed attempt, and releases admission in `finally`.
+ - **Overflow recovery** — provider-confirmed overflow needs no capacity metadata: it bypasses normal pressure and retention, prunes, then attempts one maximal balanced head reduction while leaving the newest indivisible unit. Retry is authorized whenever `surface.replaceGeneration` advances, including when pruning lands before later summary work throws. No replacement, an exhausted target-specific cap, cancellation, or an unknown/noncanonical error preserves the original provider failure.
+ - **Failure handling** — a live unmatched `compaction/start` is the durable lock. An unmatched marker before a newer `session/end-seed` is stale evidence from a prior lifecycle and does not block; one after that boundary reports `busy`. Summary and changed-span failures close with an error and leave the conversation surface untouched, though the attempt remains in the log. A failed close deliberately leaves a blocking orphan. Operational pressure failures warn and continue, while overflow-recovery failure preserves the original provider error only when no earlier replacement advanced the surface. Cancellation remains authoritative after cleanup and durability.
+@@ -86,7 +87,7 @@ For example, the same compact plugin can safely serve models with different capa
+ 
+ #### What the model sees
+ 
+-After a successful step crosses the threshold, oversized tool results are first rewritten when the optional pruner is loaded. If summarization remains necessary, the next request receives the checkpoint preamble below, a blank line, `<compacted-summary>`, the data-dependent summary, and `</compacted-summary>`. Overflow recovery rebuilds the immediate retry from whatever replacement advanced the surface. A checkpoint replaces the selected older range and is followed by the retained recent units.
++After a successful step crosses the threshold, oversized tool results are first rewritten when the optional pruner is loaded. If summarization remains necessary, the next request receives the checkpoint preamble below, a blank line, `<compacted-summary>`, the data-dependent summary, and `</compacted-summary>`. Overflow recovery rebuilds the immediate retry from whatever replacement advanced the surface. A checkpoint replaces the selected older range and is followed by the retained recent units. When active request retention applies, the second framing below follows the summary: the placeholders become the original content blocks and all recorded tool attempts through checkpoint preparation, including calls in the recent history but excluding later calls. This is progress information, not a tool restriction or an enforced call budget.
+ 
+ ##### Conversation checkpoint preamble
+ 
+@@ -94,6 +95,16 @@ After a successful step crosses the threshold, oversized tool results are first
+ This is an automatically generated checkpoint condensing an earlier span of the conversation to free up context. Treat the captured context as established background and build on it without restating it. Continue the task directly from the messages that follow, without acknowledging this checkpoint.
+ ```
+ 
++##### Retained user request
++
++```markdown
++Current-turn user request (verbatim; overrides summary):
++<retained-user-request>
++{original request content blocks}
++</retained-user-request>
++Recorded tool calls since this request: {count} (all tools through checkpoint preparation, including retained-history calls and failed attempts). Later user messages take precedence.
++```
++
+ #### Token effect
+ 
+ Model-free pruning can avoid the auxiliary call entirely; otherwise it reduces that call's transcript before the summary replaces an older range. The replacement reduces future input history rather than appending a second copy. A summary remains until a later compaction replaces it, while an indivisible non-tool unit can still exceed the budget.
+@@ -162,3 +173,4 @@ The replayed system prompt, tools, and shadowed-region messages match the conver
+ - **Some indivisible-unit and envelope-only overflow remains outside surface compaction** — recovery cannot shrink system/tools/prefix, split an indivisible non-tool node, or repair a tool unit whose non-prunable remainder still exceeds the window. The optional pruner can shrink text-bearing tool-result bulk inside an otherwise indivisible pair.
+ - **`compactRegion` requires an open turn** — a manual call on a fully-closed session throws ("no open turn") rather than compacting.
+ - **Summarization failure preserves the latest durable surface** — before any replacement, the auto path logs a warning and proceeds with full over-budget history. If pruning already landed, a later summarization failure proceeds from that durable pruned surface. Summarization truncation at `maxTokens`, which hidden reasoning tokens can consume, follows the same rule.
++- **Retention is limited to the latest actual user input in the open turn** — older goals and evidence still depend on the generated summary, whose factual quality and instruction compliance are not validated. Retaining a large request can prevent compaction from shrinking the selected range. Preserved instructions do not guarantee model compliance or completion.
+diff --git a/packages/compaction/compaction-basic/README.zh.md b/packages/compaction/compaction-basic/README.zh.md
+index d79ea39..afcb958 100644
+--- a/packages/compaction/compaction-basic/README.zh.md
++++ b/packages/compaction/compaction-basic/README.zh.md
+@@ -17,6 +17,7 @@
+ - **收敛**：最多按 `compactionRetries` 重试头部检查点压缩；拒绝不能缩小源内容的摘要，如果重试仍无法回到阈值以下，则抛出异常。
+ - **摘要**：直接 `llm/stream` 调用使用已配置的提供方／模型对与上限，回退到最新已记录请求目标，然后再回退到 agent（智能体）目标，而不运行仅用于 agent loop 的 `agent/request` 扩展点。该调用会逐字回放会话自身的系统提示词、工具与已遮蔽区域消息（包括图片引用），并将压缩指令作为最后一条 user 消息追加，从而复用提供方的热前缀 cache，而非使它失效。所选适配器必须解析或明确拒绝这些图片。它将 `GenerateOptions.purpose` 设为 `compaction`，适配器可将其作为请求归因转发（DeepSeek 适配器发送 `x-deepseek-harness-compact: 1`），但不会触碰模型可见的请求体。只有返回的文本会进入检查点；推理（reasoning）和工具调用都会被排除，以免泄露私有推理或产生遗留调用；图片输出会以 `UNSUPPORTED_CONTENT` 失败，而不是消失。
+ - **框定**：替换 user 消息使用 `<compacted-summary>` 标签标记已建立的检查点上下文。原始摘要保留在 `compaction/summary` 事件上，后续自动周期会合并之前的检查点。
++- **保留当前请求**：当所选范围包含未结束轮次中最新接纳的用户请求或其后继检查点时，替换消息还会保留该请求的原始内容块，以及自该请求以来已记录的工具调用次数。文本取自原始 `user/message`，而非摘要。范围之外的较新请求保持原位，不会重复；已结束轮次的请求仍可被摘要。包括保留内容在内的完整替换消息必须通过现有缩减检查。
+ - **生命周期**：所有入口点共享一个先记录标记的区域事务。它会验证范围与活动锁，同步追加 `compaction/start`，准备并等待摘要，重新验证，再追加 `compaction/summary` 和替换，最后恰好进行一次闭合尝试。自动调用和显式范围调用要求数字标识的开放轮次归属，并要求整个表层保持稳定；串行 `agent/pre-step` listener 会在派生请求之前检查压力，而规范提供方溢出则经由 `agent/request-error` 进入，并且只在表层取得持久进展后才允许重试。`compactNow()` 会预留空闲接纳，使用 `turn: null`，允许所选 span 之外追加仅追加上下文，flush 每次已闭合尝试，并在 `finally` 中释放接纳预留。
+ - **溢出恢复**：提供方已确认的溢出不需容量元数据。它会绕过常规压力与保留，执行剪枝，再尝试一次最大平衡头部缩减，并留下最新不可分单元。只要 `surface.replaceGeneration` 前进，就允许重试，包括剪枝在后续摘要工作抛出异常前已落地的情况。如果没有替换、目标特定上限已耗尽、已取消，或遇到未知／非规范错误，则保留原始提供方失败。
+ - **失败处理**：活动的未匹配 `compaction/start` 是持久锁。位于较新 `session/end-seed` 之前的未匹配标记，是先前生命周期留下的陈旧证据，不会阻塞；位于该边界之后的标记报告 `busy`。摘要和 span 变更失败会以错误闭合，并保持会话表层不变，但日志中仍保留该尝试。闭合失败会有意留下阻塞性的未匹配标记。压力检查中的运行故障会发出警告并继续；只有此前没有替换推进表层时，溢出恢复失败才保留原始提供方错误。完成清理与持久化后，取消仍具有最终决定权。
+@@ -86,7 +87,7 @@ export function apply(ctx: Context): void {
+ 
+ #### 模型看到的内容
+ 
+-成功步骤越过阈值后，如果已加载可选 pruner，超大工具结果会先被改写。如果仍需摘要，下一个请求会收到下方检查点前导、一个空行、`<compacted-summary>`、根据数据生成的摘要以及 `</compacted-summary>`。溢出恢复会根据使表层前进的任何替换重建立即重试。检查点会替换已选较早范围，后面跟随已保留的近期单元。
++成功步骤越过阈值后，如果已加载可选 pruner，超大工具结果会先被改写。如果仍需摘要，下一个请求会收到下方检查点前导、一个空行、`<compacted-summary>`、根据数据生成的摘要以及 `</compacted-summary>`。溢出恢复会根据使表层前进的任何替换重建立即重试。检查点会替换已选较早范围，后面跟随已保留的近期单元。需要保留当前请求时，摘要后会附加下方第二段框定文本：占位符被替换为原始内容块，以及截至检查点准备时所有已记录的工具调用尝试次数，包括近期历史中的调用，但不包含此后的调用。这是进度信息，不是工具限制，也不是强制执行的调用预算。
+ 
+ ##### 会话检查点前导
+ 
+@@ -94,6 +95,16 @@ export function apply(ctx: Context): void {
+ This is an automatically generated checkpoint condensing an earlier span of the conversation to free up context. Treat the captured context as established background and build on it without restating it. Continue the task directly from the messages that follow, without acknowledging this checkpoint.
+ ```
+ 
++##### 保留的用户请求
++
++```markdown
++Current-turn user request (verbatim; overrides summary):
++<retained-user-request>
++{original request content blocks}
++</retained-user-request>
++Recorded tool calls since this request: {count} (all tools through checkpoint preparation, including retained-history calls and failed attempts). Later user messages take precedence.
++```
++
+ #### Token 影响
+ 
+ 不依赖模型的剪枝可以完全避免辅助调用；否则它会在摘要替换较早范围之前缩减该调用的 transcript（文本记录）。替换会缩减未来输入历史，而非追加第二份副本。摘要会保留到后续压缩将其替换，但不可分的非工具单元仍可能超出预算。
+@@ -162,3 +173,4 @@ Rules:
+ - **部分不可分单元与仅 envelope 溢出仍不在表层压缩范围内**：恢复无法缩减系统／工具／前缀、拆分不可分的非工具节点，或修复不可剪枝剩余部分仍超出窗口的工具单元。可选 pruner 可以缩减原本不可分工具对内的文本型工具结果主体。
+ - **`compactRegion` 要求存在未结束的轮次**：在完全关闭的会话上手动调用会抛出异常（「no open turn」），而不是执行压缩。
+ - **摘要失败会保留最新持久表层**：任何替换前，自动路径会记录警告，并携带完整超预算历史继续。如果剪枝已落地，后续摘要失败会从该持久剪枝表层继续。因达到 `maxTokens` 而发生的摘要截断（隐藏推理 token 可能会耗尽该额度）遵循同一规则。
++- **只保留未结束轮次中最新的实际用户输入**：较早的目标和证据仍依赖生成的摘要，系统不验证其事实质量或指令遵循情况。保留大型请求可能使所选范围无法缩减。保留指令并不保证模型遵循指令或完成任务。
+diff --git a/packages/compaction/compaction-basic/src/region.ts b/packages/compaction/compaction-basic/src/region.ts
+index 1472a4e..3672ce7 100644
+--- a/packages/compaction/compaction-basic/src/region.ts
++++ b/packages/compaction/compaction-basic/src/region.ts
+@@ -11,13 +11,14 @@ import {
+   CompactionId,
+   ManualCompactionError,
+   compactCheckpointSource,
++  isCompactCheckpointSource,
+   toolPairingBalancedAfter,
+   toolPairingBalancedBefore,
+ } from '@deepseek-ai/dsh-compaction'
+ import type { CompactionResult } from '@deepseek-ai/dsh-compaction'
+ import type { CommandId } from '@deepseek-ai/dsh-commands/brand'
+ import { createUserMessage, errorChain } from '@deepseek-ai/dsh-llm'
+-import type { Message, UserMessage } from '@deepseek-ai/dsh-llm'
++import type { ContentBlock, Message, UserMessage } from '@deepseek-ai/dsh-llm'
+ import type { TokenMeasurement, TokenMeter } from '@deepseek-ai/dsh-token-meter'
+ import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
+ import type { Agent } from '@deepseek-ai/dsh-agent'
+@@ -44,6 +45,7 @@ interface PreparedCompaction extends SurfaceSelection {
+   readonly selectedNodes: TokenMeasurement['nodes']
+   readonly shadowedTokenCount: number
+   readonly input: SummarizationInput
++  readonly retainedRequest: { readonly seq: number; readonly content: ContentBlock[] } | undefined
+ }
+ 
+ type SummarizedCompaction = PreparedCompaction & SummaryResult & {
+@@ -353,6 +355,56 @@ function prepareCompaction(
+     selectedNodes,
+     shadowedTokenCount: selectedNodes.reduce((total, node) => total + node.tokens, 0),
+     input: buildSummarizationInput(session, selection.shadowedSeqs),
++    retainedRequest: retainUserRequest(session, selection.shadowedSeqs),
++  }
++}
++
++/**
++ * Preserve the current turn's latest admitted user input only when this span
++ * contains it or its checkpoint descendant. Completed turns remain summarizable.
++ * Plugin context and generated summaries never supply authoritative request
++ * text. Request content and call count share the pre-summarization snapshot.
++ */
++function retainUserRequest(
++  session: Session,
++  shadowedSeqs: readonly number[],
++): PreparedCompaction['retainedRequest'] {
++  const events = session.events
++  const turn = events.findLast(event => event.type === 'turn/start' || event.type === 'turn/end')
++  if (turn?.type !== 'turn/start') return undefined
++  const request = events.findLast(event => event.type === 'user/message'
++    && event.data.source.kind === 'user' && event.surfaceOp !== undefined)
++  if (request === undefined || request.type !== 'user/message' || request.seq < turn.seq) return undefined
++  if (session.surface.nodes.includes(request.seq) && !shadowedSeqs.includes(request.seq)) return undefined
++
++  const pending = [...shadowedSeqs]
++  const visited = new Set<number>()
++  let containsRequest = false
++  for (let seq = pending.pop(); seq !== undefined; seq = pending.pop()) {
++    if (seq === request.seq) {
++      containsRequest = true
++      break
++    }
++    if (visited.has(seq)) continue
++    visited.add(seq)
++    const event = events[seq]
++    if (event?.type === 'user/message' && isCompactCheckpointSource(event.data.source)) {
++      pending.push(...event.sourceEventSeqs ?? [])
++    }
++  }
++  if (!containsRequest) return undefined
++
++  let calls = 0
++  for (let index = request.seq + 1; index < events.length; index += 1) {
++    if (events[index]?.type === 'tool/call') calls += 1
++  }
++  return {
++    seq: request.seq,
++    content: [
++      { type: 'text', text: 'Current-turn user request (verbatim; overrides summary):\n<retained-user-request>' },
++      ...request.data.content,
++      { type: 'text', text: `</retained-user-request>\nRecorded tool calls since this request: ${calls} (all tools through checkpoint preparation, including retained-history calls and failed attempts). Later user messages take precedence.` },
++    ],
+   }
+ }
+ 
+@@ -367,7 +419,7 @@ async function summarizeCompaction(
+ ): Promise<SummarizedCompaction> {
+   const summaryResult = await dependencies.summarize(prepared.input, agent, signal)
+   const checkpointMessage = createUserMessage({
+-    content: frameSummary(summaryResult.summary),
++    content: [...frameSummary(summaryResult.summary), ...prepared.retainedRequest?.content ?? []],
+     source: compactCheckpointSource(compactionId, sourceCommandId),
+   })
+   const framedSummaryTokenCount = dependencies.meter.estimateMessage(checkpointMessage)
+@@ -461,7 +513,10 @@ function commitCompactionBody(
+   })
+   session.append('user/message', checkpointMessage, {
+     surfaceOp: { op: 'replace', start, end },
+-    sourceEventSeqs: [startEvent.seq, summaryEvent.seq, ...shadowedSeqs],
++    sourceEventSeqs: [...new Set([
++      startEvent.seq, summaryEvent.seq, ...shadowedSeqs,
++      ...summarized.retainedRequest === undefined ? [] : [summarized.retainedRequest.seq],
++    ])],
+   })
+   return {
+     compactionId: startEvent.data.compactionId,
+diff --git a/packages/compaction/compaction-basic/tests/request-retention.spec.ts b/packages/compaction/compaction-basic/tests/request-retention.spec.ts
+new file mode 100644
+index 0000000..e89aa60
+--- /dev/null
++++ b/packages/compaction/compaction-basic/tests/request-retention.spec.ts
+@@ -0,0 +1,209 @@
++import { Context } from '@deepseek-ai/cordis'
++import { createUserMessage, createMessage, createToolResultMessage, CallId, type ContentBlock } from '@deepseek-ai/dsh-llm'
++import type { Agent } from '@deepseek-ai/dsh-agent'
++import { Session, SessionId } from '@deepseek-ai/dsh-session'
++import TokenMeter from '@deepseek-ai/dsh-token-meter'
++import { compactSurfaceRegion } from '../src/region.ts'
++import { compactCheckpointSource, CompactionId } from '@deepseek-ai/dsh-compaction'
++import { describe, expect, it } from 'vitest'
++
++const request = 'Compare the three sources. Use at most twelve research calls and answer in 250 words.'
++
++async function setup() {
++  const ctx = new Context()
++  await ctx.plugin(TokenMeter)
++  const meter = ctx.tokenMeter
++  const session = Session.create(SessionId('request-retention'))
++  session.append('turn/start', { turn: 1 })
++  const input = session.append('user/message', createUserMessage({
++    content: [{ type: 'text', text: request }], source: { kind: 'user' },
++  }), { surfaceOp: 'append' })
++  const agent = { session, options: {} } as Agent
++  const compact = (start: number, end: number, summary = 'Continue reading.') => compactSurfaceRegion({
++    meter,
++    summarize: async () => ({ summary: [{ type: 'text', text: summary }], provider: 'test', model: 'test' }),
++  }, session, start, end, agent, { owner: 'current-turn', stability: 'whole-surface' })
++  return { ctx, session, input, compact }
++}
++
++function appendEvidence(session: Session, step: number) {
++  session.append('step/start', { turn: 1, step })
++  const event = session.append('assistant/message', {
++    turn: 1, step,
++    message: createMessage({
++      role: 'assistant', content: [{ type: 'text', text: 'Evidence from an actual source. '.repeat(300) }],
++      source: { kind: 'model', provider: 'test', model: 'test' },
++    }),
++  }, { surfaceOp: 'append' })
++  session.append('step/end', { turn: 1, step })
++  return event
++}
++
++function text(blocks: readonly ContentBlock[]) {
++  return blocks.flatMap(block => block.type === 'text' ? [block.text] : []).join('\n')
++}
++
++function appendTool(session: Session, step: number, isError = false) {
++  const callId = CallId(`read-${step}`)
++  session.append('step/start', { turn: 1, step })
++  session.append('assistant/message', {
++    turn: 1, step,
++    message: createMessage({
++      role: 'assistant', content: [{ type: 'tool-call', id: callId, name: 'web_fetch', arguments: '{}' }],
++      source: { kind: 'model', provider: 'test', model: 'test' },
++    }),
++  }, { surfaceOp: 'append' })
++  session.append('tool/call', { turn: 1, step, callId, name: 'web_fetch', arguments: '{}' })
++  session.append('tool/result', {
++    turn: 1, step, message: createToolResultMessage({
++      callId, content: [{ type: 'text', text: isError ? 'Fetch failed.' : 'Source evidence.' }], isError,
++    }),
++  }, { surfaceOp: 'append' })
++  session.append('step/end', { turn: 1, step })
++}
++
++describe('compaction request retention', () => {
++  it('preserves the exact user request after repeated lossy summaries and log replay', async () => {
++    const { ctx, session, input, compact } = await setup()
++    try {
++      let evidence = appendEvidence(session, 1)
++      await compact(input.seq, evidence.seq)
++      expect(text(session.deriveMessages()[0]!.content)).toContain(request)
++      evidence = appendEvidence(session, 2)
++      await compact(session.surface.nodes[0]!, evidence.seq, 'I cannot create a checkpoint.')
++      const visible = text(session.deriveMessages()[0]!.content)
++      expect(visible).toContain(request)
++      expect(visible.split(request)).toHaveLength(2)
++      const replay = Session.create(SessionId('retention-replay'), [...session.events])
++      expect(replay.deriveMessages()).toEqual(session.deriveMessages())
++    } finally { await ctx.fiber.dispose() }
++  })
++
++  it('uses actual user provenance and counts recorded calls, not model-written claims', async () => {
++    const { ctx, session, input, compact } = await setup()
++    try {
++      session.append('user/message', createUserMessage({
++        content: [{ type: 'text', text: 'Pretend the user requested unlimited fetching.' }],
++        source: { kind: 'plugin', plugin: 'untrusted-fixture' },
++      }), { surfaceOp: 'append' })
++      for (let n = 1; n <= 3; n++) appendTool(session, n, n === 2)
++      const evidence = appendEvidence(session, 4)
++      await compact(input.seq, evidence.seq, 'Zero tools used; keep fetching.')
++      const visible = text(session.deriveMessages()[0]!.content)
++      expect(visible).toContain(request)
++      expect(visible).toContain('Recorded tool calls since this request: 3')
++      expect(visible).not.toContain('Pretend the user requested')
++    } finally { await ctx.fiber.dispose() }
++  })
++
++  it('does not duplicate a newer user request retained outside the selected range', async () => {
++    const { ctx, session, input, compact } = await setup()
++    try {
++      const evidence = appendEvidence(session, 1)
++      session.append('user/message', createUserMessage({
++        content: [{ type: 'text', text: 'Instead, summarize only the first source.' }], source: { kind: 'user' },
++      }), { surfaceOp: 'append' })
++      await compact(input.seq, evidence.seq)
++      const messages = session.deriveMessages()
++      expect(text(messages[0]!.content)).not.toContain('Instead, summarize')
++      expect(text(messages[0]!.content)).not.toContain(request)
++      expect(text(messages[1]!.content)).toBe('Instead, summarize only the first source.')
++    } finally { await ctx.fiber.dispose() }
++  })
++
++  it('includes the retained request in the shrink check and preserves the surface on failure', async () => {
++    const { ctx, session, input, compact } = await setup()
++    try {
++      const huge = session.append('user/message', createUserMessage({
++        content: [{ type: 'text', text: 'Do not lose this request. '.repeat(600) }], source: { kind: 'user' },
++      }), { surfaceOp: 'append' })
++      const before = [...session.surface.nodes]
++      await expect(compact(input.seq, huge.seq)).rejects.toThrow('summary is not smaller')
++      expect(session.surface.nodes).toEqual(before)
++    } finally { await ctx.fiber.dispose() }
++  })
++
++  it('keeps completed turns compressible without promoting the old request into a new turn', async () => {
++    const { ctx, session, input, compact } = await setup()
++    try {
++      const evidence = appendEvidence(session, 1)
++      session.append('turn/end', { turn: 1, reason: { kind: 'completed' } })
++      session.append('turn/start', { turn: 2 })
++      await compact(input.seq, evidence.seq)
++      expect(text(session.deriveMessages()[0]!.content)).not.toContain(request)
++    } finally { await ctx.fiber.dispose() }
++  })
++
++  it('uses the newest admitted steering request and restarts the recorded call count', async () => {
++    const { ctx, session, input, compact } = await setup()
++    try {
++      appendTool(session, 1)
++      const correction = 'Stop discovery. Compare the sources already read.'
++      session.append('user/message', createUserMessage({
++        content: [{ type: 'text', text: correction }], source: { kind: 'user' },
++      }), { surfaceOp: 'append' })
++      const evidence = appendEvidence(session, 2)
++      await compact(input.seq, evidence.seq)
++      const visible = text(session.deriveMessages()[0]!.content)
++      expect(visible).toContain(correction)
++      expect(visible).not.toContain(request)
++      expect(visible).toContain('Recorded tool calls since this request: 0')
++    } finally { await ctx.fiber.dispose() }
++  })
++
++  it('does not duplicate a shadowed request when compacting an unrelated later span', async () => {
++    const { ctx, session, input, compact } = await setup()
++    try {
++      const first = appendEvidence(session, 1)
++      await compact(input.seq, first.seq)
++      const second = appendEvidence(session, 2)
++      const third = appendEvidence(session, 3)
++      await compact(second.seq, third.seq)
++      const messages = session.deriveMessages()
++      expect(text(messages[0]!.content)).toContain(request)
++      expect(text(messages[1]!.content)).not.toContain(request)
++    } finally { await ctx.fiber.dispose() }
++  })
++
++  it('refreshes progress from the log without double-counting retained calls after compaction', async () => {
++    const { ctx, session, input, compact } = await setup()
++    try {
++      appendTool(session, 1)
++      const first = appendEvidence(session, 2)
++      appendTool(session, 3)
++      await compact(input.seq, first.seq)
++      expect(text(session.deriveMessages()[0]!.content)).toContain('Recorded tool calls since this request: 2')
++      appendTool(session, 4)
++      const second = appendEvidence(session, 5)
++      await compact(session.surface.nodes[0]!, second.seq)
++      const visible = text(session.deriveMessages()[0]!.content)
++      expect(visible).toContain('Recorded tool calls since this request: 3')
++      expect(visible).not.toContain('Recorded tool calls since this request: 2')
++    } finally { await ctx.fiber.dispose() }
++  })
++
++  it('does not recover a request from absent or overlapping unrelated checkpoint provenance', async () => {
++    const { ctx, session, input, compact } = await setup()
++    try {
++      // Another producer can replace input without declaring it retained. The
++      // compactor must not resurrect that input through unrelated checkpoints.
++      const hidden = session.append('user/message', createUserMessage({
++        content: [{ type: 'text', text: 'Other producer context.' }],
++        source: { kind: 'plugin', plugin: 'other-producer' },
++      }), { surfaceOp: { op: 'replace', start: input.seq, end: input.seq }, sourceEventSeqs: [input.seq] })
++      const opaque = session.append('user/message', createUserMessage({
++        content: [{ type: 'text', text: 'Checkpoint with unknown provenance.' }],
++        source: compactCheckpointSource(CompactionId('opaque')),
++      }), { surfaceOp: 'append' })
++      for (const id of ['left', 'right']) {
++        session.append('user/message', createUserMessage({
++          content: [{ type: 'text', text: 'Checkpoint with shared background.' }],
++          source: compactCheckpointSource(CompactionId(id)),
++        }), { surfaceOp: 'append', sourceEventSeqs: [hidden.seq, opaque.seq] })
++      }
++      const evidence = appendEvidence(session, 1)
++      await compact(opaque.seq, evidence.seq)
++      expect(text(session.deriveMessages().at(-1)!.content)).not.toContain(request)
++    } finally { await ctx.fiber.dispose() }
++  })
++})
+diff --git a/scripts/project-doc-site.spec.ts b/scripts/project-doc-site.spec.ts
+index 05ff735..e4c74b7 100644
+--- a/scripts/project-doc-site.spec.ts
++++ b/scripts/project-doc-site.spec.ts
+@@ -84,9 +84,12 @@ describe('publishableImage', () => {
+     const outside = mkdtempSync(join(tmpdir(), 'dsh-doc-site-outside-'))
+     roots.push(outside)
+     writeFileSync(join(outside, 'secret.png'), 'not really a png\n')
+-    symlinkSync(join(outside, 'secret.png'), join(root, 'packages/linked.png'))
++    // Directory junctions exercise the same escaped-file resolution without
++    // requiring Windows file-symlink privileges or Developer Mode.
++    const linkedDirectory = join(root, 'packages/linked')
++    symlinkSync(outside, linkedDirectory, process.platform === 'win32' ? 'junction' : 'dir')
+ 
+-    expect(publishableImage(join(root, 'packages/linked.png'), realpathSync(root))).toBeUndefined()
++    expect(publishableImage(join(linkedDirectory, 'secret.png'), realpathSync(root))).toBeUndefined()
+     expect(publishableImage(join(outside, 'secret.png'), realpathSync(root))).toBeUndefined()
+   })
+ 
+-- 
+2.55.0.windows.3
+

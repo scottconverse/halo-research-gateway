@@ -65,7 +65,13 @@ const toolGroups = [
   ['Local + durable', 'local_fetch · local_crawl · research_job'],
 ];
 
-const hosts = ['DSH', 'Codex', 'Claude Code', 'OpenCode', 'LM Studio Bionic'];
+const hosts = [
+  'DSH',
+  'Codex Desktop',
+  'Cowork / Claude Desktop',
+  'OpenCode Desktop',
+  'LM Studio Bionic',
+];
 
 export default function Home() {
   return (
@@ -81,7 +87,7 @@ export default function Home() {
             </span>
             <span>Halo Research Gateway</span>
             <span className="hidden rounded-full border border-emerald-300/20 bg-emerald-300/8 px-2 py-0.5 font-mono text-[10px] text-emerald-200 sm:inline">
-              v0.2.0
+              v0.3.0
             </span>
           </a>
           <div className="hidden items-center gap-7 text-sm text-slate-400 md:flex">
@@ -108,7 +114,7 @@ export default function Home() {
           <div>
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/7 px-3 py-1.5 font-mono text-xs text-cyan-100">
               <span className="size-1.5 rounded-full bg-emerald-300 shadow-[0_0_12px_#6ee7b7]" />
-              DSH-first · localhost-only · source-backed
+              Windows-only · standard MCP · source-backed
             </div>
             <h1 className="max-w-4xl text-balance text-5xl font-semibold leading-[.98] tracking-[-0.05em] text-white sm:text-6xl lg:text-[82px]">
               One research plane.
@@ -116,15 +122,17 @@ export default function Home() {
               <span className="text-cyan-200">Every agent.</span>
             </h1>
             <p className="mt-7 max-w-2xl text-pretty text-lg leading-8 text-slate-300 sm:text-xl">
-              Give DSH the tools to find web sources, read pages and documents,
-              compare evidence, and return useful citations. The Gateway runs
-              locally on Windows. It does not send email, post to GitHub, buy
-              things, or manage accounts.
+              Give every compatible local AI client the same tools to find web
+              sources, read pages and documents, compare evidence, and return
+              useful citations. DSH is the first client, not a dependency. The
+              Gateway does not send email, post to GitHub, buy things, or manage
+              accounts.
             </p>
             <p className="mt-5 max-w-2xl text-sm leading-6 text-amber-200">
-              Current status: the installed Gateway is verified; the complete
-              DSH research workflow is still blocked by a DSH tools-package
-              mismatch. This is not a finished end-to-end release.{' '}
+              Current status: the complete bounded DSH workflow passed across
+              eight successful Gateway calls, continuation and two automatic
+              compactions. Other registered clients use the same MCP contract;
+              their model-selected live calls remain separately tracked.{' '}
               <a className="underline underline-offset-4" href="#proof">
                 See the evidence and remaining work.
               </a>
@@ -152,8 +160,8 @@ export default function Home() {
             <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-400">
               {[
                 '14 research tools',
-                '423 local and CI regression tests',
-                'DSH is the primary client',
+                'Windows quality gate + site build',
+                'DSH is the first client',
               ].map((item) => (
                 <span key={item} className="flex items-center gap-2">
                   <CheckCircle2 className="size-4 text-emerald-300" />
@@ -369,26 +377,26 @@ export default function Home() {
               What is verified—and what is still open.
             </h2>
             <p className="section-copy">
-              Verified snapshot: September 3, 2026, Gateway 0.2.0 at 7cdfe72.
-              The same 423-test suite passed locally and in Windows CI. Native
-              public-source, browser and process checks are separate evidence;
-              none replaces a successful full research workflow through DSH.
+              Version 0.3.0 release-candidate evidence includes a complete DSH
+              workflow: eight successful Gateway calls, three distinct required
+              sources, continuation, two automatic compactions and a supported
+              final answer. The exact merged revision must still be bound to
+              green Windows CI before release; the tag requires owner approval.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <span className="proof-pill">423 regression tests passed</span>
-              <a className="proof-pill underline underline-offset-4" href="https://github.com/scottconverse/halo-research-gateway/actions/runs/33720850885">
-                Windows CI · exact tested revision
+              <span className="proof-pill">DSH workflow verifier passed</span>
+              <a className="proof-pill underline underline-offset-4" href="https://github.com/scottconverse/halo-research-gateway/actions">
+                Windows CI · current runs
               </a>
               <span className="proof-pill">Schema 1.5</span>
               <span className="proof-pill">DB schema 3</span>
             </div>
             <p className="mt-6 text-sm leading-6 text-amber-200">
-              The latest DSH workflow failed before search could run because of
-              a DSH tools-package mismatch. That repair still needs approval.
-              Real research login and app-bound cookies, visible human challenge
-              handoff, CapSolver browser-token application, broader resource
-              limits and full installation/stress acceptance remain open.
-              Bright Data routing was tested with a fake vendor, not a paid API.
+              The DSH workflow is green. Real research login and app-bound
+              cookies, broader stress and clean-OS/logon acceptance remain open.
+              CapSolver and Bright Data were tested with local fake vendors, not
+              paid APIs. Registered clients are not called live-proven until
+              their model selects and completes a Gateway tool.
             </p>
             <p className="mt-5 text-sm leading-6 text-slate-400">
               Proxy citations disclose unverified final redirects. Cost budgets
@@ -449,7 +457,7 @@ export default function Home() {
               'Search for relevant sources.',
               'Read pages, documents, transcripts, and discussions.',
               'Compare evidence and disclose missing or partial results.',
-              'Return usable citations to DSH.',
+              'Return usable citations to the requesting client.',
             ].map((step, index) => (
               <li
                 key={step}
@@ -469,7 +477,7 @@ export default function Home() {
 
       <section id="start" className="py-24">
         <div className="mx-auto max-w-5xl px-5 text-center lg:px-8">
-          <p className="section-kicker">Version 0.2.0</p>
+          <p className="section-kicker">Version 0.3.0</p>
           <h2 className="mx-auto max-w-3xl text-balance text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
             Install the local Gateway, then verify your host connection.
           </h2>
@@ -509,9 +517,9 @@ export default function Home() {
             <span className="grid size-8 place-items-center rounded-lg border border-cyan-300/20 bg-cyan-300/7 text-cyan-200">
               <Braces className="size-4" />
             </span>
-            <span>Halo Research Gateway · v0.2.0</span>
+            <span>Halo Research Gateway · v0.3.0</span>
           </div>
-          <p>DSH-first. Local by default. Evidence all the way down.</p>
+          <p>Agent-neutral. Windows-local. Evidence all the way down.</p>
         </div>
       </footer>
     </main>

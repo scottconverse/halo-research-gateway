@@ -1,4 +1,4 @@
-# Halo Research Gateway 0.2.0 — Complete User Manual
+# Halo Research Gateway 0.3.0 — Complete User Manual
 
 This is the operator guide for installing, using, maintaining, and recovering Halo Research Gateway on the HALO Windows workstation. [Research-only scope and finish list](RESEARCH-ONLY-SCOPE.md) supersedes conflicting parts of the original v1.5 design.
 
@@ -6,7 +6,7 @@ This is the operator guide for installing, using, maintaining, and recovering Ha
 
 | Item | Value |
 | --- | --- |
-| Product version | `0.2.0` |
+| Product version | `0.3.0` |
 | Landing page | `https://halo-research-gateway.sconverse.chatgpt.site` (owner-only) |
 | Result schema | `1.5` |
 | Database schema | `3` |
@@ -19,11 +19,11 @@ This is the operator guide for installing, using, maintaining, and recovering Ha
 | Source | `C:\Users\scott\Desktop\Code\halo-research-gateway` |
 | GitHub | `https://github.com/scottconverse/halo-research-gateway` |
 
-DSH is primary. Codex, Claude Code, OpenCode, and LM Studio Bionic are secondary or fallback clients. The gateway does not replace DSH or choose its model, reasoning, context, slots, sandbox, or verification policy.
+The Gateway is Windows-only and agent/model-neutral. DSH is the first client, but Codex Desktop/CLI, Cowork and Claude Desktop/Code, OpenCode Desktop, LM Studio Bionic, and other local MCP clients use the same standard MCP endpoint and fourteen-tool contract. The Gateway does not replace a client or choose its model, reasoning, context, slots, sandbox, or verification policy.
 
 ## 2. Install and verify
 
-Prerequisites: Windows 11 under Scott's account, PowerShell, `uv`, internet access for the initial locked environment, Chrome for Crawl4AI, and a supported MCP host.
+Prerequisites: Windows 11 under Scott's account, PowerShell, `uv`, Node.js 22 for the source/install quality gate, internet access for the initial locked environment, Chrome for Crawl4AI, and a supported MCP host. Node validates the optional DSH adapter; the Gateway service itself remains Python-native and clients do not need the DSH adapter.
 
 From the repository root:
 
@@ -56,7 +56,7 @@ this existing Windows machine. It does not establish clean-OS prerequisites,
 actual logon, real personal-profile import or a production deployment. See
 [installer evidence](INSTALLER-EVIDENCE-2026-09-03.md).
 
-Open `http://127.0.0.1:8765/operator`. Healthy means `status: ok`, version `0.2.0`, result schema `1.5`, database schema `3`, and ordinary providers ready or honestly degraded.
+Open `http://127.0.0.1:8765/operator`. After 0.3.0 is deployed, healthy means `status: ok`, version `0.3.0`, result schema `1.5`, database schema `3`, and ordinary providers ready or honestly degraded. Source version and installed runtime version are separate facts during an upgrade.
 
 ## 3. Start, stop, and inspect
 
@@ -91,19 +91,20 @@ See [foreground evidence](FOREGROUND-LIFECYCLE-EVIDENCE-2026-09-03.md) and
 
 ## 4. Daily research use
 
-On Halo, a September 3 deployment repair corrected a duplicate DSH tools package
-that prevented calls from dispatching. It preserved models, presets, permissions
-and all existing conversations. Search and reading now dispatch, but the broad
-research acceptance task timed out after cursor-copy errors and compaction. Do
-not treat a running server or a selected tool as proof of a supported final answer.
-See [the exact repair and acceptance record](DSH-RESOLUTION-EVIDENCE-2026-09-03.md).
+On Halo, the September 3 DSH repair preserved models, presets, permissions and
+existing conversations. The later request-retention and invalid-summary repairs
+then passed a complete workflow: eight successful Gateway calls, three distinct
+required sources, continuation, two automatic compactions, and a supported final
+answer within the configured time and word limits. See
+[the exact verified workflow record](DSH-VERIFIED-WORKFLOW-EVIDENCE-2026-09-03.md).
+That is DSH acceptance, not blanket proof for every other registered client.
 
 Pagination cursors are opaque text. Copy `page.next_cursor` exactly into the same
 tool's `cursor` argument; do not decode, shorten, reconstruct or edit it. An error
 is not a read page. A partial page can support the facts actually returned; it
 does not establish that the whole source was read.
 
-Ask DSH naturally. Examples:
+Ask any connected client naturally. Examples:
 
 - "Search for the current official documentation, then fetch the two best sources."
 - "Research this GitHub issue and cite the evidence."
@@ -833,7 +834,7 @@ uv run python tests\acceptance\live_provider_canary.py
 uv run python tests\acceptance\crawl_canary.py
 ```
 
-Read [0.2.0 release notes](RELEASE-NOTES-v0.2.0.md), [0.2.0 evidence](EVIDENCE-v0.2.0-2026-09-01.md), [implementation status](implementation-status.md), [security](security.md), [operations](operations.md), [host integration](host-integration.md), and [quality gate](quality-gate.md).
+Read [0.3.0 release notes](RELEASE-NOTES-v0.3.0.md), [DSH workflow evidence](DSH-VERIFIED-WORKFLOW-EVIDENCE-2026-09-03.md), [implementation status](implementation-status.md), [security](security.md), [operations](operations.md), [host integration](host-integration.md), and [quality gate](quality-gate.md).
 
 ## 17. Trust boundary
 

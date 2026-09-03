@@ -1,0 +1,15 @@
+# Minimal composition fragment for the optional DSH client integration.
+# Replace the example file URL with the absolute installed integration path.
+- id: compaction
+  name: cordis:group
+  group: true
+  isolate:
+    compaction: true
+  config:
+    - id: compaction-basic
+      name: '@deepseek-ai/dsh-compaction-basic'
+
+    # Must follow compaction so the durable Gateway ledger is re-injected after
+    # an automatic fold. The query version intentionally busts module caches.
+    - id: halo-research-state
+      name: 'file:///C:/absolute/path/to/halo-research-state/index.mjs?v=2'

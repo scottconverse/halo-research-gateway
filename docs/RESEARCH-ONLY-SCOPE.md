@@ -6,7 +6,7 @@ handoffs, skill copies, and earlier plans. Historical evidence is not deleted.
 
 ## Purpose
 
-Give DSH full, useful search and research: find sources, read their contents,
+Give DSH and every compatible local MCP client full, useful search and research: find sources, read their contents,
 collect evidence, and return usable citations. The Gateway is not a general
 personal assistant or an account-operation system. It does not change DSH's
 native permissions, models, or development workflow.
@@ -54,18 +54,12 @@ filter fixes, and cookie-only fixture repair are committed. Pushed checkpoint
 Reddit search/thread and Hacker News discussion evidence. Authenticated GitHub
 was proven at adapter level. These do not complete the following work:
 
-1. **Prove the whole DSH workflow after the package repair.** The September 3
-   repair removes the shadow package identity without changing DSH code, models,
-   permissions, presets or old conversations. Real search, multi-page reading and
-   one exact-cursor continuation now dispatch. The broad run still timed out
-   after four miscopied cursor rejections and seven compactions, without a final
-   answer. The strengthened acceptance checker rejects failed/unissued cursors
-   and failed/duplicate source reads. See DSH-RESOLUTION-EVIDENCE-2026-09-03.md.
-   Later request-retention repair preserves the question, but supported synthesis
-   still fails. A separate malformed-summary source candidate is not installed;
-   four real local-model summary diagnostics rejected the baseline and all three
-   proposed prompt/composition variants. No variant was deployed and no workflow
-   pass is claimed. See DSH-SUMMARY-DIAGNOSTICS-2026-09-03.md.
+1. **Completed: prove the whole DSH workflow.** The request-retention and
+   invalid-summary repairs passed one complete model-driven workflow with eight
+   successful Gateway calls, three distinct required source reads, continuation,
+   two automatic compactions and a citation-supported final answer inside the
+   six-minute/250-word bounds. Strict automated history verification and manual
+   evidence review passed. See DSH-VERIFIED-WORKFLOW-EVIDENCE-2026-09-03.md.
 2. **Finish durable research jobs.** Pause/cancel, admission/argument bounds,
    state protection and honest empty/partial outcomes now pass isolated tests.
    Source checkpoints, cumulative budgets, lease renewal and bounded status now
@@ -112,11 +106,10 @@ was proven at adapter level. These do not complete the following work:
    nested replies and commit-pinned document pagination. Installed connection/
    DSH acceptance and wider provider/source limits remain; these are not proved
    by the disposable test. Keep intermittent upstream throttling visible.
-6. **Finish delivery.** The corrected owner-only landing page is published.
-   Keep operator copies aligned, finish metadata/documentation and verify CI
-   for the final revision after the remaining functional acceptance work.
-   Product version remains `0.2.0`; final target is `0.3.0` only after the
-   required acceptance is green. No new release tag or package is claimed.
+6. **Finish delivery.** Version 0.3.0 source, manual, landing-page source,
+   integration package and release metadata are aligned. CI and merge evidence
+   must bind to the final revision. The release tag remains intentionally pending
+   owner approval; source version 0.3.0 is not itself proof of a deployed runtime.
 
 Optional fallback-host integrations do not justify expanding the core product.
 No Gmail, publishing, shopping, account management, broad personal-data migration,
@@ -188,8 +181,9 @@ Recorded implementation gaps still included in that list:
   FOREGROUND-LIFECYCLE-EVIDENCE-2026-09-03.md. Forced console closure/Ctrl+C,
   strict wall-clock startup bounds, actual logon, long-running stress and clean-OS
   prerequisites remain separate. See INSTALLER-EVIDENCE-2026-09-03.md.
-- Two HTTP User-Agent strings still say `0.1`; package description/dependency
-  metadata, contributing guidance and a licensing decision remain unfinished.
+- HTTP identity, package metadata, contributing guidance and licensing are
+  aligned to 0.3.0. Remaining release work is CI/merge/deployment evidence and
+  the owner-approved tag.
 
 ## Change rule
 
