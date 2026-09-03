@@ -152,9 +152,15 @@ def create_application(config: GatewayConfig | None = None):
         max_chars: Literal[2000, 4000, 6000] | None = None,
         cursor: str | None = None,
     ) -> dict:
-        del include_tables, ocr
         return await service.document_extract(
-            url, pages, max_chars, cursor, client=request_client(ctx), max_age_seconds=max_age_seconds
+            url,
+            pages,
+            max_chars,
+            cursor,
+            client=request_client(ctx),
+            max_age_seconds=max_age_seconds,
+            include_tables=include_tables,
+            ocr=ocr,
         )
 
     @server.tool(description="Collect a bounded multi-source evidence packet; returns evidence, not an uncited answer.")

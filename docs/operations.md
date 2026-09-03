@@ -27,6 +27,22 @@ The registered task is `Halo Research Gateway`. The 2026-09-01 recovery drill pe
 - Cookie-only imported research profiles live under the gateway runtime browser directory and are copied capabilities. Never point Crawl4AI at the mutable source profile.
 - CapSolver and Bright Data remain inert until the operator config names the provider (`capsolver` or `brightdata`), encrypted connection ID, exact domains, attempt ceiling, and spend ceiling.
 
+## Local document OCR data
+
+`Install-HaloResearch.ps1` invokes `uv run --locked python -m
+halo_research_gateway.ocr_data` after environment synchronization. This verifies
+and installs English `tessdata_fast` data plus its Apache license into
+`.venv/share/tessdata`. Existing verified files are reused without a download;
+size/hash mismatch fails setup. A different existing file is left untouched.
+The new assets are environment data, not runtime credentials or source files.
+They must be restored/verified after rebuilding a virtual environment.
+
+PDF parsing/OCR runs in an owned native child, killed and reaped on timeout or
+cancellation. Its 120-second parse deadline excludes the preceding HTTP fetch.
+See [manual](USER-MANUAL.md#pdf-text-tables-and-local-ocr) for exact bounds and
+[evidence](DOCUMENT-EXTRACTION-EVIDENCE-2026-09-02.md) for tested/unproved surfaces.
+Fixture installer wiring is not a clean-machine installation receipt.
+
 ## Rollback
 
 1. Stop the gateway.

@@ -99,7 +99,12 @@ Recorded implementation gaps still included in that list:
 
 - `web_crawl` discards depth/site-only/interaction/capture arguments;
   `max_pages` currently enables full-page scrolling, not page traversal.
-- `document_extract` discards table/OCR options.
+- `document_extract` table/OCR forwarding, page-cited native tables, isolated
+  cancellation/deadline, and local English OCR are fixed and fixture-tested.
+  Arbitrary scanned layouts, hard native-parser RAM bounds, DSH use and complete
+  clean-install acceptance are not proved. See DOCUMENT-EXTRACTION-EVIDENCE-2026-09-02.md.
+- Recognized sensitive final PDF redirect URLs are redacted and not disk-cached;
+  equivalent final-redirect checks for generic HTTP/non-PDF fallback remain open.
 - Memory snapshot retention is not bounded; local/GitHub retrieval needs
   response/shared-limit hardening, and arbitrary job fields need bounds.
 - Background creation-time/duplicate-owner safeguards are fixed and native-tested;

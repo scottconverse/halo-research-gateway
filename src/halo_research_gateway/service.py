@@ -510,12 +510,15 @@ class HaloService:
         cursor=None,
         client="unidentified",
         max_age_seconds=None,
+        *,
+        include_tables=True,
+        ocr="auto",
     ) -> dict:
         if cursor:
             return self._resume("document_extract", cursor, max_chars)
         if not url:
             return self._error("document_extract", "policy", ValueError("URL_REQUIRED"))
-        key = "document:" + hashlib.sha256(json.dumps([url, pages]).encode()).hexdigest()
+        key = "document:v2:" + hashlib.sha256(json.dumps([url, pages, include_tables, ocr]).encode()).hexdigest()
         try:
             from .security import is_sensitive_url
 
@@ -524,7 +527,7 @@ class HaloService:
                 client,
                 key,
                 86400,
-                lambda: self.documents.extract(url, pages),
+                lambda: self.documents.extract(url, pages, include_tables=include_tables, ocr=ocr),
                 cacheable=not is_sensitive_url(url),
                 max_age_seconds=max_age_seconds,
             )

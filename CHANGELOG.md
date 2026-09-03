@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Honor document table/OCR options through MCP, service and option-specific cache keys. Return page-cited native PDF tables and local English OCR; reject unsupported page selections and forced OCR on non-PDF sources. Bound parser input/output, page/image/text/table work, isolate parsing in a cancellable native child, and redact recognized sensitive PDF redirect URLs while bypassing disk caching. Setup installs pinned, size/SHA-verified English language data and license; no cloud OCR or virtualization. Full DSH, arbitrary scan/layout, native peak-memory and clean-install acceptance remain separate.
+
 - Fix background launcher ownership: serialize simultaneous start/stop, validate repository/executable/module/creation time, retain a process handle through stop, refuse unrelated listeners, honor the configured port/health path, and clean up a failed new launch. Mismatched existing instances are left untouched. Native disposable start/stop/restart passed in Windows PowerShell and PowerShell 7; foreground, logon and clean-install acceptance remain separate.
 
 - Remove Gmail compose/draft/send, GitHub issue/comment writes, general form submission, the two action MCP tools, and the general action approval endpoint/UI.

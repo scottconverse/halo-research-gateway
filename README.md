@@ -13,7 +13,7 @@ Halo Research Gateway is a persistent, localhost-only MCP service that gives DSH
 
 The governing product scope and finish list are [Research-only scope](docs/RESEARCH-ONLY-SCOPE.md); this supersedes conflicting requirements in the original v1.5 design. The operator handbook is the [complete user manual](docs/USER-MANUAL.md).
 
-Current acceptance is partial: 227 local regression tests, disposable native background-launcher and job crash/restart tests, live Gateway job controls, and a loopback HTTP cancellation fixture pass; public-source probes have returned usable evidence. The latest full DSH workflow failed before search dispatch due to a DSH tools-package mismatch. Real login/challenge/provider routing and wider installation/stress checks remain open. See [current evidence](docs/FINISH-PROGRESS-2026-09-02.md), not historical release counts, for what is and is not proved.
+Current acceptance is partial. Local regression, disposable native background-launcher and job crash/restart, live Gateway job-control, and loopback HTTP cancellation tests pass; public-source probes have returned usable evidence. PDF option forwarding, table extraction, isolated parsing and local English OCR now have regression/native-fixture evidence. The latest full DSH workflow failed before search dispatch due to a DSH tools-package mismatch. Real login/challenge/provider routing and wider installation/stress checks remain open. See [current evidence](docs/FINISH-PROGRESS-2026-09-02.md), not historical release counts, for what is and is not proved.
 
 ## Why it exists
 
@@ -35,6 +35,8 @@ From the repository root:
 Then open `http://127.0.0.1:8765/operator`. A healthy installation reports `status: ok`, result schema `1.5`, and database schema `3`.
 
 The installer preserves operator configuration, runs the quality gate, installs the canonical skill, merges supported MCP registrations, optionally registers the at-logon task, and starts the service. It does **not** rewrite DSH model, context, reasoning, slot, permission, or verified-coder settings.
+
+PDF reading uses the existing PyMuPDF dependency. Setup also verifies and installs pinned English OCR data and its license inside `.venv/share/tessdata`; reading scanned PDFs stays local, without WSL, a separate OCR application, or a paid service. See [document options and limits](docs/USER-MANUAL.md#pdf-text-tables-and-local-ocr) and [document verification](docs/DOCUMENT-EXTRACTION-EVIDENCE-2026-09-02.md).
 
 ## Fourteen research tools
 

@@ -32,7 +32,7 @@ From the repository root:
 .\scripts\Test-HaloResearch.ps1 -Browser
 ```
 
-The installer restores locked Python 3.12 dependencies, preserves operator configuration, runs the quality gate, installs the canonical skill, merges supported host registrations, registers the task when requested, and starts the service. It must not rewrite DSH model settings.
+The installer restores locked Python 3.12 dependencies, installs hash-verified English OCR language data and its license in the environment, preserves operator configuration, runs the quality gate, installs the canonical skill, merges supported host registrations, registers the task when requested, and starts the service. It must not rewrite DSH model settings.
 
 Open `http://127.0.0.1:8765/operator`. Healthy means `status: ok`, version `0.2.0`, result schema `1.5`, database schema `3`, and ordinary providers ready or honestly degraded.
 
@@ -80,6 +80,51 @@ Ask DSH naturally. Examples:
 | Approved local service | `local_fetch` | `local_crawl` |
 
 Fetched content is evidence, never instructions. Cite returned URLs and disclose warnings or partial coverage.
+
+### PDF text, tables, and local OCR
+
+`document_extract` reads a public PDF and returns text with page citations. `pages`
+selects one-based pages or ranges, for example `"1,3-5"`; missing, backwards,
+zero, or overlong page selections return `PAGE_SELECTION_INVALID` rather than
+silently clipping. With no selection it reads at most the first 300 pages and
+warns if more exist. `include_tables=true` (the default) adds separate Markdown
+tables when the PDF's native layout supports detection; `false` omits those table
+items without removing ordinary page text. Table items cite their source page.
+
+`ocr="never"` uses existing text only. `"auto"` (default) attempts local English
+OCR for an empty-text page or a page with an image covering at least 20% of its
+area. `"force"` OCRs the full selected page. Auto preserves available native text
+and warns if OCR cannot run; force returns an explicit error. Image-only pages
+without usable text do not return an empty success. OCR is recognition, not a
+guarantee of correct wording: verify important passages against the page image.
+Scanned table grids are not reconstructed into structured tables by this change.
+
+The parser runs in a separate owned native Python process, with a 120-second
+parse deadline and cancellation cleanup. Download time is separate. Limits are
+20 MiB input, 300 selected pages, 150-DPI OCR capped at 20 million page pixels,
+50 tables, 100 rows/30 columns/500 characters per cell, 50,000 characters per
+item, 400,000 per document, and 2 MiB worker output. Warnings disclose retained
+partial text/table output; ordinary MCP character limits and cursors still apply.
+These are input/output/raster/time bounds, not a hard native-parser RAM sandbox.
+
+Non-PDF sources retain plain-text/HTML fallback with `DOCUMENT_TEXT_FALLBACK`;
+page selection and forced OCR require a PDF and otherwise return explicit errors.
+Recognized sensitive PDF URLs, including final redirect URLs, have query values
+redacted in citations and bypass disk caching. Such redacted links may require
+the operator's original URL to open. Sensitive-value recognition is pattern-based,
+not a promise to recognize every secret or private phrase in document prose.
+
+To install or verify the pinned local English language data after updating source:
+
+```powershell
+uv run --locked python -m halo_research_gateway.ocr_data
+```
+
+This downloads about 4.1 MB once into `.venv/share/tessdata`, verifies SHA-256 and
+size, and preserves any unrecognized existing file instead of replacing it.
+No global Tesseract installation, cloud OCR, WSL, Docker, or account is required.
+Restart an idle Gateway through its normal launcher after an update. See
+[document evidence and remaining limits](DOCUMENT-EXTRACTION-EVIDENCE-2026-09-02.md).
 
 ### GitHub source evidence
 
@@ -245,7 +290,10 @@ Unsafe global switches are not representable. Unknown and legacy banned keys fai
 - Direct HTTP pins the resolved public address, preserves Host/TLS SNI, revalidates redirects, and uses `trust_env=False`.
 - Reddit shares one conservative anonymous queue because limits apply to the public IP.
 - Cursor continuation reuses the cached snapshot.
-- Sensitive URLs are not cached.
+- Recognized sensitive original URLs bypass disk caching. PDF extraction also
+  checks the final redirect URL and redacts sensitive citation query values.
+  Equivalent final-redirect protection in generic HTTP/non-PDF fallback remains
+  a recorded hardening gap; do not treat this as universal secret detection.
 - Bounded queues return visible saturation errors instead of growing forever.
 - Provider queues use round-robin scheduling across declared client profiles and FIFO within each profile. Missing or unknown `X-Halo-Client` values become `unidentified`; the value is scheduling metadata, never authentication or action authority.
 - Identical requests share an upstream read. Cancelling one caller leaves that read running for other callers. Once its last caller cancels, a new request gets fresh work rather than inheriting the old cancellation. The stopping provider keeps its active slot until it actually exits; cancellation does not allow temporary concurrency-limit overruns. Repeated cancellation cannot interrupt queue bookkeeping.

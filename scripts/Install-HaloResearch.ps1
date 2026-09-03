@@ -6,6 +6,8 @@ New-Item -ItemType Directory -Force -Path $runtime | Out-Null
 Set-Location -LiteralPath $repo
 uv sync --locked --extra crawl --extra documents --group dev
 if ($LASTEXITCODE) { throw 'Locked environment installation failed' }
+uv run --locked python -m halo_research_gateway.ocr_data
+if ($LASTEXITCODE) { throw 'Verified local OCR-data installation failed' }
 $config = Join-Path $runtime 'config.toml'
 if (-not (Test-Path -LiteralPath $config)) { Copy-Item -LiteralPath (Join-Path $repo 'config\config.example.toml') -Destination $config }
 git config --local core.hooksPath .githooks
