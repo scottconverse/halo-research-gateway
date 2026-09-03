@@ -306,7 +306,22 @@ def create_application(config: GatewayConfig | None = None):
         cursor: str | None = None,
     ) -> dict:
         del max_chars, cursor
-        return await service.research_job(operation, request_client(ctx), job_id, question, profile, limits)
+        try:
+            return await service.research_job(operation, request_client(ctx), job_id, question, profile, limits)
+        except (ValueError, KeyError, PermissionError) as exc:
+            # Only stable job-control codes may cross the MCP boundary. Unknown
+            # exceptions retain the SDK's sanitization, never raw debug text.
+            code = exc.args[0] if exc.args else None
+            if isinstance(code, str) and code in {
+                "JOB_NOT_FOUND",
+                "JOB_NOT_OWNED",
+                "JOB_STATE_CONFLICT",
+                "INVALID_JOB_LIMITS",
+                "JOB_CAPACITY_REACHED",
+                "INVALID_ARGUMENT",
+            }:
+                return service._error("research_job", "policy", ValueError(code))
+            raise
 
     async def health(_: Request):
         return JSONResponse(service.health())

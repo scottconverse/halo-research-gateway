@@ -18,6 +18,13 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+September 3 DSH job trials: two real jobs completed with partial public evidence
+and exact continuation reads, but both finished before pause. No DSH lifecycle
+pass is claimed. The observed generic control errors are repaired in source:
+six known codes use safe error envelopes; unexpected errors stay sanitized.
+The full gate and disposable native MCP check pass; installed evidence requires
+a separate reload receipt. See DSH-JOB-EVIDENCE-2026-09-03.md.
+
 Compact cursor repair: source now emits 51-character authenticated references,
 with bounded visible metadata, public-cache restart recovery and memory-only
 private references. Legacy layout-3 inline cursors remain usable, including as a

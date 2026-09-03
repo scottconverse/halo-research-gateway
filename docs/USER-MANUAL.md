@@ -520,6 +520,15 @@ See [local policy evidence](LOCAL-READER-POLICY-EVIDENCE-2026-09-03.md).
 
 ## 9. Durable research jobs
 
+Expected control failures now return a normal error envelope with `ok: false`,
+empty `items`, and an explicit `error.code`: `JOB_NOT_FOUND`, `JOB_NOT_OWNED`,
+`JOB_STATE_CONFLICT`, `INVALID_JOB_LIMITS`, `JOB_CAPACITY_REACHED` or
+`INVALID_ARGUMENT`. Unknown exceptions remain sanitized. A terminal job cannot
+be paused/resumed: inspect its status rather than assuming a failed control call
+changed the job. September 3 DSH trials created jobs and read retained evidence,
+but both completed before pause arrived; DSH pause/resume is not yet proved.
+See [DSH job evidence](DSH-JOB-EVIDENCE-2026-09-03.md).
+
 `research_job` operations:
 
 - `create`: finite job with explicit limits;

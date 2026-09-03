@@ -66,7 +66,10 @@ was proven at adapter level. These do not complete the following work:
    Source checkpoints, cumulative budgets, lease renewal and bounded status now
    have regression coverage and a native process-crash/restart fixture passes.
    A live Gateway MCP job now passes pause/frozen-state/resume, cumulative
-   budget checks and retained evidence pagination. DSH job use, long-running
+   budget checks and retained evidence pagination. Two real DSH jobs now create
+   and read partial evidence with exact cursors, but both finish before pause;
+   no DSH pause/resume pass is claimed. Known job errors now have safe explicit
+   MCP codes. See DSH-JOB-EVIDENCE-2026-09-03.md. DSH lifecycle use, long-running
    stress and provider cancellation still need proof;
    an already-running synchronous DDGS request cannot be forcibly cancelled.
 3. **Finish research login/challenge access.** A real Chrome v10 cookie fixture

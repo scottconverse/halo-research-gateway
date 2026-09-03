@@ -23,6 +23,11 @@ Current acceptance is partial. The DSH tools-package mismatch was repaired on Se
 
 ## Why it exists
 
+Research-job control failures now report specific safe codes instead of generic
+tool errors. Two real DSH jobs returned partial evidence and exact continuation
+pages, but completed before pause; DSH pause/resume remains unproved. See
+[job-control repair and actual DSH outcomes](docs/DSH-JOB-EVIDENCE-2026-09-03.md).
+
 Pagination now normally returns a 51-character authenticated reference so local
 models have less text to copy. Evidence identity, expiry and same-tool/output
 checks remain enforced. Public references share the bounded disk cache; private

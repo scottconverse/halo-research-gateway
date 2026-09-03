@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Return explicit safe research-job control errors through MCP instead of generic tool failures. Preserve job state/ownership checks and sanitize unknown exceptions. Two real DSH jobs returned partial evidence and exact continuations but finished before pause; DSH pause/resume acceptance remains open.
+
 - Shorten ordinary pagination references to 51 authenticated characters while preserving immutable evidence, expiry, tool/output matching and private-result cache policy. Bound and expose reference metadata; keep existing signed layout-3 tokens compatible and use them when compact metadata cannot fit. This addresses observed DSH token-copy failures; real DSH acceptance remains a separate requirement.
 
 - Strengthen DSH acceptance to reject failed fetches, rejected or unissued cursors, aborted turns and duplicate fragment-only sources. Record the installed DSH package-identity repair separately from Gateway code: real dispatch is restored, but the broad local-model workflow timed out and is not a pass. Final release target is `0.3.0`; no new tag is claimed.
