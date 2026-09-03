@@ -1,0 +1,19 @@
+{
+  "cmd": "$cacheSource='C:\\Users\\scott\\Desktop\\Code\\halo-research-gateway\\Microsoft\\Windows\\PowerShell\\ModuleAnalysisCache'; $cacheDestination='C:\\Users\\scott\\Documents\\Codex\\2026-09-01\\is-this-tool-plugin-real-https\\outputs\\installer-unintended-module-cache.bin'; if(Test-Path -LiteralPath $cacheDestination){throw 'Cache preservation target exists'}; $cacheHash=(Get-FileHash -LiteralPath $cacheSource).Hash; Move-Item -LiteralPath $cacheSource -Destination $cacheDestination; if((Get-FileHash -LiteralPath $cacheDestination).Hash -ne $cacheHash){throw 'Moved cache hash mismatch'}; [pscustomobject]@{preservedAt=$cacheDestination;sha256=$cacheHash;bytes=(Get-Item -LiteralPath $cacheDestination).Length} | ConvertTo-Json; .\\.venv\\Scripts\\python.exe -m ruff format tests/unit/test_installer_contract.py tests/acceptance/test_install_native.py; .\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_installer_contract.py -q --tb=short",
+  "chunks": [
+    {
+      "chunk_id": "212244",
+      "wall_time_seconds": 10.0042176,
+      "session_id": 45957,
+      "original_token_count": 72,
+      "output": "{\r\n  \"preservedAt\": \"C:\\\\Users\\\\scott\\\\Documents\\\\Codex\\\\2026-09-01\\\\is-this-tool-plugin-real-https\\\\outputs\\\\installer-unintended-module-cache.bin\",\r\n  \"sha256\": \"46350DBE29CAAB10F65CAE3F93F81B26EB5C0ACCB6F2C489CE0027C449EEFDE3\",\r\n  \"bytes\": 4641\r\n}\r\n2 files left unchanged\n..........."
+    },
+    {
+      "chunk_id": "ecbbfd",
+      "wall_time_seconds": 0.0000036,
+      "exit_code": 0,
+      "original_token_count": 23,
+      "output": "............                                                  [100%]\r\n23 passed in 20.40s\r\n"
+    }
+  ]
+}

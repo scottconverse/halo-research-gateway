@@ -18,6 +18,16 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+September 3 installer checkpoint: per-user default paths, configured MCP address,
+PowerShell 5.1/7 host JSON preservation, safe parse errors and early Git failure
+handling now have 23 installer regressions. Fresh native checkout/venv installation,
+real network-MCP HTTP/Chrome reads, repair-state preservation and stop/restart
+pass in both shells: `2 passed in 504.33s (0:08:24)`. Each actual install/repair
+runs the 575-test full gate. Both 56-file code snapshots match the final source.
+No installed Gateway/DSH/host settings/task was changed. Foreground/logon/stress,
+clean-OS prerequisites and full DSH acceptance remain separate. All failures,
+test-fixture corrections and exact commands: INSTALLER-EVIDENCE-2026-09-03.md.
+
 September 3 CapSolver source checkpoint: automatic public crawling can apply a
 token to one declared standalone Turnstile/reCAPTCHA v2 widget and read the final
 source inside the existing browser/domain/budget policy. Unit and native Chrome/

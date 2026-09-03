@@ -93,6 +93,11 @@ was proven at adapter level. These do not complete the following work:
    honors configured port/health, and cleans failed launches. Disposable native
    duplicate-start/stop/restart passes in both PowerShell versions; foreground,
    logon, browser-tree and clean-install acceptance are not covered by that test.
+   A newer fresh-checkout/venv installer test now passes in PowerShell 5.1/7:
+   real dependency/OCR setup, network MCP HTTP/Chrome reads, unchanged data/config
+   during repair, stop and restart. No real task or installed host settings were
+   changed. See INSTALLER-EVIDENCE-2026-09-03.md. Foreground, actual logon,
+   clean-OS prerequisites and wider stress/process bounds remain separate.
 5. **Close source-provider coverage gaps.** Real native MCP now proves an actual
    Exa request followed by configured-quota failover to DDGS and a fetched source.
    Authenticated MCP in a disposable instance proves a 19-comment GitHub thread,
@@ -168,9 +173,11 @@ Recorded implementation gaps still included in that list:
   local results remain off disk cache. Universal secret detection, source prose/
   embedded links/path secrets and historical-data scrubbing are not included.
   See LOCAL-READER-POLICY-EVIDENCE-2026-09-03.md.
-- Background creation-time/duplicate-owner safeguards are fixed and native-tested;
-  foreground ownership, strict wall-clock startup bounds, logon, long-running
-  and clean-install acceptance remain.
+- Background creation-time/duplicate-owner safeguards are fixed and native-tested.
+  Fresh native application install/repair and actual HTTP/Chrome MCP reading now
+  pass in both supported PowerShell versions. Foreground ownership, strict
+  wall-clock startup bounds, actual logon, long-running stress and clean-OS
+  prerequisites remain separate. See INSTALLER-EVIDENCE-2026-09-03.md.
 - Two HTTP User-Agent strings still say `0.1`; package description/dependency
   metadata, contributing guidance and a licensing decision remain unfinished.
 

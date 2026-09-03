@@ -1,0 +1,440 @@
+{
+  "schema": 1,
+  "stage": "source and fresh native application install/repair acceptance complete; no live deployment or release",
+  "baseCommit": "70f083d40b72c663b2388b849a0b9b8cc58809b6",
+  "runs": {
+    "installBaseline": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_launcher_ownership.py tests/acceptance/test_launcher_native.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "519337",
+          "wall_time_seconds": 10.0164237,
+          "session_id": 94537,
+          "original_token_count": 4,
+          "output": ".............."
+        },
+        {
+          "chunk_id": "c22676",
+          "wall_time_seconds": 1.9523314,
+          "exit_code": 0,
+          "original_token_count": 22,
+          "output": "................................                           [100%]\r\n46 passed in 50.35s\r\n"
+        }
+      ]
+    },
+    "installerOcrBaseline": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_ocr_data.py -q",
+      "chunks": [
+        {
+          "chunk_id": "97ad9f",
+          "wall_time_seconds": 2.0892041,
+          "exit_code": 0,
+          "original_token_count": 25,
+          "output": ".......                                                                  [100%]\r\n7 passed in 1.32s\r\n"
+        }
+      ]
+    },
+    "installerRed": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_installer_contract.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "b76f16",
+          "wall_time_seconds": 5.1898141,
+          "exit_code": 1,
+          "original_token_count": 1410,
+          "output": "FFFFFF                                                                   [100%]\r\n================================== FAILURES ===================================\r\n_ test_registration_preserves_other_hosts_and_uses_configured_endpoint[powershell.exe] _\r\ntests\\unit\\test_installer_contract.py:60: in test_registration_preserves_other_hosts_and_uses_configured_endpoint\r\n    assert result.returncode == 0, result.stdout + result.stderr\r\nE   AssertionError: ConvertFrom-Json : A parameter cannot be found that matches parameter name 'AsHashtable'.\r\nE     At C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2259\\test_registration_preserves_ot0\\fixture \r\nE     repo\\scripts\\Install-HaloResearch.ps1:31 char:77\r\nE     + ... t-Content -LiteralPath $lmConfig -Raw | ConvertFrom-Json -AsHashtable\r\nE     +                                                              ~~~~~~~~~~~~\r\nE         + CategoryInfo          : InvalidArgument: (:) [ConvertFrom-Json], ParentContainsErrorRecordException\r\nE         + FullyQualifiedErrorId : NamedParameterNotFound,Microsoft.PowerShell.Commands.ConvertFromJsonCommand\r\nE      \r\nE     \r\nE   assert 1 == 0\r\nE    +  where 1 = CompletedProcess(args=['powershell.exe', '-NoProfile', '-NonInteractive', '-File', 'C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\...ption\\n    + FullyQualifiedErrorId : NamedParameterNotFound,Microsoft.PowerShell.Commands.ConvertFromJsonCommand\\n \\n\").returncode\r\n_ test_registration_preserves_other_hosts_and_uses_configured_endpoint[pwsh.exe] _\r\ntests\\unit\\test_installer_contract.py:63: in test_registration_preserves_other_hosts_and_uses_configured_endpoint\r\n    assert merged[\"mcpServers\"][\"halo-research\"][\"url\"] == \"http://127.0.0.1:18765/research\"\r\nE   AssertionError: assert 'http://127.0.0.1:8765/mcp' == 'http://127.0...8765/research'\r\nE     \r\nE     - http://127.0.0.1:18765/research\r\nE     ?                  -     ^^^^^^ ^\r\nE     + http://127.0.0.1:8765/mcp\r\nE     ?                       ^ ^\r\n_ test_new_runtime_config_does_not_point_into_developer_profile[powershell.exe] _\r\ntests\\unit\\test_installer_contract.py:72: in test_new_runtime_config_does_not_point_into_developer_profile\r\n    assert \"C:\\\\\\\\Users\\\\\\\\scott\" not in config.read_text(encoding=\"utf-8\")\r\nE   assert 'C:\\\\\\\\Users\\\\\\\\scott' not in '[server]\\np...ed = false\\n'\r\nE     \r\nE     'C:\\\\\\\\Users\\\\\\\\scott' is contained here:\r\nE       tabase = \"C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\HaloResearchGateway\\\\state\\\\gateway.db\"\r\nE     ?           ++++++++++++++++\r\nE       # Positive compressed-payload limits; not physical SQLite/WAL file-size limits.\r\nE       # Gateway reads/writes prune expired/over-limit rows. Oversized results stay readable uncached.\r\nE       cache_max_bytes = 1073741824...\r\nE     \r\nE     ...Full output truncated (100 lines hidden), use '-vv' to show\r\n___ test_new_runtime_config_does_not_point_into_developer_profile[pwsh.exe] ___\r\ntests\\unit\\test_installer_contract.py:72: in test_new_runtime_config_does_not_point_into_developer_profile\r\n    assert \"C:\\\\\\\\Users\\\\\\\\scott\" not in config.read_text(encoding=\"utf-8\")\r\nE   assert 'C:\\\\\\\\Users\\\\\\\\scott' not in '[server]\\np...ed = false\\n'\r\nE     \r\nE     'C:\\\\\\\\Users\\\\\\\\scott' is contained here:\r\nE       tabase = \"C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\HaloResearchGateway\\\\state\\\\gateway.db\"\r\nE     ?           ++++++++++++++++\r\nE       # Positive compressed-payload limits; not physical SQLite/WAL file-size limits.\r\nE       # Gateway reads/writes prune expired/over-limit rows. Oversized results stay readable uncached.\r\nE       cache_max_bytes = 1073741824...\r\nE     \r\nE     ...Full output truncated (100 lines hidden), use '-vv' to show\r\n_ test_failed_hook_setup_cannot_report_success_or_change_host_settings[powershell.exe] _\r\ntests\\unit\\test_installer_contract.py:80: in test_failed_hook_setup_cannot_report_success_or_change_host_settings\r\n    assert not (user / \".agents/skills/halo-research\").exists()\r\nE   AssertionError: assert not True\r\nE    +  where True = exists()\r\nE    +    where exists = (WindowsPath('C:/Users/scott/AppData/Local/Temp/pytest-of-scott/pytest-2259/test_failed_hook_setup_cannot_0/user') / '.agents/skills/halo-research').exists\r\n_ test_failed_hook_setup_cannot_report_success_or_change_host_settings[pwsh.exe] _\r\ntests\\unit\\test_installer_contract.py:78: in test_failed_hook_setup_cannot_report_success_or_change_host_settings\r\n    assert result.returncode != 0, \"Installer ignored failed git hook setup\"\r\nE   AssertionError: Installer ignored failed git hook setup\r\nE   assert 0 != 0\r\nE    +  where 0 = CompletedProcess(args=['pwsh.exe', '-NoProfile', '-NonInteractive', '-File', 'C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\Temp\\\\...\\\\test_failed_hook_setup_cannot_1\\\\wrapper.ps1'], returncode=0, stdout='Halo Research Gateway installed.\\n', stderr='').returncode\r\n=========================== short test summary info ===========================\r\nFAILED tests/unit/test_installer_contract.py::test_registration_preserves_other_hosts_and_uses_configured_endpoint[powershell.exe]\r\nFAILED tests/unit/test_installer_contract.py::test_registration_preserves_other_hosts_and_uses_configured_endpoint[pwsh.exe]\r\nFAILED tests/unit/test_installer_contract.py::test_new_runtime_config_does_not_point_into_developer_profile[powershell.exe]\r\nFAILED tests/unit/test_installer_contract.py::test_new_runtime_config_does_not_point_into_developer_profile[pwsh.exe]\r\nFAILED tests/unit/test_installer_contract.py::test_failed_hook_setup_cannot_report_success_or_change_host_settings[powershell.exe]\r\nFAILED tests/unit/test_installer_contract.py::test_failed_hook_setup_cannot_report_success_or_change_host_settings[pwsh.exe]\r\n6 failed in 4.40s\r\n"
+        }
+      ]
+    },
+    "installerRedClean": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_installer_contract.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "2889dd",
+          "wall_time_seconds": 4.5151957,
+          "exit_code": 1,
+          "original_token_count": 1190,
+          "output": "FFFFFF                                                                   [100%]\r\n================================== FAILURES ===================================\r\n_ test_registration_preserves_other_hosts_and_uses_configured_endpoint[powershell.exe] _\r\ntests\\unit\\test_installer_contract.py:60: in test_registration_preserves_other_hosts_and_uses_configured_endpoint\r\n    assert result.returncode == 0, result.stdout + result.stderr\r\nE   AssertionError: ConvertFrom-Json : A parameter cannot be found that matches parameter name 'AsHashtable'.\r\nE     At C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2260\\test_registration_preserves_ot0\\fixture \r\nE     repo\\scripts\\Install-HaloResearch.ps1:31 char:77\r\nE     + ... t-Content -LiteralPath $lmConfig -Raw | ConvertFrom-Json -AsHashtable\r\nE     +                                                              ~~~~~~~~~~~~\r\nE         + CategoryInfo          : InvalidArgument: (:) [ConvertFrom-Json], ParentContainsErrorRecordException\r\nE         + FullyQualifiedErrorId : NamedParameterNotFound,Microsoft.PowerShell.Commands.ConvertFromJsonCommand\r\nE      \r\nE     \r\nE   assert 1 == 0\r\nE    +  where 1 = CompletedProcess(args=['powershell.exe', '-NoProfile', '-NonInteractive', '-File', 'C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\...ption\\n    + FullyQualifiedErrorId : NamedParameterNotFound,Microsoft.PowerShell.Commands.ConvertFromJsonCommand\\n \\n\").returncode\r\n_ test_registration_preserves_other_hosts_and_uses_configured_endpoint[pwsh.exe] _\r\ntests\\unit\\test_installer_contract.py:63: in test_registration_preserves_other_hosts_and_uses_configured_endpoint\r\n    assert merged[\"mcpServers\"][\"halo-research\"][\"url\"] == \"http://127.0.0.1:18765/research\"\r\nE   AssertionError: assert 'http://127.0.0.1:8765/mcp' == 'http://127.0...8765/research'\r\nE     \r\nE     - http://127.0.0.1:18765/research\r\nE     ?                  -     ^^^^^^ ^\r\nE     + http://127.0.0.1:8765/mcp\r\nE     ?                       ^ ^\r\n_ test_new_runtime_config_does_not_point_into_developer_profile[powershell.exe] _\r\ntests\\unit\\test_installer_contract.py:73: in test_new_runtime_config_does_not_point_into_developer_profile\r\n    assert not developer_path_found, \"New configuration points into the developer's absolute profile\"\r\nE   AssertionError: New configuration points into the developer's absolute profile\r\nE   assert not True\r\n___ test_new_runtime_config_does_not_point_into_developer_profile[pwsh.exe] ___\r\ntests\\unit\\test_installer_contract.py:73: in test_new_runtime_config_does_not_point_into_developer_profile\r\n    assert not developer_path_found, \"New configuration points into the developer's absolute profile\"\r\nE   AssertionError: New configuration points into the developer's absolute profile\r\nE   assert not True\r\n_ test_failed_hook_setup_cannot_report_success_or_change_host_settings[powershell.exe] _\r\ntests\\unit\\test_installer_contract.py:81: in test_failed_hook_setup_cannot_report_success_or_change_host_settings\r\n    assert not (user / \".agents/skills/halo-research\").exists()\r\nE   AssertionError: assert not True\r\nE    +  where True = exists()\r\nE    +    where exists = (WindowsPath('C:/Users/scott/AppData/Local/Temp/pytest-of-scott/pytest-2260/test_failed_hook_setup_cannot_0/user') / '.agents/skills/halo-research').exists\r\n_ test_failed_hook_setup_cannot_report_success_or_change_host_settings[pwsh.exe] _\r\ntests\\unit\\test_installer_contract.py:79: in test_failed_hook_setup_cannot_report_success_or_change_host_settings\r\n    assert result.returncode != 0, \"Installer ignored failed git hook setup\"\r\nE   AssertionError: Installer ignored failed git hook setup\r\nE   assert 0 != 0\r\nE    +  where 0 = CompletedProcess(args=['pwsh.exe', '-NoProfile', '-NonInteractive', '-File', 'C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\Temp\\\\...\\\\test_failed_hook_setup_cannot_1\\\\wrapper.ps1'], returncode=0, stdout='Halo Research Gateway installed.\\n', stderr='').returncode\r\n=========================== short test summary info ===========================\r\nFAILED tests/unit/test_installer_contract.py::test_registration_preserves_other_hosts_and_uses_configured_endpoint[powershell.exe]\r\nFAILED tests/unit/test_installer_contract.py::test_registration_preserves_other_hosts_and_uses_configured_endpoint[pwsh.exe]\r\nFAILED tests/unit/test_installer_contract.py::test_new_runtime_config_does_not_point_into_developer_profile[powershell.exe]\r\nFAILED tests/unit/test_installer_contract.py::test_new_runtime_config_does_not_point_into_developer_profile[pwsh.exe]\r\nFAILED tests/unit/test_installer_contract.py::test_failed_hook_setup_cannot_report_success_or_change_host_settings[powershell.exe]\r\nFAILED tests/unit/test_installer_contract.py::test_failed_hook_setup_cannot_report_success_or_change_host_settings[pwsh.exe]\r\n6 failed in 3.75s\r\n"
+        }
+      ]
+    },
+    "installerGreen1": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_installer_contract.py tests/unit/test_ocr_data.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "1db887",
+          "wall_time_seconds": 5.9028744,
+          "exit_code": 1,
+          "original_token_count": 430,
+          "output": "F............                                                            [100%]\r\n================================== FAILURES ===================================\r\n_ test_registration_preserves_other_hosts_and_uses_configured_endpoint[powershell.exe] _\r\ntests\\unit\\test_installer_contract.py:60: in test_registration_preserves_other_hosts_and_uses_configured_endpoint\r\n    assert result.returncode == 0, result.stdout + result.stderr\r\nE   AssertionError: Get-FileHash : The term 'Get-FileHash' is not recognized as the name of a cmdlet, function, script file, or operable \r\nE     program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.\r\nE     At C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2261\\test_registration_preserves_ot0\\fixture \r\nE     repo\\scripts\\Install-HaloResearch.ps1:34 char:26\r\nE     +         $originalHash = (Get-FileHash -LiteralPath $lmConfig -Algorit ...\r\nE     +                          ~~~~~~~~~~~~\r\nE         + CategoryInfo          : ObjectNotFound: (Get-FileHash:String) [], ParentContainsErrorRecordException\r\nE         + FullyQualifiedErrorId : CommandNotFoundException\r\nE      \r\nE     \r\nE   assert 1 == 0\r\nE    +  where 1 = CompletedProcess(args=['powershell.exe', '-NoProfile', '-NonInteractive', '-File', 'C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\...-FileHash:String) [], ParentContainsErrorRecordException\\n    + FullyQualifiedErrorId : CommandNotFoundException\\n \\n\").returncode\r\n=========================== short test summary info ===========================\r\nFAILED tests/unit/test_installer_contract.py::test_registration_preserves_other_hosts_and_uses_configured_endpoint[powershell.exe]\r\n1 failed, 12 passed in 5.14s\r\n"
+        }
+      ]
+    },
+    "installerFalsification": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_installer_contract.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "d78f5b",
+          "wall_time_seconds": 10.0035184,
+          "session_id": 72716,
+          "original_token_count": 3,
+          "output": "..........."
+        },
+        {
+          "chunk_id": "6cee6d",
+          "wall_time_seconds": 0.000004,
+          "exit_code": 0,
+          "original_token_count": 23,
+          "output": ".......                                                       [100%]\r\n18 passed in 15.74s\r\n"
+        }
+      ]
+    },
+    "installerLint": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m ruff format tests/unit/test_installer_contract.py tests/acceptance/test_install_native.py; .\\.venv\\Scripts\\python.exe -m ruff check src tests",
+      "chunks": [
+        {
+          "chunk_id": "ecb226",
+          "wall_time_seconds": 0.3261211,
+          "exit_code": 1,
+          "original_token_count": 201,
+          "output": "2 files reformatted\nI001 [*] Import block is un-sorted or un-formatted\n  --> tests\\acceptance\\test_install_native.py:7:1\n   |\n 5 |   \"\"\"\n 6 |\n 7 | / import hashlib\n 8 | | import json\n 9 | | import os\n10 | | import shutil\n11 | | import subprocess\n12 | | import sys\n13 | | from pathlib import Path\n14 | |\n15 | | import pytest\n16 | |\n17 | | from test_launcher_native import SHELLS, assert_listener_closed, fixture_environment, health\n   | |____________________________________________________________________________________________^\n18 |\n19 |   REPO = Path(__file__).resolve().parents[2]\n   |\nhelp: Organize imports\n   |\n15 | import pytest\n   -\n16 | from test_launcher_native import SHELLS, assert_listener_closed, fixture_environment, health\n   |\n\nFound 1 error.\n[*] 1 fixable with the `--fix` option.\n"
+        }
+      ]
+    },
+    "installerSecretRed": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_installer_contract.py -k credential -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "9f8970",
+          "wall_time_seconds": 3.3467824,
+          "exit_code": 1,
+          "original_token_count": 347,
+          "output": "F.                                                                       [100%]\r\n================================== FAILURES ===================================\r\n_ test_malformed_host_file_does_not_echo_credential_like_content[powershell.exe] _\r\ntests\\unit\\test_installer_contract.py:130: in test_malformed_host_file_does_not_echo_credential_like_content\r\n    assert marker not in result.stdout + result.stderr, \"Parser failure exposed host file contents\"\r\nE   AssertionError: Parser failure exposed host file contents\r\nE   assert 'fixture-pri...y-do-not-log' not in 'ConvertFrom...Command\\n \\n'\r\nE     \r\nE     'fixture-private-key-do-not-log' is contained here:\r\nE       rimitive: fixture-private-key-do-not-log.\r\nE       At C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2265\\test_malformed_host_file_does_0\\fixture \r\nE       repo\\scripts\\Install-HaloResearch.ps1:35 char:75\r\nE       + ... Content -LiteralPath $lmConfig -Raw -Encoding UTF8 | ConvertFrom-Json\r\nE       +                                                          ~~~~~~~~~~~~~~~~...\r\nE     \r\nE     ...Full output truncated (3 lines hidden), use '-vv' to show\r\n=========================== short test summary info ===========================\r\nFAILED tests/unit/test_installer_contract.py::test_malformed_host_file_does_not_echo_credential_like_content[powershell.exe]\r\n1 failed, 1 passed, 18 deselected in 2.53s\r\n"
+        }
+      ]
+    },
+    "installerSecretRedClean": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_installer_contract.py -k credential -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "eb156a",
+          "wall_time_seconds": 3.7801577,
+          "exit_code": 1,
+          "original_token_count": 345,
+          "output": "F.                                                                       [100%]\r\n================================== FAILURES ===================================\r\n_ test_malformed_host_file_does_not_echo_credential_like_content[powershell.exe] _\r\ntests\\unit\\test_installer_contract.py:131: in test_malformed_host_file_does_not_echo_credential_like_content\r\n    pytest.fail(\"Parser failure exposed fixture host contents:\\n\" + result.stdout + result.stderr)\r\nE   Failed: Parser failure exposed fixture host contents:\r\nE   ConvertFrom-Json : Invalid JSON primitive: fixture-private-key-do-not-log.\r\nE   At C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2267\\test_malformed_host_file_does_0\\fixture \r\nE   repo\\scripts\\Install-HaloResearch.ps1:35 char:75\r\nE   + ... Content -LiteralPath $lmConfig -Raw -Encoding UTF8 | ConvertFrom-Json\r\nE   +                                                          ~~~~~~~~~~~~~~~~\r\nE       + CategoryInfo          : NotSpecified: (:) [ConvertFrom-Json], ArgumentException\r\nE       + FullyQualifiedErrorId : System.ArgumentException,Microsoft.PowerShell.Commands.ConvertFromJsonCommand\r\n=========================== short test summary info ===========================\r\nFAILED tests/unit/test_installer_contract.py::test_malformed_host_file_does_not_echo_credential_like_content[powershell.exe]\r\n1 failed, 1 passed, 18 deselected in 2.92s\r\n"
+        }
+      ]
+    },
+    "installerFinalFocused": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m ruff format tests/unit/test_installer_contract.py tests/acceptance/test_install_native.py; .\\.venv\\Scripts\\python.exe -m ruff check src tests; .\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_installer_contract.py tests/unit/test_ocr_data.py tests/unit/test_launcher_ownership.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "66cb8f",
+          "wall_time_seconds": 10.0034116,
+          "session_id": 84987,
+          "original_token_count": 14,
+          "output": "2 files left unchanged\nAll checks passed!\n..........."
+        },
+        {
+          "chunk_id": "9ad1d1",
+          "wall_time_seconds": 0.0000034,
+          "exit_code": 0,
+          "original_token_count": 23,
+          "output": "............................................................  [100%]\r\n71 passed in 50.22s\r\n"
+        }
+      ]
+    },
+    "installerProbeRed": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_installer_contract.py -k valid_python -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "baadc9",
+          "wall_time_seconds": 0.9961312,
+          "exit_code": 1,
+          "original_token_count": 193,
+          "output": "F                                                                        [100%]\r\n================================== FAILURES ===================================\r\n__________________ test_native_install_probe_is_valid_python __________________\r\ntests\\unit\\test_installer_contract.py:139: in test_native_install_probe_is_valid_python\r\n    compile(scripts[0], \"native-install-MCP-probe\", \"exec\")\r\nE     File \"native-install-MCP-probe\", line 14\r\nE       value=json.loads('\r\nE                        ^\r\nE   SyntaxError: unterminated string literal (detected at line 14)\r\n=========================== short test summary info ===========================\r\nFAILED tests/unit/test_installer_contract.py::test_native_install_probe_is_valid_python\r\n1 failed, 20 deselected in 0.17s\r\n"
+        }
+      ]
+    },
+    "installerProbeGreen": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m ruff format tests/unit/test_installer_contract.py; .\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_installer_contract.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "aaeb14",
+          "wall_time_seconds": 10.0046028,
+          "session_id": 5017,
+          "original_token_count": 8,
+          "output": "1 file reformatted\n..........."
+        },
+        {
+          "chunk_id": "8763a5",
+          "wall_time_seconds": 0.0000011,
+          "exit_code": 0,
+          "original_token_count": 23,
+          "output": "..........                                                    [100%]\r\n21 passed in 25.56s\r\n"
+        }
+      ]
+    },
+    "installerArrayRed": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_installer_contract.py -k invalid_host -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "93f453",
+          "wall_time_seconds": 10.0073651,
+          "session_id": 90647,
+          "original_token_count": 3,
+          "output": "......FF."
+        },
+        {
+          "chunk_id": "2502ad",
+          "wall_time_seconds": 0.0000039,
+          "exit_code": 1,
+          "original_token_count": 399,
+          "output": "...                                                             [100%]\r\n================================== FAILURES ===================================\r\n_ test_invalid_host_config_is_preserved_without_partial_write[[{}]-powershell.exe] _\r\ntests\\unit\\test_installer_contract.py:110: in test_invalid_host_config_is_preserved_without_partial_write\r\n    assert result.returncode != 0\r\nE   AssertionError: assert 0 != 0\r\nE    +  where 0 = CompletedProcess(args=['powershell.exe', '-NoProfile', '-NonInteractive', '-File', 'C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\...\\\\test_invalid_host_config_is_pr6\\\\wrapper.ps1'], returncode=0, stdout='Halo Research Gateway installed.\\n', stderr='').returncode\r\n_ test_invalid_host_config_is_preserved_without_partial_write[[{}]-pwsh.exe] __\r\ntests\\unit\\test_installer_contract.py:110: in test_invalid_host_config_is_preserved_without_partial_write\r\n    assert result.returncode != 0\r\nE   AssertionError: assert 0 != 0\r\nE    +  where 0 = CompletedProcess(args=['pwsh.exe', '-NoProfile', '-NonInteractive', '-File', 'C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\Temp\\\\...\\\\test_invalid_host_config_is_pr7\\\\wrapper.ps1'], returncode=0, stdout='Halo Research Gateway installed.\\n', stderr='').returncode\r\n=========================== short test summary info ===========================\r\nFAILED tests/unit/test_installer_contract.py::test_invalid_host_config_is_preserved_without_partial_write[[{}]-powershell.exe]\r\nFAILED tests/unit/test_installer_contract.py::test_invalid_host_config_is_preserved_without_partial_write[[{}]-pwsh.exe]\r\n2 failed, 10 passed, 11 deselected in 12.57s\r\n"
+        }
+      ]
+    },
+    "installerArrayGreen": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m pytest tests/unit/test_installer_contract.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "7f8ea4",
+          "wall_time_seconds": 10.0095685,
+          "session_id": 93428,
+          "original_token_count": 3,
+          "output": "..........."
+        },
+        {
+          "chunk_id": "96b738",
+          "wall_time_seconds": 0.0000034,
+          "exit_code": 0,
+          "original_token_count": 23,
+          "output": "............                                                  [100%]\r\n23 passed in 19.29s\r\n"
+        }
+      ]
+    },
+    "installerNative1": {
+      "cmd": "$env:HALO_INSTALL_NATIVE_EVIDENCE='C:\\Users\\scott\\Documents\\Codex\\2026-09-01\\is-this-tool-plugin-real-https\\outputs\\installer-native-first'; .\\.venv\\Scripts\\python.exe -m pytest tests/acceptance/test_install_native.py -k powershell -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "2f0126",
+          "wall_time_seconds": 10.0045023,
+          "session_id": 23904,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "649993",
+          "wall_time_seconds": 5.0162452,
+          "session_id": 23904,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "75158b",
+          "wall_time_seconds": 5.0086875,
+          "session_id": 23904,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "e61647",
+          "wall_time_seconds": 5.0120279,
+          "session_id": 23904,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "f60b1f",
+          "wall_time_seconds": 0.0000035,
+          "exit_code": 0,
+          "original_token_count": 32,
+          "output": ".                                                                        [100%]\r\n1 passed, 1 deselected in 242.65s (0:04:02)\r\n"
+        }
+      ]
+    },
+    "installerNativeFinal": {
+      "cmd": "$env:HALO_INSTALL_NATIVE_EVIDENCE='C:\\Users\\scott\\Documents\\Codex\\2026-09-01\\is-this-tool-plugin-real-https\\outputs\\installer-native-final'; .\\.venv\\Scripts\\python.exe -m pytest tests/acceptance/test_install_native.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "6905d6",
+          "wall_time_seconds": 10.004231,
+          "session_id": 65695,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "0f54c9",
+          "wall_time_seconds": 5.0083559,
+          "session_id": 65695,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "24fec6",
+          "wall_time_seconds": 5.0116318,
+          "session_id": 65695,
+          "original_token_count": 1,
+          "output": "F"
+        },
+        {
+          "chunk_id": "4fe952",
+          "wall_time_seconds": 8e-7,
+          "exit_code": 1,
+          "original_token_count": 478,
+          "output": "F                                                                       [100%]\r\n================================== FAILURES ===================================\r\n_________ test_fresh_native_install_start_stop_repair[powershell.exe] _________\r\ntests\\acceptance\\test_install_native.py:186: in test_fresh_native_install_start_stop_repair\r\n    assert probe.returncode == 0, probe.stdout + probe.stderr\r\nE   AssertionError:   File \"<string>\", line 14\r\nE         value=json.loads('\r\nE                          ^\r\nE     SyntaxError: unterminated string literal (detected at line 14)\r\nE     \r\nE   assert 1 == 0\r\nE    +  where 1 = CompletedProcess(args=['C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\Temp\\\\pytest-of-scott\\\\pytest-2269\\\\test_fresh_native_instal...14\\n    value=json.loads(\\'\\n                     ^\\nSyntaxError: unterminated string literal (detected at line 14)\\n').returncode\r\n____________ test_fresh_native_install_start_stop_repair[pwsh.exe] ____________\r\ntests\\acceptance\\test_install_native.py:186: in test_fresh_native_install_start_stop_repair\r\n    assert probe.returncode == 0, probe.stdout + probe.stderr\r\nE   AssertionError:   File \"<string>\", line 14\r\nE         value=json.loads('\r\nE                          ^\r\nE     SyntaxError: unterminated string literal (detected at line 14)\r\nE     \r\nE   assert 1 == 0\r\nE    +  where 1 = CompletedProcess(args=['C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\Temp\\\\pytest-of-scott\\\\pytest-2269\\\\test_fresh_native_instal...14\\n    value=json.loads(\\'\\n                     ^\\nSyntaxError: unterminated string literal (detected at line 14)\\n').returncode\r\n=========================== short test summary info ===========================\r\nFAILED tests/acceptance/test_install_native.py::test_fresh_native_install_start_stop_repair[powershell.exe]\r\nFAILED tests/acceptance/test_install_native.py::test_fresh_native_install_start_stop_repair[pwsh.exe]\r\n2 failed in 268.03s (0:04:28)\r\n"
+        }
+      ]
+    },
+    "installerNativeCorrected": {
+      "cmd": "$env:HALO_INSTALL_NATIVE_EVIDENCE='C:\\Users\\scott\\Documents\\Codex\\2026-09-01\\is-this-tool-plugin-real-https\\outputs\\installer-native-corrected'; .\\.venv\\Scripts\\python.exe -m pytest tests/acceptance/test_install_native.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "ddf8c5",
+          "wall_time_seconds": 10.0023789,
+          "session_id": 78162,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "9e3868",
+          "wall_time_seconds": 5.0052997,
+          "session_id": 78162,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "91a72a",
+          "wall_time_seconds": 5.0044832,
+          "session_id": 78162,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "b5a33b",
+          "wall_time_seconds": 5.01404,
+          "session_id": 78162,
+          "original_token_count": 1,
+          "output": "F"
+        },
+        {
+          "chunk_id": "26289c",
+          "wall_time_seconds": 0.0000039,
+          "exit_code": 1,
+          "original_token_count": 2073,
+          "output": "F                                                                       [100%]\r\n================================== FAILURES ===================================\r\n_________ test_fresh_native_install_start_stop_repair[powershell.exe] _________\r\ntests\\acceptance\\test_install_native.py:186: in test_fresh_native_install_start_stop_repair\r\n    assert probe.returncode == 0, probe.stdout + probe.stderr\r\nE   AssertionError: [\"community_search\", \"community_thread\", \"deep_research\", \"document_extract\", \"github_research\", \"local_crawl\", \"local_fetch\", \"reddit_search\", \"reddit_thread\", \"research_job\", \"transcript_fetch\", \"web_crawl\", \"web_fetch\", \"web_search\"]\r\nE     {\"tool\": \"local_fetch\", \"marker_found\": true, \"url\": \"http://127.0.0.1:65478/source\"}\r\nE       + Exception Group Traceback (most recent call last):\r\nE       |   File \"<string>\", line 18, in <module>\r\nE       |   File \"C:\\Users\\scott\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\runners.py\", line 195, in run\r\nE       |     return runner.run(main)\r\nE       |            ^^^^^^^^^^^^^^^^\r\nE       |   File \"C:\\Users\\scott\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\runners.py\", line 118, in run\r\nE       |     return self._loop.run_until_complete(task)\r\nE       |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\nE       |   File \"C:\\Users\\scott\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\base_events.py\", line 691, in run_until_complete\r\nE       |     return future.result()\r\nE       |            ^^^^^^^^^^^^^^^\r\nE       |   File \"<string>\", line 6, in run\r\nE       |   File \"C:\\Users\\scott\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\contextlib.py\", line 231, in __aexit__\r\nE       |     await self.gen.athrow(value)\r\nE       |   File \"C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2275\\test_fresh_native_install_star0\\fresh repo\\.venv\\Lib\\site-packages\\mcp\\client\\streamable_http.py\", line 688, in streamable_http_client\r\nE       |     anyio.create_task_group() as tg,\r\nE       |     ^^^^^^^^^^^^^^^^^^^^^^^^^\r\nE       |   File \"C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2275\\test_fresh_native_install_star0\\fresh repo\\.venv\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py\", line 815, in __aexit__\r\nE       |     raise BaseExceptionGroup(\r\nE       | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)\r\nE       +-+---------------- 1 ----------------\r\nE         | Exception Group Traceback (most recent call last):\r\nE         |   File \"C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2275\\test_fresh_native_install_star0\\fresh repo\\.venv\\Lib\\site-packages\\mcp\\client\\streamable_http.py\", line 705, in streamable_http_client\r\nE         |     yield read_stream, write_stream\r\nE         |   File \"<string>\", line 7, in run\r\nE         |   File \"C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2275\\test_fresh_native_install_star0\\fresh repo\\.venv\\Lib\\site-packages\\mcp\\client\\session.py\", line 521, in __aexit__\r\nE         |     result = await self._task_group.__aexit__(exc_type, exc_val, exc_tb)\r\nE         |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\nE         |   File \"C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2275\\test_fresh_native_install_star0\\fresh repo\\.venv\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py\", line 815, in __aexit__\r\nE         |     raise BaseExceptionGroup(\r\nE         | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)\r\nE         +-+---------------- 1 ----------------\r\nE           | Traceback (most recent call last):\r\nE           |   File \"<string>\", line 15, in run\r\nE           | AssertionError: {'code': 'CRAWL_NO_EVIDENCE', 'message': 'RuntimeError: operation did not complete'}\r\nE           +------------------------------------\r\nE     \r\nE   assert 1 == 0\r\nE    +  where 1 = CompletedProcess(args=['C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\Temp\\\\pytest-of-scott\\\\pytest-2275\\\\test_fresh_native_instal...EVIDENCE\\', \\'message\\': \\'RuntimeError: operation did not complete\\'}\\n      +------------------------------------\\n').returncode\r\n____________ test_fresh_native_install_start_stop_repair[pwsh.exe] ____________\r\ntests\\acceptance\\test_install_native.py:186: in test_fresh_native_install_start_stop_repair\r\n    assert probe.returncode == 0, probe.stdout + probe.stderr\r\nE   AssertionError: [\"community_search\", \"community_thread\", \"deep_research\", \"document_extract\", \"github_research\", \"local_crawl\", \"local_fetch\", \"reddit_search\", \"reddit_thread\", \"research_job\", \"transcript_fetch\", \"web_crawl\", \"web_fetch\", \"web_search\"]\r\nE     {\"tool\": \"local_fetch\", \"marker_found\": true, \"url\": \"http://127.0.0.1:60599/source\"}\r\nE       + Exception Group Traceback (most recent call last):\r\nE       |   File \"<string>\", line 18, in <module>\r\nE       |   File \"C:\\Users\\scott\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\runners.py\", line 195, in run\r\nE       |     return runner.run(main)\r\nE       |            ^^^^^^^^^^^^^^^^\r\nE       |   File \"C:\\Users\\scott\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\runners.py\", line 118, in run\r\nE       |     return self._loop.run_until_complete(task)\r\nE       |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\nE       |   File \"C:\\Users\\scott\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\base_events.py\", line 691, in run_until_complete\r\nE       |     return future.result()\r\nE       |            ^^^^^^^^^^^^^^^\r\nE       |   File \"<string>\", line 6, in run\r\nE       |   File \"C:\\Users\\scott\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\contextlib.py\", line 231, in __aexit__\r\nE       |     await self.gen.athrow(value)\r\nE       |   File \"C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2275\\test_fresh_native_install_star1\\fresh repo\\.venv\\Lib\\site-packages\\mcp\\client\\streamable_http.py\", line 688, in streamable_http_client\r\nE       |     anyio.create_task_group() as tg,\r\nE       |     ^^^^^^^^^^^^^^^^^^^^^^^^^\r\nE       |   File \"C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2275\\test_fresh_native_install_star1\\fresh repo\\.venv\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py\", line 815, in __aexit__\r\nE       |     raise BaseExceptionGroup(\r\nE       | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)\r\nE       +-+---------------- 1 ----------------\r\nE         | Exception Group Traceback (most recent call last):\r\nE         |   File \"C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2275\\test_fresh_native_install_star1\\fresh repo\\.venv\\Lib\\site-packages\\mcp\\client\\streamable_http.py\", line 705, in streamable_http_client\r\nE         |     yield read_stream, write_stream\r\nE         |   File \"<string>\", line 7, in run\r\nE         |   File \"C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2275\\test_fresh_native_install_star1\\fresh repo\\.venv\\Lib\\site-packages\\mcp\\client\\session.py\", line 521, in __aexit__\r\nE         |     result = await self._task_group.__aexit__(exc_type, exc_val, exc_tb)\r\nE         |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\nE         |   File \"C:\\Users\\scott\\AppData\\Local\\Temp\\pytest-of-scott\\pytest-2275\\test_fresh_native_install_star1\\fresh repo\\.venv\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py\", line 815, in __aexit__\r\nE         |     raise BaseExceptionGroup(\r\nE         | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)\r\nE         +-+---------------- 1 ----------------\r\nE           | Traceback (most recent call last):\r\nE           |   File \"<string>\", line 15, in run\r\nE           | AssertionError: {'code': 'CRAWL_NO_EVIDENCE', 'message': 'RuntimeError: operation did not complete'}\r\nE           +------------------------------------\r\nE     \r\nE   assert 1 == 0\r\nE    +  where 1 = CompletedProcess(args=['C:\\\\Users\\\\scott\\\\AppData\\\\Local\\\\Temp\\\\pytest-of-scott\\\\pytest-2275\\\\test_fresh_native_instal...EVIDENCE\\', \\'message\\': \\'RuntimeError: operation did not complete\\'}\\n      +------------------------------------\\n').returncode\r\n=========================== short test summary info ===========================\r\nFAILED tests/acceptance/test_install_native.py::test_fresh_native_install_start_stop_repair[powershell.exe]\r\nFAILED tests/acceptance/test_install_native.py::test_fresh_native_install_start_stop_repair[pwsh.exe]\r\n2 failed in 282.65s (0:04:42)\r\n"
+        }
+      ]
+    },
+    "installerCrawlDiagnostic": {
+      "cmd": ".\\.venv\\Scripts\\python.exe C:\\Users\\scott\\Documents\\Codex\\2026-09-01\\is-this-tool-plugin-real-https\\outputs\\inspect-install-crawl.py",
+      "chunks": [
+        {
+          "chunk_id": "8f51e6",
+          "wall_time_seconds": 2.9602225,
+          "exit_code": 0,
+          "original_token_count": 132,
+          "output": "{\"success\": false, \"status\": 200, \"error\": \"Blocked by anti-bot protection: Structural: minimal_text on small page (279 bytes, 28 chars visible)\", \"html\": \"<html><head><title>Fresh install fixture</title></head><body style=\\\"margin-right: 0px; padding-right: 0px; overflow: auto;\\\"><article>NATIVE_JS_FROM_FRESH_INSTALL</article><script>document.querySelector('article').textContent='NATIVE_JS_FROM_FRESH_INSTALL';</script></body></html>\", \"markdown\": \"NATIVE_JS_FROM_FRESH_INSTALL\\n\"}\r\n{\"gateway_error\": \"CRAWL_NO_EVIDENCE\"}\r\n"
+        }
+      ]
+    },
+    "installerCrawlPreflight": {
+      "cmd": ".\\.venv\\Scripts\\python.exe C:\\Users\\scott\\Documents\\Codex\\2026-09-01\\is-this-tool-plugin-real-https\\outputs\\inspect-install-crawl.py",
+      "chunks": [
+        {
+          "chunk_id": "9a3228",
+          "wall_time_seconds": 2.9313792,
+          "exit_code": 0,
+          "original_token_count": 1322,
+          "output": "{\"success\": true, \"status\": 200, \"error\": \"\", \"html\": \"<html><head><title>Fresh install fixture</title></head><body style=\\\"margin-right: 0px; padding-right: 0px; overflow: auto;\\\"><article>NATIVE_JS_FROM_FRESH_INSTALL This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. </article><script>document.querySelector('article').textContent=\\\"NATIVE_JS_FROM_FRESH_INSTALL This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. \\\";</script></body></html>\", \"markdown\": \"NATIVE_JS_FROM_FRESH_INSTALL This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. \\n\"}\r\n{\"items\": [\"NATIVE_JS_FROM_FRESH_INSTALL This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. This local fixture describes a research source that can be read and cited after native installation. \\n\"]}\r\n"
+        }
+      ]
+    },
+    "installerNativeAccepted": {
+      "cmd": ".\\.venv\\Scripts\\python.exe -m ruff format tests/acceptance/test_install_native.py; .\\.venv\\Scripts\\python.exe -m ruff check src tests; $env:HALO_INSTALL_NATIVE_EVIDENCE='C:\\Users\\scott\\Documents\\Codex\\2026-09-01\\is-this-tool-plugin-real-https\\outputs\\installer-native-accepted'; .\\.venv\\Scripts\\python.exe -m pytest tests/acceptance/test_install_native.py -q --tb=short",
+      "chunks": [
+        {
+          "chunk_id": "d7346e",
+          "wall_time_seconds": 10.0140304,
+          "session_id": 7389,
+          "original_token_count": 10,
+          "output": "1 file reformatted\nAll checks passed!\n"
+        },
+        {
+          "chunk_id": "828167",
+          "wall_time_seconds": 5.0149208,
+          "session_id": 7389,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "9aa4be",
+          "wall_time_seconds": 5.0119983,
+          "session_id": 7389,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "b50552",
+          "wall_time_seconds": 5.0139271,
+          "session_id": 7389,
+          "original_token_count": 1,
+          "output": "."
+        },
+        {
+          "chunk_id": "d648e9",
+          "wall_time_seconds": 5.0112962,
+          "session_id": 7389,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "4b9f92",
+          "wall_time_seconds": 5.0111196,
+          "session_id": 7389,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "033ecf",
+          "wall_time_seconds": 5.0156624,
+          "session_id": 7389,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "78f8b6",
+          "wall_time_seconds": 5.01042,
+          "session_id": 7389,
+          "original_token_count": 0,
+          "output": ""
+        },
+        {
+          "chunk_id": "328fe8",
+          "wall_time_seconds": 1.4655992,
+          "exit_code": 0,
+          "original_token_count": 28,
+          "output": ".                                                                       [100%]\r\n2 passed in 504.33s (0:08:24)\r\n"
+        }
+      ]
+    }
+  },
+  "nativeStageFiles": {
+    "preliminary": "installer-native/first/",
+    "syntaxFailure": "installer-native/syntax-failed/",
+    "smallPageFailure": "installer-native/tiny-source-failed/",
+    "accepted": "installer-native/accepted/"
+  },
+  "sourceHashVerification": {
+    "filesPerNativeCase": 56,
+    "mismatches": [
+      0,
+      0
+    ]
+  },
+  "captureNotes": [
+    "Initial hard-coded-path assertions and initial secret-marker assertion were shortened by pytest; clean complete diagnostics follow.",
+    "Native first run predates final diagnostic/array fixes and the browser probe; it is not final-source acceptance.",
+    "installerNativeFinal and installerNativeCorrected names refer to FAILED attempts. Only installerNativeAccepted is the final successful full run."
+  ]
+}

@@ -134,6 +134,15 @@ Then open `http://127.0.0.1:8765/operator`. A healthy installation reports `stat
 
 The installer preserves operator configuration, runs the quality gate, installs the canonical skill, merges supported MCP registrations, optionally registers the at-logon task, and starts the service. It does **not** rewrite DSH model, context, reasoning, slot, permission, or verified-coder settings.
 
+Installer host registration supports Windows PowerShell 5.1 and PowerShell 7,
+uses the configured MCP port/path, and preserves unrelated LM Studio settings
+with a unique original-file backup. Invalid/non-object settings fail without
+being overwritten or printed. New configuration uses the current Windows user's
+runtime defaults, not a developer-specific path; existing configuration is not
+rewritten. Git and PowerShell 7 are needed for the configured repository commit
+hook. Installation, real logon and existing-host deployment are separate evidence
+stages; see [installer evidence](docs/INSTALLER-EVIDENCE-2026-09-03.md).
+
 PDF reading uses the existing PyMuPDF dependency. Setup also verifies and installs pinned English OCR data and its license inside `.venv/share/tessdata`; reading scanned PDFs stays local, without WSL, a separate OCR application, or a paid service. See [document options and limits](docs/USER-MANUAL.md#pdf-text-tables-and-local-ocr) and [document verification](docs/DOCUMENT-EXTRACTION-EVIDENCE-2026-09-02.md).
 
 ## Fourteen research tools

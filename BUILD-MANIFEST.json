@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-03T12:40:11.9902845Z",
+  "generated_at": "2026-09-03T13:23:38.9077865Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -29,13 +29,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "b10a14971e0ebaaf13cd7172bb81f2b99b2703e6d589a3d9231dfc0be8102ec5",
-      "bytes": 13714
+      "sha256": "47911670d2ae133311278622fe4efe6ef0a2e6dc08bdad699c769a999c87b03f",
+      "bytes": 14154
     },
     {
       "path": "config/config.example.toml",
-      "sha256": "31ced71441489382f4a43d1cf0c7db0c452d48b0fe7864a4ef0a8af8628c9b2f",
-      "bytes": 3372
+      "sha256": "c8f45c5214d529b51223478712cdd5fee58615f43baeb3fb745d981285c52720",
+      "bytes": 3251
     },
     {
       "path": "debug_cache.py",
@@ -133,6 +133,51 @@
       "bytes": 65766
     },
     {
+      "path": "docs/evidence/installer-20260903.json",
+      "sha256": "957db06ec43d0427435cca35deea8d612a63eb0ce830d7a549a7a65697f624ca",
+      "bytes": 50660
+    },
+    {
+      "path": "docs/evidence/installer-cache-isolation-20260903.json",
+      "sha256": "6431d84829a6f5d3050ef66cc89d5a7802fe8e89fa050e8d4973b1e47b8bc084",
+      "bytes": 1713
+    },
+    {
+      "path": "docs/evidence/installer-native/accepted/powershell.exe.json",
+      "sha256": "1a3e0ae68742b7dbc83dd74296545b11568a03d46f953fa4ea21868b5e7de093",
+      "bytes": 15039
+    },
+    {
+      "path": "docs/evidence/installer-native/accepted/pwsh.exe.json",
+      "sha256": "644c58c25c42112061aca9452922ebece456381b0462831ac0bd33607cd9b6bc",
+      "bytes": 15033
+    },
+    {
+      "path": "docs/evidence/installer-native/first/powershell.exe.json",
+      "sha256": "6ebc3e97fdd326b3ce5ea58df9a879c1760c1ae88d7fcfd5f847ed7cc54f30cd",
+      "bytes": 8285
+    },
+    {
+      "path": "docs/evidence/installer-native/syntax-failed/powershell.exe.json",
+      "sha256": "2a1c9c10c667abcea1e0e53fafc859f9915d948076b10fe228ae1b18bc909782",
+      "bytes": 13132
+    },
+    {
+      "path": "docs/evidence/installer-native/syntax-failed/pwsh.exe.json",
+      "sha256": "28e34c42fbee873231ec3705bb4c9d0a1d0798600b24caf4963f058afa96a5cb",
+      "bytes": 13126
+    },
+    {
+      "path": "docs/evidence/installer-native/tiny-source-failed/powershell.exe.json",
+      "sha256": "c8153dd804ba39c8a34173b99d11720f15c16d1838fab13d42a9ace7fac2bc63",
+      "bytes": 16294
+    },
+    {
+      "path": "docs/evidence/installer-native/tiny-source-failed/pwsh.exe.json",
+      "sha256": "f4368669a0dc200b68ce0e021bad07f2c888e916622f51e87f6a690c59a0653c",
+      "bytes": 16288
+    },
+    {
       "path": "docs/evidence/job-bounds-20260903.json",
       "sha256": "47c7ec94253cf9e34b898d499ba20c29369208a3cb43798cd524ae4752a2e6bc",
       "bytes": 96265
@@ -169,8 +214,13 @@
     },
     {
       "path": "docs/implementation-status.md",
-      "sha256": "946647ae113a0ad41491182a28ef3d48ba55bfbee4cd8279341baf8f75de9d41",
-      "bytes": 17015
+      "sha256": "02458c3ea53c7246dad87c5943642df5e0f524cee2cfa97c0a627c8a9212afab",
+      "bytes": 17744
+    },
+    {
+      "path": "docs/INSTALLER-EVIDENCE-2026-09-03.md",
+      "sha256": "d83fd70de3e98a11984e3f1bde4ae7c5460f86aeaca2956aac97c9a153275774",
+      "bytes": 11225
     },
     {
       "path": "docs/JOB-BOUNDS-EVIDENCE-2026-09-03.md",
@@ -204,8 +254,8 @@
     },
     {
       "path": "docs/operations.md",
-      "sha256": "e762c9c3fdb97d1ba98726c28f369380347f348a2cb8ced067492fbf8c108acc",
-      "bytes": 10945
+      "sha256": "768b0abab99e82a1d310785c3e6a8512938cb220a81db9c5c8b0405b7352a68d",
+      "bytes": 11579
     },
     {
       "path": "docs/quality-gate.md",
@@ -224,8 +274,8 @@
     },
     {
       "path": "docs/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "c61f8734080c3309353e482e94278fb1572ab664470b366741f7b0525ffcc905",
-      "bytes": 12301
+      "sha256": "e5a3bf7f22fd4589c5584c6441cbde2e5e2e084cc8eee474c1028dfe24a25e5a",
+      "bytes": 12880
     },
     {
       "path": "docs/RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md",
@@ -264,8 +314,8 @@
     },
     {
       "path": "docs/USER-MANUAL.md",
-      "sha256": "4e0038a47c638d06d68ae4ff0c983d757e832863396d08bc86fa58c42dfb67a9",
-      "bytes": 54176
+      "sha256": "506bb3b852000c2d48b3af0167ce32cb5be4093ed3243473626e3b1a1ac52666",
+      "bytes": 56135
     },
     {
       "path": "pyproject.toml",
@@ -274,18 +324,18 @@
     },
     {
       "path": "README.md",
-      "sha256": "48cf77f2f0f0d72bcb01e2704e8d745814bff97cc479da18a9b3db33555ee9d9",
-      "bytes": 18050
+      "sha256": "5df7ae4ff4c84bb6c49df3b40d40e46b644398fe3b2a5d6bb3888141529ddd80",
+      "bytes": 18678
     },
     {
       "path": "scripts/HaloLifecycle.ps1",
-      "sha256": "8b0c39877c52930e3f34c389283398ad28d78eb8e95294ef0e8b13a5f69f425f",
-      "bytes": 6006
+      "sha256": "99e70ac2d2f123399d48ab5feb2ba233229e2067bea8c77fe160ddce48f29efa",
+      "bytes": 6030
     },
     {
       "path": "scripts/Install-HaloResearch.ps1",
-      "sha256": "2c2357401e32f5143cd6e39e6d1e603b328df367e5fa0fcf4f89319ac3c96fff",
-      "bytes": 2679
+      "sha256": "0386089910595ec372734fbe392ac0c1b54bcfbe085e36908d6b11da6b1664c2",
+      "bytes": 4594
     },
     {
       "path": "scripts/Invoke-QualityGate.ps1",
@@ -349,8 +399,8 @@
     },
     {
       "path": "skills/halo-research/references/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "c61f8734080c3309353e482e94278fb1572ab664470b366741f7b0525ffcc905",
-      "bytes": 12301
+      "sha256": "e5a3bf7f22fd4589c5584c6441cbde2e5e2e084cc8eee474c1028dfe24a25e5a",
+      "bytes": 12880
     },
     {
       "path": "skills/halo-research/references/source-selection.md",
@@ -688,6 +738,11 @@
       "bytes": 10200
     },
     {
+      "path": "tests/acceptance/test_install_native.py",
+      "sha256": "37e258733f784a3882098e5919606047b24834f4957bfe1f112ea8f4d8d6316c",
+      "bytes": 10301
+    },
+    {
       "path": "tests/acceptance/test_job_bounds_native.py",
       "sha256": "0273df0643797c6abfd367af893d0d8a11266dd2ce4c8e3339bd35a0feeaacc5",
       "bytes": 6515
@@ -836,6 +891,11 @@
       "path": "tests/unit/test_import_concurrency.py",
       "sha256": "d772c20ee9128e5f69fd8be2cf5e796c38507d9fafb7ccd992e699bc55781eec",
       "bytes": 4231
+    },
+    {
+      "path": "tests/unit/test_installer_contract.py",
+      "sha256": "ef12eb8f14f85e4319810f5e95a8f8c06c35122fccd68cc38eb0ddce398a6f4f",
+      "bytes": 6934
     },
     {
       "path": "tests/unit/test_job_bounds.py",

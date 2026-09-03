@@ -34,6 +34,28 @@ From the repository root:
 
 The installer restores locked Python 3.12 dependencies, installs hash-verified English OCR language data and its license in the environment, preserves operator configuration, runs the quality gate, installs the canonical skill, merges supported host registrations, registers the task when requested, and starts the service. It must not rewrite DSH model settings.
 
+Run it from a Git checkout. Git hook setup failures stop installation instead of
+being ignored; the configured commit hook requires PowerShell 7. The installer
+itself supports Windows PowerShell 5.1 and PowerShell 7. A newly copied sample
+configuration omits absolute storage/browser paths, so the service uses the
+current Windows user's local application-data directory. Existing configuration
+is preserved byte-for-byte; deliberate path overrides remain your responsibility.
+
+`-RegisterHosts` updates only the `halo-research` entry in LM Studio's `mcp.json`,
+using the active server port and MCP path (including `HALO_RESEARCH_CONFIG` when
+set). Other server entries and settings remain. The original file gets a unique
+`mcp.json.halo-backup-*` sibling; a temporary output is fully serialized before
+replacement. Malformed/non-object JSON is preserved and errors do not echo its
+contents. A changed file detected before replacement is not overwritten. Close
+LM Studio settings while registering: the final file check is not a universal
+cross-application transaction lock. The installer may already have installed
+dependencies/skills before registration fails; it is not an all-or-nothing rollback.
+
+Fresh native checkout/venv testing uses disposable profile paths and ports on
+this existing Windows machine. It does not establish clean-OS prerequisites,
+actual logon, real personal-profile import or a production deployment. See
+[installer evidence](INSTALLER-EVIDENCE-2026-09-03.md).
+
 Open `http://127.0.0.1:8765/operator`. Healthy means `status: ok`, version `0.2.0`, result schema `1.5`, database schema `3`, and ordinary providers ready or honestly degraded.
 
 ## 3. Start, stop, and inspect
@@ -417,6 +439,13 @@ coverage, resource bounds and a real operator-selected account remain separate
 acceptance work. See [handoff evidence](HUMAN-HANDOFF-EVIDENCE-2026-09-03.md).
 
 ## 7. Browser crawling
+
+Crawl4AI can reject a very small, low-text page as suspicious even when Chrome
+rendered it successfully. The Gateway keeps that failure explicit as
+`CRAWL_NO_EVIDENCE`; this code alone is not proof of a real CAPTCHA. Direct
+`web_fetch`/`local_fetch` reading is separate and may be useful when the source
+does not require JavaScript. A synthetic single-word page exposed this limit
+during installer acceptance; see [installer evidence](INSTALLER-EVIDENCE-2026-09-03.md).
 
 `max_pages` now limits actual navigation attempts (1..25, or the lower configured
 ceiling), including failed pages. `max_depth` is link distance from the starting

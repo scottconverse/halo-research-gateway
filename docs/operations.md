@@ -15,6 +15,15 @@ Start and stop only with the repository scripts. The stop script verifies execut
 
 ## Recovery
 
+Installer repair preserves an existing runtime TOML file. New sample files leave
+storage/browser paths at per-user service defaults. LM Studio registration uses
+the active MCP port/path and keeps a unique original JSON backup, with malformed
+or non-object files left intact. Do not publish those backups: unrelated host
+settings may contain credentials. Installation can partially finish before a
+later registration failure; inspect the specific error rather than deleting
+runtime state. Close host settings while registering to avoid concurrent writers.
+See [installer source and native evidence](INSTALLER-EVIDENCE-2026-09-03.md).
+
 Pagination snapshots now have count, serialized-byte and idle-retention limits
 under `[output]`; usage is visible at `/stats.snapshots`. An old or evicted cursor
 may require a fresh research request. Public disk recovery checks the original

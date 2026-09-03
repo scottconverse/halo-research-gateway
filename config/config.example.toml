@@ -5,14 +5,13 @@ health_path = "/health"
 log_level = "INFO"
 
 [storage]
-database = "C:\\Users\\scott\\AppData\\Local\\HaloResearchGateway\\state\\gateway.db"
+# Omitted storage paths use this Windows user's local HaloResearchGateway folder.
+# Override them explicitly only when intentionally relocating runtime state.
 # Positive compressed-payload limits; not physical SQLite/WAL file-size limits.
 # Gateway reads/writes prune expired/over-limit rows. Oversized results stay readable uncached.
 cache_max_bytes = 1073741824
 entry_max_bytes = 5242880
 inline_payload_max_bytes = 262144
-content_directory = "C:\\Users\\scott\\AppData\\Local\\HaloResearchGateway\\state\\content\\sha256"
-backup_directory = "C:\\Users\\scott\\AppData\\Local\\HaloResearchGateway\\state\\backups"
 
 [output]
 unidentified_default_chars = 6000
@@ -61,7 +60,7 @@ page_timeout_seconds = 45
 job_timeout_seconds = 120
 max_pages = 25
 max_depth = 3
-base_directory = "C:\\Users\\scott\\AppData\\Local\\HaloResearchGateway\\browser"
+# Omitted base_directory uses this Windows user's HaloResearchGateway/browser.
 
 [imports]
 approval_ttl_seconds = 300

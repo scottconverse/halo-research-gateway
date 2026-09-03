@@ -80,7 +80,7 @@ from pathlib import Path
 from halo_research_gateway.config import ROOT, GatewayConfig
 p = Path(os.environ.get('HALO_RESEARCH_CONFIG', ROOT / 'config.toml'))
 s = GatewayConfig.load(p if p.exists() else None).server
-print(json.dumps({'port': s.port, 'health_path': s.health_path}))
+print(json.dumps({'port': s.port, 'health_path': s.health_path, 'mcp_path': s.mcp_path}))
 '@
     $result = & $Context.Python -c $query
     if ($LASTEXITCODE -ne 0) { throw 'Cannot read Gateway configuration; no service was changed.' }
