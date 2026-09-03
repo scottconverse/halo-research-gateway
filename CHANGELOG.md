@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Shorten ordinary pagination references to 51 authenticated characters while preserving immutable evidence, expiry, tool/output matching and private-result cache policy. Bound and expose reference metadata; keep existing signed layout-3 tokens compatible and use them when compact metadata cannot fit. This addresses observed DSH token-copy failures; real DSH acceptance remains a separate requirement.
+
 - Strengthen DSH acceptance to reject failed fetches, rejected or unissued cursors, aborted turns and duplicate fragment-only sources. Record the installed DSH package-identity repair separately from Gateway code: real dispatch is restored, but the broad local-model workflow timed out and is not a pass. Final release target is `0.3.0`; no new tag is claimed.
 
 - Add an operator-started public research-login/challenge window with Done/Cancel, a two-minute operation deadline, single-browser ownership, redacted status and bounded memory-only cookie reuse for managed-profile retries. No model action tool or persistent password/session export is added. Controlled visible Chrome and operator UI checks pass; real-account, installed and DSH acceptance remain separate. Serialize cookie imports with browser access and retain the profile lock through a cancelled native copy until its receipt is recorded.

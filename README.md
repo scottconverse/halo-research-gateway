@@ -23,6 +23,13 @@ Current acceptance is partial. The DSH tools-package mismatch was repaired on Se
 
 ## Why it exists
 
+Pagination now normally returns a 51-character authenticated reference so local
+models have less text to copy. Evidence identity, expiry and same-tool/output
+checks remain enforced. Public references share the bounded disk cache; private
+references stay in bounded memory. Existing layout-3 signed tokens remain valid
+and are the fallback under storage pressure. This does not itself prove the DSH
+workflow. See [pagination behavior](docs/USER-MANUAL.md#pagination).
+
 The source now streams local HTTP and GitHub API responses with the configured
 decoded-body limit and per-request deadline. Local reads also share HTTP admission
 and per-origin pacing. Oversize/timeout failures return no partial source as

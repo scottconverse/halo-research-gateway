@@ -193,6 +193,26 @@ before metadata-aware cursor layout 3 also return `CURSOR_EVICTED`: the paging
 layout changed, so old positions must not be silently reinterpreted. This does
 not delete durable jobs, vault data or source profiles.
 
+New cursors normally use a 51-character opaque reference beginning `h1_`.
+Copy it exactly; the shorter form is not permission to abbreviate or reconstruct
+it. It still authenticates the original layout-3 state, output budget, tool and
+evidence identity. Existing unexpired layout-3 inline tokens remain accepted.
+Tampered/malformed references return `CURSOR_INVALID` before reading saved state;
+expired references return `CURSOR_EXPIRED` even after their saved state is gone.
+Missing reference metadata returns `CURSOR_EVICTED` rather than fetching a source
+again or silently substituting newer evidence.
+
+Reference metadata has its own memory pool, using the same `snapshot_max_entries`,
+`snapshot_max_bytes` and `cursor_ttl_seconds` limits as evidence snapshots.
+`/stats.cursor_handles` reports its count, serialized bytes and caps, without
+reference values or source contents. The two pools are separately bounded, so
+their combined retained payload can reach twice the configured byte limit.
+Private/non-cacheable metadata never goes to disk. Public metadata uses the
+existing cache capacity and expiry rules; both it and the unchanged evidence
+must survive for restart continuation. Cache statistics include these metadata
+rows. If metadata cannot fit, output uses the existing longer signed cursor and
+is refitted to the same character budget. No database migration is needed.
+
 Long `snippet` and `content` fields continue on subsequent pages without silently
 trimming their tails or repeating snippets on every content chunk. Partial item
 metadata includes `text_offset` and `text_total`; these describe the snippet-plus-
@@ -254,8 +274,10 @@ Every Gateway cache write removes expired or over-limit entries before committin
 so other clients cannot observe a committed overshoot. Ordinary disk-cache hits
 and misses also prune old entries; lowering a limit takes effect on that traffic
 or explicit cache maintenance. This is activity-driven, not an idle timer.
-In-memory cursor continuation and statistics reads alone do not prune disk rows.
-Least-recently-used evidence is discarded first. Other tables, including jobs,
+Statistics reads alone do not prune disk rows. Compact public continuation may
+read or write reference metadata and therefore trigger ordinary cache pruning;
+private in-memory continuation does not persist metadata. Least-recently-used
+cache entries are discarded first. Other tables, including jobs,
 connections, provider limits and historical receipts, are not deleted.
 
 The cache prepares its database journal before serving requests. Another process

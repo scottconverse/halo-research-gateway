@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import gzip
 import hashlib
 import json
 import sqlite3
@@ -112,6 +113,8 @@ class HaloService:
         )
         self._snapshots: OrderedDict[str, tuple[bytes, float]] = OrderedDict()
         self._snapshot_bytes = 0
+        self._cursor_handles: OrderedDict[str, tuple[str, float]] = OrderedDict()
+        self._cursor_handle_bytes = 0
         self.started_at = rfc3339(self.clock.utcnow())
         self._job_tasks: dict[str, asyncio.Task] = {}
         self._job_lock = asyncio.Lock()
@@ -131,6 +134,9 @@ class HaloService:
         await self.crawler.close()
         self._snapshots.clear()
         self._snapshot_bytes = 0
+
+        self._cursor_handles.clear()
+        self._cursor_handle_bytes = 0
 
     async def oauth_begin(self, **values) -> dict:
         begun = await self.oauth.begin(**values)
@@ -203,9 +209,11 @@ class HaloService:
         snapshot_key = digest
         self._snapshot_put(snapshot_key, payload)
         items = self._chunk_items([x.as_dict() for x in result.items], budget)
+        staged_handles: dict[str, str] = {}
+        use_compact = True
 
         def encode_cursor(page: dict) -> str:
-            return self.cursors.encode(
+            signed = self.cursors.encode(
                 page
                 | {
                     "t": tool,
@@ -215,27 +223,58 @@ class HaloService:
                     "v": 3,
                 }
             )
+            if not use_compact:
+                return signed
+            handle = self.cursors.compact(signed)
+            staged_handles[handle] = signed
+            return handle
 
-        return build_envelope(
-            tool,
-            result.provider,
-            str(uuid.uuid4()),
-            now,
-            now,
-            items,
-            requested or len(result.items),
-            result.available if result.available is not None else len(result.items),
-            budget,
-            cache_hit=result.cache_hit,
-            cache_age_seconds=result.cache_age_seconds,
-            cache_key=result.cache_key,
-            cursor_state=cursor_state,
-            encode_cursor=encode_cursor,
-            warnings=result.warnings,
-        )
+        def render() -> dict:
+            return build_envelope(
+                tool,
+                result.provider,
+                str(uuid.uuid4()),
+                now,
+                now,
+                items,
+                requested or len(result.items),
+                result.available if result.available is not None else len(result.items),
+                budget,
+                cache_hit=result.cache_hit,
+                cache_age_seconds=result.cache_age_seconds,
+                cache_key=result.cache_key,
+                cursor_state=cursor_state,
+                encode_cursor=encode_cursor,
+                warnings=result.warnings,
+            )
+
+        envelope = render()
+        handle = envelope["page"]["next_cursor"]
+        # Envelope fitting may try many offsets. Retain only the returned token.
+        if handle and not self._remember_cursor(handle, staged_handles[handle], persist=bool(result.cache_key)):
+            use_compact = False
+            envelope = render()
+        return envelope
 
     def _resume(self, tool: str, cursor: str, max_chars: int | None) -> dict:
         try:
+            if cursor.startswith("h1_"):
+                self.cursors.validate_handle(cursor)
+                self._prune_cursor_handles()
+                entry = self._cursor_handles.get(cursor)
+                if entry is not None:
+                    self._cursor_handles.move_to_end(cursor)
+                    signed = entry[0]
+                else:
+                    cached_state = self.cache.get("cursor-handle:" + cursor)
+                    if cached_state is None:
+                        return self._error(tool, "pagination", ValueError("CURSOR_EVICTED"))
+                    try:
+                        signed = cached_state.decode("ascii")
+                    except UnicodeError as exc:
+                        raise CursorError("cursor state is malformed") from exc
+                self.cursors.validate_handle(cursor, signed)
+                cursor = signed
             state = self.cursors.decode(cursor)
             if state.get("v") != 3:
                 return self._error(tool, "pagination", ValueError("CURSOR_EVICTED"))
@@ -257,6 +296,50 @@ class HaloService:
             return self._envelope(tool, result, cursor_budget, state)
         except Exception as exc:
             return self._error(tool, "pagination", exc)
+
+    def _prune_cursor_handles(self) -> None:
+        now = self.clock.monotonic()
+        for handle, (signed, expires) in list(self._cursor_handles.items()):
+            if expires <= now:
+                del self._cursor_handles[handle]
+                self._cursor_handle_bytes -= len(handle) + len(signed)
+
+    def _remember_cursor(self, handle: str, signed: str, *, persist: bool) -> bool:
+        self._prune_cursor_handles()
+        limits = self.config.output
+        size = len(handle) + len(signed)
+        if size > limits.snapshot_max_bytes:
+            return False
+        if persist:
+            encoded = signed.encode("ascii")
+            # A transport optimization must not evict already cached evidence.
+            if self.cache.stats()["total_compressed_bytes"] + len(gzip.compress(encoded)) > self.cache.max_bytes:
+                return False
+            try:
+                self.cache.put("cursor-handle:" + handle, encoded, limits.cursor_ttl_seconds)
+            except EntryTooLargeError:
+                return False
+        previous = self._cursor_handles.pop(handle, None)
+        if previous is not None:
+            self._cursor_handle_bytes -= len(handle) + len(previous[0])
+        while self._cursor_handles and (
+            len(self._cursor_handles) >= limits.snapshot_max_entries
+            or self._cursor_handle_bytes + size > limits.snapshot_max_bytes
+        ):
+            old_handle, (old_signed, _) = self._cursor_handles.popitem(last=False)
+            self._cursor_handle_bytes -= len(old_handle) + len(old_signed)
+        self._cursor_handles[handle] = (signed, self.clock.monotonic() + limits.cursor_ttl_seconds)
+        self._cursor_handle_bytes += size
+        return True
+
+    def _cursor_handle_stats(self) -> dict:
+        self._prune_cursor_handles()
+        return {
+            "entries": len(self._cursor_handles),
+            "payload_bytes": self._cursor_handle_bytes,
+            "max_entries": self.config.output.snapshot_max_entries,
+            "max_payload_bytes": self.config.output.snapshot_max_bytes,
+        }
 
     def _prune_snapshots(self) -> None:
         now = self.clock.monotonic()
@@ -1388,6 +1471,7 @@ class HaloService:
             "queues": self.coordinator.stats(),
             "cache": self.cache.stats(),
             "snapshots": self._snapshot_stats(),
+            "cursor_handles": self._cursor_handle_stats(),
             "research_session": self.research_session.status()["state"],
             "jobs": self._job_counts(),
             "profiles": {

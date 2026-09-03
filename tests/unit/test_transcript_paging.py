@@ -1,6 +1,7 @@
 """Lossless transcript text and timing metadata through bounded MCP pages."""
 
 import copy
+import hashlib
 import json
 from types import SimpleNamespace
 
@@ -137,9 +138,18 @@ async def test_previous_cursor_layout_is_rejected_instead_of_misreading_evidence
         ],
     )
     service = app.state.halo_service
-    page = service._envelope("transcript_fetch", result, 2000)
-    old_state = service.cursors.decode(page["page"]["next_cursor"])
-    old_state["v"] = 2
+    service._envelope("transcript_fetch", result, 2000)
+    # Build the prior inline layout explicitly; current transport is opaque.
+    old_state = {
+        "v": 2,
+        "t": "transcript_fetch",
+        "b": 2000,
+        "k": "",
+        "s": hashlib.sha256(service._encode_result(result)).hexdigest(),
+        "i": 1,
+        "c": 1,
+        "n": 2,
+    }
     old_cursor = service.cursors.encode(old_state)
     rejected = await call(app, {"cursor": old_cursor})
     assert not rejected["ok"], "Old cursor layout was silently interpreted by the new paginator"

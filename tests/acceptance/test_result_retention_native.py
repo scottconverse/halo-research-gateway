@@ -109,13 +109,14 @@ async def test_native_mcp_retention_shared_clients_lossless_pages_and_restart(tm
             )
             assert a["ok"] and b["ok"], (a, b)
             original_cursor, old_b = a["page"]["next_cursor"], b["page"]["next_cursor"]
-            assert original_cursor and old_b
+            assert len(original_cursor) == len(old_b) == 51
             collected, page_count = "", 0
             while True:
                 collected += "".join(item.get("content") or "" for item in a["items"])
                 page_count += 1
                 if not a["page"]["next_cursor"]:
                     break
+                assert len(a["page"]["next_cursor"]) == 51
                 assert page_count < 200
                 a = await read(first, cursor=a["page"]["next_cursor"])
                 assert a["ok"], a
@@ -130,6 +131,8 @@ async def test_native_mcp_retention_shared_clients_lossless_pages_and_restart(tm
                 assert stats["snapshots"]["entries"] == 2
                 assert 0 < stats["snapshots"]["payload_bytes"] <= 24000
                 assert stats["cache"]["entries"] == 0
+                assert 0 < stats["cursor_handles"]["entries"] <= 2
+                assert 0 < stats["cursor_handles"]["payload_bytes"] <= 24000
         assert sorted(hits) == ["/research/a", "/research/b", "/research/c"]
         await stop_gateway(first_process, first_output)
         await start_gateway()

@@ -18,6 +18,13 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+Compact cursor repair: source now emits 51-character authenticated references,
+with bounded visible metadata, public-cache restart recovery and memory-only
+private references. Legacy layout-3 inline cursors remain usable, including as a
+storage-pressure fallback. Expiry, tamper, tool, budget and immutable-evidence
+checks remain. Source/native acceptance and installed/DSH acceptance must be
+reported separately; shortening a token is not proof of model completion.
+
 September 3 DSH repair: the shadow tools package was preserved as a backup and
 replaced with a junction to the identical existing package used by the agent loop.
 The real identity assertion changes from failure to success. All 121 prior sessions

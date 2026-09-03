@@ -50,6 +50,8 @@ async def page(session, arguments, budget):
     assert value["ok"], value.get("error")
     assert value["provider"] == "public-transcript"
     assert len(wire) == value["page"]["serialized_chars"] <= budget
+    if value["page"]["next_cursor"]:
+        assert len(value["page"]["next_cursor"]) == 51
     return value
 
 
@@ -149,6 +151,7 @@ async def main():
                                             "url": URL,
                                             "max_chars": budget,
                                             "pages": pages,
+                                            "cursor_chars": len(first["page"]["next_cursor"] or ""),
                                             "content_chars": len(actual[0]),
                                             "segments": len(actual[1]),
                                             "evidence_sha256": hashlib.sha256(

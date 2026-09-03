@@ -47,6 +47,35 @@ class CursorCodec:
         signature = hmac.new(self.key, body, hashlib.sha256).digest()
         return base64.urlsafe_b64encode(body + signature).decode().rstrip("=")
 
+    def compact(self, signed_state: str) -> str:
+        """Reference authenticated state without exposing its fields to the model."""
+        expires = int(self.decode(signed_state)["exp"]).to_bytes(8, "big")
+        identity = hmac.digest(self.key, b"cursor-state-v1\0" + signed_state.encode(), "sha256")[:12]
+        body = expires + identity
+        signature = hmac.digest(self.key, b"cursor-handle-v1\0" + body, "sha256")[:16]
+        return "h1_" + base64.urlsafe_b64encode(body + signature).decode().rstrip("=")
+
+    def validate_handle(self, token: str, signed_state: str | None = None) -> None:
+        """Authenticate and check expiry before lookup; bind retrieved state after it."""
+        try:
+            if not token.startswith("h1_") or len(token) != 51:
+                raise CursorError("cursor handle is malformed")
+            raw = base64.urlsafe_b64decode(token[3:])
+            if base64.urlsafe_b64encode(raw).decode().rstrip("=") != token[3:]:
+                raise CursorError("cursor encoding is non-canonical")
+            body, signature = raw[:20], raw[20:]
+            expected = hmac.digest(self.key, b"cursor-handle-v1\0" + body, "sha256")[:16]
+            if not hmac.compare_digest(signature, expected):
+                raise CursorError("cursor signature is invalid")
+            if int.from_bytes(body[:8], "big") < int(self.clock()):
+                raise CursorExpired("cursor expired")
+            if signed_state is not None and not hmac.compare_digest(token, self.compact(signed_state)):
+                raise CursorError("cursor state does not match handle")
+        except CursorError:
+            raise
+        except Exception as exc:
+            raise CursorError("cursor handle is malformed") from exc
+
     def decode(self, token: str) -> dict:
         try:
             raw = base64.urlsafe_b64decode(token + "=" * (-len(token) % 4))

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-03T08:49:19.2816202Z",
+  "generated_at": "2026-09-03T09:12:35.2936628Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -29,8 +29,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "7598814b9b64f9918954099554f6a2fcb15dc0ce54b90f617c4fef16cfd71e8c",
-      "bytes": 11773
+      "sha256": "f4bac5947257ed79e79d11c576ec41af1c796e9261097c05ed7fdda219a93c4a",
+      "bytes": 12178
     },
     {
       "path": "config/config.example.toml",
@@ -56,6 +56,11 @@
       "path": "docs/CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md",
       "sha256": "9406651d457e62445feb9aa4b2a1c9a98ee54a7f3260d1d59e8cf0a283eeb474",
       "bytes": 90506
+    },
+    {
+      "path": "docs/COMPACT-CURSOR-EVIDENCE-2026-09-03.md",
+      "sha256": "41c94c211885f153303e5e1fd6f89c62331e526f681d6a61cc3a697121244009",
+      "bytes": 24696
     },
     {
       "path": "docs/COORDINATOR-CANCELLATION-EVIDENCE-2026-09-02.md",
@@ -134,8 +139,8 @@
     },
     {
       "path": "docs/implementation-status.md",
-      "sha256": "c473d554106f649fd37974336bfbcc72cee28d52d3834e743a2d52d92bfe299c",
-      "bytes": 14345
+      "sha256": "4afb9c21d39875d7f17d2cf494d3435d4f518724d5d601917a59ea1f99203231",
+      "bytes": 14813
     },
     {
       "path": "docs/JOB-CONTROL-EVIDENCE-2026-09-02.md",
@@ -224,8 +229,8 @@
     },
     {
       "path": "docs/USER-MANUAL.md",
-      "sha256": "fb098a86b7081a096fb75a2ca371a476b57d6986407c68e4f31c84bfbb9d8ab3",
-      "bytes": 46739
+      "sha256": "ecf1595186e7e2da24102b1adb1a9560b85e511ed5bd6ec7e9cd9c96cada4837",
+      "bytes": 48264
     },
     {
       "path": "pyproject.toml",
@@ -234,8 +239,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "4ac3bd27b5eaee5e61b802249e946263980cecb6cf9d9434448395c403128189",
-      "bytes": 16052
+      "sha256": "84bffbfb82d399364327615da08765a3c71814f6694f5e4c494dd2cbfbe123c5",
+      "bytes": 16520
     },
     {
       "path": "scripts/HaloLifecycle.ps1",
@@ -399,8 +404,8 @@
     },
     {
       "path": "src/halo_research_gateway/cursor.py",
-      "sha256": "5ad4afb2adedea3f48c5ec1ff87260cf06500a856ce93dd7671bb305eedba79b",
-      "bytes": 2451
+      "sha256": "b78b2294403eac5e3b2976ac7138276feeafab16d3fdeae889564998dcd0ca2f",
+      "bytes": 4203
     },
     {
       "path": "src/halo_research_gateway/envelope.py",
@@ -524,8 +529,8 @@
     },
     {
       "path": "src/halo_research_gateway/service.py",
-      "sha256": "2b1ab9a6c364b8811c9c9880f89dbcba13b6061d3516c20bfc08ef0f6d9f6181",
-      "bytes": 60360
+      "sha256": "9790f759aced35c393c0ba36a83f7688ccb9acb51b4f457ce2a938814d1f65a2",
+      "bytes": 64299
     },
     {
       "path": "src/halo_research_gateway/tools/__init__.py",
@@ -654,13 +659,13 @@
     },
     {
       "path": "tests/acceptance/test_result_retention_native.py",
-      "sha256": "6a5b07c0a0291b521cd87b17be48c0ba7b99eb72a0af4640547172da77d88b03",
-      "bytes": 6249
+      "sha256": "a35c9063f90faadb6cfe84ebb252440c22f35516a765a2d857d8a55e6e5102ec",
+      "bytes": 6467
     },
     {
       "path": "tests/acceptance/transcript_mcp_native_live.py",
-      "sha256": "f516c9d8029dd3bc317bac5a31d8ba11888fe12ba5d687eac0c37282aa5107e7",
-      "bytes": 9273
+      "sha256": "14c54032d28cd58fea8738348f2f82c2b99368ae39323eb28960128145c6b5f8",
+      "bytes": 9466
     },
     {
       "path": "tests/unit/test_active_cancellation.py",
@@ -696,6 +701,11 @@
       "path": "tests/unit/test_chrome_import.py",
       "sha256": "9acce9e92951f9be926bd4d48c66d8db6e556e3882b52b10f4c154c07117b209",
       "bytes": 3271
+    },
+    {
+      "path": "tests/unit/test_compact_cursor.py",
+      "sha256": "7e98a4a0723044b668a24d7f9e85763dddc196870689fc9476bb06559150aeb4",
+      "bytes": 10257
     },
     {
       "path": "tests/unit/test_config.py",
@@ -869,8 +879,8 @@
     },
     {
       "path": "tests/unit/test_transcript_paging.py",
-      "sha256": "ca860f04905ee2ac0916eca49cd4d4d5d0d8ac840cae541b80c082c37a02d782",
-      "bytes": 6125
+      "sha256": "6c8843afcf5fd22e9e0884a6fedee0df7cbaa8c53de1a27f982d56ccf75b25e0",
+      "bytes": 6349
     },
     {
       "path": "tests/unit/test_v15_state.py",
