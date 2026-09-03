@@ -18,6 +18,14 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+The owner-only landing page was republished on September 3 as Sites version 4,
+source `b7bd4ff`, reflecting Gateway runtime `7cdfe72` and its 423-test CI proof.
+It distinguishes native/installed/fake-vendor checks and explicitly marks the
+DSH workflow and real-login/human-challenge/install gaps. Existing design and
+access are unchanged. Publication is verified, not browser visual acceptance.
+See SITE-EVIDENCE-ALIGNMENT-2026-09-03.md. This website/documentation checkpoint
+does not change or restart Gateway or DSH; a later docs SHA is not a new runtime.
+
 Recognized gate pages fail explicitly and auto public crawl reaches configured
 Bright Data. Estimated-cost reservations, bounded streaming/deadlines and honest
 redirect metadata have regressions. Native Chrome/network MCP with a public

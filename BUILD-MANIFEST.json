@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-03T05:53:03.5765259Z",
+  "generated_at": "2026-09-03T06:17:43.3691804Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -29,8 +29,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "f41906d8eb3ccd76f55562a1c8471f2c3375c300ef1e0502572662efae30a35c",
-      "bytes": 9527
+      "sha256": "d6a7969c188a7f8904db4ed65b3e7f625eb6d1637e7eef11df80b218e52ca296",
+      "bytes": 9897
     },
     {
       "path": "config/config.example.toml",
@@ -104,8 +104,8 @@
     },
     {
       "path": "docs/FINISH-PROGRESS-2026-09-02.md",
-      "sha256": "590744c808700456863580212e90a29bf5bef72223bbfdcfe17fd4f4da58a6f1",
-      "bytes": 24024
+      "sha256": "ee0263af9d8029fb0ee1593a2dd21aaf028cb12e6eb6a0e63ba0d6605c61384e",
+      "bytes": 24223
     },
     {
       "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
@@ -124,8 +124,8 @@
     },
     {
       "path": "docs/implementation-status.md",
-      "sha256": "ca7bde11cc42a74471baa8d6cabbb48a64791274478822887593388de28df87f",
-      "bytes": 10277
+      "sha256": "15d18c26c9634e71eafc0171dc0fbd8608adae9e01c58ce372f838a4201c7789",
+      "bytes": 10836
     },
     {
       "path": "docs/JOB-CONTROL-EVIDENCE-2026-09-02.md",
@@ -193,6 +193,11 @@
       "bytes": 6047
     },
     {
+      "path": "docs/SITE-EVIDENCE-ALIGNMENT-2026-09-03.md",
+      "sha256": "41ffea1b2adc99c5d803d9cf2145e3f4c9704b4782b750dbf73a733ddc84bc95",
+      "bytes": 14829
+    },
+    {
       "path": "docs/TRANSCRIPT-PAGING-EVIDENCE-2026-09-02.md",
       "sha256": "bfffb050a2c4b7f9853ff05dc2e2c2b5c02e5675357a54865a06e79cc295464b",
       "bytes": 59346
@@ -209,8 +214,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "a8ac3b240b2d4bdeefabc298b77edd3fd9127ba23a43b7a877c2823b0ebde667",
-      "bytes": 13817
+      "sha256": "33bdab64ef1a667cd02b442f7aec313c6c47c5ac14e9b6063d2b06d61849dab5",
+      "bytes": 14216
     },
     {
       "path": "scripts/HaloLifecycle.ps1",
@@ -864,8 +869,8 @@
     },
     {
       "path": "website/app/page.tsx",
-      "sha256": "3544bab9174ec408b849e40e4cc23b575cce7b7a07006dfd7a8fdbd8a83ef043",
-      "bytes": 22229
+      "sha256": "f84762ec074aeb5e982e0d44fd3b5469fd6a6a66dcb15ad7b1d18a08fb7a7698",
+      "bytes": 24467
     },
     {
       "path": "website/components.json",

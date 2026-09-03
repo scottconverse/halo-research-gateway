@@ -28,12 +28,12 @@ const capabilities = [
   {
     icon: Globe2,
     title: 'Fetch and real browser crawl',
-    body: 'Read ordinary pages directly, or render JavaScript with gateway-owned Chrome. Cookie-only research sessions and WebSocket checks have fixture coverage; real login compatibility still needs testing.',
+    body: 'Read ordinary pages directly or follow a bounded set of JavaScript pages with Gateway-owned Chrome. Native fixtures cover exact local paths, WebSockets and cancellation. Real research-login compatibility remains open.',
   },
   {
     icon: Database,
     title: 'Evidence that survives the turn',
-    body: 'Persistent cache, durable jobs, fair client queues, signed continuation pages, canonical URLs, deduplication, and citable evidence.',
+    body: 'Continue through signed pages without losing collected text or transcript timing. Shared cache limits, durable-job checkpoints and restart tests preserve usable evidence; evicted or unavailable results are disclosed.',
   },
   {
     icon: KeyRound,
@@ -48,7 +48,7 @@ const capabilities = [
   {
     icon: ShieldCheck,
     title: 'Explicit limits and coverage',
-    body: 'Public web sources and named local targets, with shared queues and visible partial results. Optional challenge/proxy adapters are disabled; complete crawl routing is not yet verified.',
+    body: 'Recognized challenge pages are not research evidence. Configured Bright Data fallback has native Chrome and local fake-vendor proof. Paid providers remain disabled; no real paid call or universal bypass is claimed.',
   },
 ];
 
@@ -121,6 +121,14 @@ export default function Home() {
               locally on Windows. It does not send email, post to GitHub, buy
               things, or manage accounts.
             </p>
+            <p className="mt-5 max-w-2xl text-sm leading-6 text-amber-200">
+              Current status: the installed Gateway is verified; the complete
+              DSH research workflow is still blocked by a DSH tools-package
+              mismatch. This is not a finished end-to-end release.{' '}
+              <a className="underline underline-offset-4" href="#proof">
+                See the evidence and remaining work.
+              </a>
+            </p>
             <div className="mt-9 flex flex-wrap gap-3">
               <a
                 href="#start"
@@ -144,7 +152,7 @@ export default function Home() {
             <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-400">
               {[
                 '14 research tools',
-                '176 local regression tests',
+                '423 local and CI regression tests',
                 'DSH is the primary client',
               ].map((item) => (
                 <span key={item} className="flex items-center gap-2">
@@ -226,8 +234,9 @@ export default function Home() {
             </h2>
             <p className="section-copy">
               One process owns discovery budgets, cache, browser concurrency,
-              durable research jobs, and encrypted research connections. Every
-              host gets the same semantics; DSH stays in charge.
+              durable research jobs, and encrypted research connections. Hosts
+              use one research contract; the Gateway does not alter DSH models,
+              presets, permissions or conversation history.
             </p>
           </div>
           <div className="rounded-3xl border border-white/10 bg-white/[.025] p-5 sm:p-8">
@@ -291,14 +300,15 @@ export default function Home() {
       <section id="capabilities" className="py-24">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <div className="max-w-3xl">
-            <p className="section-kicker">Complete research surface</p>
+            <p className="section-kicker">Research-only toolkit</p>
             <h2 className="section-title">
               Built for the messy web, not a demo query.
             </h2>
             <p className="section-copy">
-              Ordinary pages stay fast. JavaScript gets a real browser. Long
-              research becomes a resumable job. Authenticated work stays
-              operator-owned.
+              Read pages, extract PDF text and tables, use local English OCR,
+              and collect captions or discussions. Keep long research in a
+              bounded, resumable job. Each capability has its own tested scope
+              and remaining limits.
             </p>
           </div>
           <div className="mt-14 grid gap-px overflow-hidden rounded-3xl border border-white/9 bg-white/9 md:grid-cols-2 lg:grid-cols-3">
@@ -359,27 +369,40 @@ export default function Home() {
               What is verified—and what is still open.
             </h2>
             <p className="section-copy">
-              Local regression tests, public-source checks, and disposable
-              browser/process tests provide different kinds of evidence. None
-              replaces a complete successful research workflow through DSH.
+              Verified snapshot: September 3, 2026, Gateway 0.2.0 at 7cdfe72.
+              The same 423-test suite passed locally and in Windows CI. Native
+              public-source, browser and process checks are separate evidence;
+              none replaces a successful full research workflow through DSH.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <span className="proof-pill">176 local tests passed</span>
-              <span className="proof-pill">Windows CI for delivered checkpoints</span>
+              <span className="proof-pill">423 regression tests passed</span>
+              <a className="proof-pill underline underline-offset-4" href="https://github.com/scottconverse/halo-research-gateway/actions/runs/33720850885">
+                Windows CI · exact tested revision
+              </a>
               <span className="proof-pill">Schema 1.5</span>
               <span className="proof-pill">DB schema 3</span>
             </div>
             <p className="mt-6 text-sm leading-6 text-amber-200">
               The latest DSH workflow failed before search could run because of
               a DSH tools-package mismatch. That repair still needs approval.
-              Real-world login and app-bound cookies, human challenges, optional
-              provider routing, and full installation/stress acceptance remain open.
+              Real research login and app-bound cookies, visible human challenge
+              handoff, CapSolver browser-token application, broader resource
+              limits and full installation/stress acceptance remain open.
+              Bright Data routing was tested with a fake vendor, not a paid API.
             </p>
+            <p className="mt-5 text-sm leading-6 text-slate-400">
+              Proxy citations disclose unverified final redirects. Cost budgets
+              reserve operator estimates, not actual vendor invoices. Cache
+              limits cover compressed research payloads, not total disk or RAM.
+            </p>
+            <a className="mt-5 inline-flex items-center gap-2 text-sm text-cyan-200 underline underline-offset-4" href="https://github.com/scottconverse/halo-research-gateway/blob/7cdfe72b5ac7f6d7e1d1c6fc08187830f123982a/docs/RESEARCH-ONLY-SCOPE.md">
+              Read the six-part finish list <ExternalLink className="size-4" />
+            </a>
           </div>
           <div className="rounded-3xl border border-white/10 bg-white/[.025] p-6 sm:p-8">
             <div className="mb-6 flex items-center justify-between">
               <span className="font-mono text-xs text-slate-400">
-                acceptance / live
+                separate verification layers
               </span>
               <span className="flex items-center gap-2 text-sm text-amber-200">
                 <span className="size-2 rounded-full bg-amber-300" />{' '}
@@ -387,11 +410,14 @@ export default function Home() {
               </span>
             </div>
             {[
-              'MCP surface — 14 research tools',
-              'Public pages, JavaScript, PDF, captions and community evidence',
-              'Authenticated read-only GitHub adapter canary',
-              'Disposable Chrome cookie-only login fixture',
-              'Native research-job crash/restart fixture',
+              'Installed Gateway — 14 research tools, public fetch and pagination',
+              'Native MCP — Exa quota failover to DDGS and a readable source',
+              'Disposable authenticated MCP — GitHub discussions, replies and commit-pinned files',
+              'Native documents and captions — PDF tables, local OCR and retained timing',
+              'Chrome fixtures — cookie-only sessions, local paths, WebSockets and cleanup',
+              'Jobs and cache — pause/resume, process restart and shared-client limits',
+              'Challenge fallback — native Chrome plus a local fake vendor, no paid call',
+              'Installed challenge check — explicit failure instead of false evidence',
             ].map((line) => (
               <div
                 key={line}

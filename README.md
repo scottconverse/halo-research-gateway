@@ -6,6 +6,12 @@ Halo Research Gateway is a persistent, localhost-only MCP service that gives DSH
 
 **Landing page:** https://halo-research-gateway.sconverse.chatgpt.site (owner-only Sites publication)
 
+The published page was aligned on September 3 with verified runtime checkpoint
+`7cdfe72`: 423 local/CI regression tests, separately labeled installed/native
+checks, and explicit unfinished DSH/login/provider/install work. This is a
+dated evidence snapshot, not a live dashboard or full-acceptance claim. See
+[publication evidence](docs/SITE-EVIDENCE-ALIGNMENT-2026-09-03.md).
+
 - MCP: `http://127.0.0.1:8765/mcp`
 - health: `http://127.0.0.1:8765/health`
 - redacted statistics: `http://127.0.0.1:8765/stats`
@@ -13,7 +19,7 @@ Halo Research Gateway is a persistent, localhost-only MCP service that gives DSH
 
 The governing product scope and finish list are [Research-only scope](docs/RESEARCH-ONLY-SCOPE.md); this supersedes conflicting requirements in the original v1.5 design. The operator handbook is the [complete user manual](docs/USER-MANUAL.md).
 
-Current acceptance is partial. Local regression, disposable native background-launcher and job crash/restart, live Gateway job-control, and loopback HTTP cancellation tests pass; public-source probes have returned usable evidence. PDF option forwarding, table extraction, isolated parsing and local English OCR now have regression/native-fixture evidence. The latest full DSH workflow failed before search dispatch due to a DSH tools-package mismatch. Real login/challenge/provider routing and wider installation/stress checks remain open. See [current evidence](docs/FINISH-PROGRESS-2026-09-02.md), not historical release counts, for what is and is not proved.
+Current acceptance is partial. Local regression, disposable native background-launcher and job crash/restart, live Gateway job-control, and loopback HTTP cancellation tests pass; public-source probes have returned usable evidence. PDF option forwarding, table extraction, isolated parsing and local English OCR now have regression/native-fixture evidence. The latest full DSH workflow failed before search dispatch due to a DSH tools-package mismatch. Real login, human challenge handoff, live paid-provider use and wider installation/stress checks remain open. See [current evidence](docs/FINISH-PROGRESS-2026-09-02.md), not historical release counts, for what is and is not proved.
 
 ## Why it exists
 

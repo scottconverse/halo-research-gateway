@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Align the owner-only landing page with the September 3 verified runtime checkpoint: replace stale test counts, distinguish installed/native/fake-vendor evidence, link exact CI and the research-only finish list, and prominently disclose the blocked DSH workflow. Preserve design, access and product version 0.2.0; this is not full acceptance or a new package release.
+
 - Fix a cache-locking race exposed by the challenge-routing commit gate: prepare SQLite WAL before requests instead of changing journal mode during normal traffic. Bound simultaneous initialization waits; preserve existing eviction/concurrency assertions and database migration behavior.
 
 - Reject recognized challenge pages as evidence and connect auto public crawling to the existing disabled-by-default Bright Data adapter. Preserve earlier sources on later failures; do not outsource managed/private/sensitive sessions. Require positive operator request-cost estimates, reserve rounded-up cost atomically and label it estimated. Request structured JSON by default while retaining raw support; bound streaming responses and total API/solver time. Native Chrome/network MCP/local fake-vendor checks pass without paid calls. Human handoff, CapSolver browser-token application and live paid acceptance remain unfinished; unverified vendor final redirects are explicit.
