@@ -20,150 +20,102 @@ def build_envelope(
     encode_cursor=None,
     warnings=None,
 ):
+    """Page complete evidence, carrying unreturned prose in the cursor offset.
+
+    The exact MCP JSON representation includes the cursor and all metadata.
+    An item whose non-prose fields cannot fit fails explicitly; citations and
+    evidence text are never silently deleted to meet a character budget.
     """
-    Create a paginated envelope of items with proper cursor management.
+    state = cursor_state or {}
+    index, offset = state.get("i", 0), state.get("o", 0)
+    cumulative, number = state.get("c", 0), state.get("n", 1)
 
-    Args:
-        tool: The tool that generated the results
-        provider: The provider used by the tool
-        request_id: Unique identifier for this request
-        requested_at: When the request was made
-        completed_at: When processing completed
-        items: List of items to paginate
-        requested: Number of items requested
-        available: Total number of items available
-        char_budget: Maximum serialized size for each page
-        cache_hit: Whether this came from cache
-        cache_age_seconds: Age of cached content in seconds
-        cache_key: Cache key used
-        cursor: Base64 encoded cursor from previous request
-        warnings: Warnings to include
-
-    Returns:
-        dict: Envelope containing pagination info, items and metadata
-    """
-    if cursor_state is not None:
-        next_index = cursor_state["i"]
-        cumulative_so_far = cursor_state["c"]
-        page_number = cursor_state["n"]
-    else:
-        next_index = 0
-        cumulative_so_far = 0
-        page_number = 1
-
-    # Collect items for this page
-    page_items = []
-
-    # Add items one by one while staying within budget, with fixed-point iteration to make sure we get the exact length
-    total_items_added = 0
-
-    # Build a base envelope structure - including ALL required fields from start
-    env_base = {
-        "schema_version": SCHEMA_VERSION,
-        "ok": True,
-        "request_id": request_id,
-        "tool": tool,
-        "provider": provider,
-        "requested_at": requested_at,
-        "completed_at": completed_at,
-        "cache": {"hit": cache_hit, "age_seconds": cache_age_seconds, "key": cache_key},
-        "coverage": {
-            "requested": requested,
-            "available": available,
-            "returned_this_page": 0,
-            "returned_cumulative": cumulative_so_far,
-            "complete": False,
-        },
-        "page": {
-            "number": page_number,
-            "serialized_chars": 0,
-            "next_cursor": None,
-            "snapshot_expires_at": None,
-        },
-        "retry_after_seconds": None,
-        "items": [],
-        "warnings": warnings or [],
-    }
-
-    # Add items one by one while staying within budget using fixed-point approach
-    for i in range(next_index, len(items)):
-        item = items[i]
-
-        # Test adding this item to see if it fits - use a copy to avoid affecting the real env
-        test_env = json.loads(json.dumps(env_base))
-        test_env["items"] = page_items + [item]
-
-        # Calculate exact serialized size using fixed-point iteration (Defect 1)
-        calculated_chars = 0
+    def render(selected, next_index, next_offset=0):
+        more = next_index < len(items)
+        continuation = {"i": next_index, "c": cumulative + len(selected), "n": number + 1}
+        if next_offset:
+            continuation["o"] = next_offset
+        value = {
+            "schema_version": SCHEMA_VERSION,
+            "ok": True,
+            "request_id": request_id,
+            "tool": tool,
+            "provider": provider,
+            "requested_at": requested_at,
+            "completed_at": completed_at,
+            "cache": {"hit": cache_hit, "age_seconds": cache_age_seconds, "key": cache_key},
+            "coverage": {
+                "requested": requested,
+                "available": available,
+                "returned_this_page": len(selected),
+                "returned_cumulative": cumulative + len(selected),
+                "complete": not more,
+            },
+            "page": {
+                "number": number,
+                "serialized_chars": 0,
+                "next_cursor": encode_cursor(continuation) if more and encode_cursor else None,
+                "snapshot_expires_at": None,
+            },
+            "retry_after_seconds": None,
+            "items": selected,
+            "warnings": sorted(set([*(warnings or []), *(["RESULT_TRUNCATED"] if more else [])])),
+        }
         for _ in range(10):
-            env_copy = json.loads(json.dumps(test_env))
-            # MCP Python SDK renders mapping results as indented JSON text. The
-            # host budget must measure that wire-visible representation.
-            actual_size = len(json.dumps(env_copy, indent=2, ensure_ascii=False))
-            if calculated_chars == actual_size:
+            size = len(json.dumps(value, indent=2, ensure_ascii=False))
+            if value["page"]["serialized_chars"] == size:
                 break
-            calculated_chars = actual_size
+            value["page"]["serialized_chars"] = size
+        return value
 
-        # If adding this would exceed budget and we already have items, stop
-        if calculated_chars > char_budget and len(page_items) > 0:
+    def prose_slice(item, start, count):
+        copied = dict(item)
+        snippet, content = item.get("snippet") or "", item.get("content") or ""
+        end = start + count
+        if snippet:
+            copied["snippet"] = snippet[start : min(end, len(snippet))]
+        if content:
+            copied["content"] = content[max(0, start - len(snippet)) : max(0, end - len(snippet))]
+        if start or count < len(snippet) + len(content):
+            copied["metadata"] = dict(item.get("metadata") or {}) | {
+                "text_offset": start,
+                "text_total": len(snippet) + len(content),
+            }
+        return copied
+
+    selected = []
+    best = render([], index, offset)
+    while index < len(items):
+        item = items[index]
+        total = len(item.get("snippet") or "") + len(item.get("content") or "")
+        if not 0 <= offset <= total:
+            raise ValueError("CURSOR_INVALID")
+        remaining = total - offset
+        whole = prose_slice(item, offset, remaining)
+        candidate = render([*selected, whole], index + 1)
+        if candidate["page"]["serialized_chars"] <= char_budget:
+            selected.append(whole)
+            index, offset, best = index + 1, 0, candidate
+            continue
+        if selected:
             break
-
-        page_items.append(item)
-        total_items_added += 1
-
-    # Ensure forward progress: include at least one item even if it exceeds budget (Defect 2)
-    if not page_items and next_index < len(items):
-        page_items = [items[next_index]]
-        total_items_added = 1
-
-    # Final envelope construction with all fields set
-    env = json.loads(json.dumps(env_base))  # Start with clean base
-    env["items"] = page_items
-    env["coverage"]["returned_this_page"] = len(page_items)
-    env["coverage"]["returned_cumulative"] = cumulative_so_far + len(page_items)
-
-    # Set next cursor properly for pagination (Defect 2)
-    next_index = next_index + total_items_added
-
-    # Terminate pagination when all items are consumed (Defect 2)
-    if next_index >= len(items):
-        env["page"]["next_cursor"] = None
-        env["coverage"]["complete"] = True
-        env["warnings"] = warnings or []
-    else:
-        payload = {"i": next_index, "c": cumulative_so_far + len(page_items), "n": page_number + 1}
-        next_cursor = encode_cursor(payload) if encode_cursor else None
-        env["page"]["next_cursor"] = next_cursor
-        env["warnings"] = sorted(set([*(warnings or []), "RESULT_TRUNCATED"]))
-
-    # The envelope itself has variable overhead (URLs, metadata, cursor). If a
-    # single chunk still exceeds the host ceiling, trim only its prose fields;
-    # never remove the citation URL or retrieval time required on every page.
-    for item in env["items"]:
-        while True:
-            actual = len(json.dumps(env, indent=2, ensure_ascii=False))
-            if actual <= char_budget:
-                break
-            field = "content" if item.get("content") else "snippet" if item.get("snippet") else None
-            if field is None:
-                item.pop("metadata", None)
-                break
-            value = item[field]
-            excess = actual - char_budget
-            keep = max(0, len(value) - excess - 16)
-            item[field] = value[:keep]
-            if keep == 0:
-                break
-        if len(json.dumps(env, indent=2, ensure_ascii=False)) <= char_budget:
-            break
-    # Fixed-point iteration to make serialized_chars exactly match json.dumps(env) (Defect 1)
-    for _ in range(10):
-        actual = len(json.dumps(env, indent=2, ensure_ascii=False))
-        if env["page"]["serialized_chars"] == actual:
-            break
-        env["page"]["serialized_chars"] = actual
-
-    return env
+        # No complete item fits. Find the largest prefix of this one item's
+        # remaining prose that fits with its actual signed continuation cursor.
+        low, high, partial = 1, remaining - 1, None
+        while low <= high:
+            count = (low + high) // 2
+            candidate = render([prose_slice(item, offset, count)], index, offset + count)
+            if candidate["page"]["serialized_chars"] <= char_budget:
+                partial = candidate
+                low = count + 1
+            else:
+                high = count - 1
+        if partial is None or encode_cursor is None:
+            raise ValueError("OUTPUT_ITEM_TOO_LARGE")
+        return partial
+    if best["page"]["serialized_chars"] > char_budget:
+        raise ValueError("OUTPUT_ITEM_TOO_LARGE")
+    return best
 
 
 def error_envelope(tool, provider, request_id, code, message, partial_items=None, retry_after_seconds=None):

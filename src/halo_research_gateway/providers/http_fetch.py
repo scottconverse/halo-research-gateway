@@ -12,7 +12,7 @@ import httpx
 
 from ..clock import SystemClock, rfc3339
 from ..models import EvidenceItem, ProviderResult
-from ..security import ParsedTarget, is_sensitive_url, validate_redirect, validate_resolved, validate_url
+from ..security import ParsedTarget, is_sensitive_url, redact_url, validate_redirect, validate_resolved, validate_url
 from .html import extract_html
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) halo-research-gateway/0.1 (+local-personal-research)"
@@ -132,8 +132,8 @@ class HttpFetchProvider:
         raise ValueError("too many redirects")
 
     async def fetch(self, url: str) -> ProviderResult:
-        sensitive = is_sensitive_url(url)
         current_url, target, headers, body = await self.download(url)
+        sensitive = is_sensitive_url(url) or is_sensitive_url(current_url)
         content_type = headers.get("content-type", "").split(";", 1)[0].lower()
         encoding = "utf-8"
         if "charset=" in headers.get("content-type", ""):
@@ -148,7 +148,7 @@ class HttpFetchProvider:
             warnings.append("TRY_WEB_CRAWL")
         item = EvidenceItem(
             title=title,
-            url=current_url,
+            url=redact_url(current_url) if sensitive else current_url,
             retrieved_at=rfc3339(self.clock.utcnow()),
             source=target.host,
             content=text,

@@ -15,6 +15,14 @@ Start and stop only with the repository scripts. The stop script verifies execut
 
 ## Recovery
 
+Pagination snapshots now have count, serialized-byte and idle-retention limits
+under `[output]`; usage is visible at `/stats.snapshots`. An old or evicted cursor
+may require a fresh research request. Public disk recovery checks the original
+payload hash; non-cacheable cursors never recover from an old disk entry. Durable
+job records are separate and remain intact. Old fetch/document cache namespaces
+are no longer served by new requests; this upgrade does not scrub historic data.
+See [pagination operation and limits](USER-MANUAL.md#pagination).
+
 The service retains the last three SQLite backups before migrations. A migration failure must leave the previous database intact and stop startup. Do not delete `gateway.db` to clear cache because it also owns provider circuits, connections, jobs, plans, and receipts.
 
 If port 8765 is occupied, identify the owning PID and command line; do not kill it blindly. The Windows Job Object contains the gateway and descendants it launches; it does not adopt unrelated Chrome or Chromium processes.

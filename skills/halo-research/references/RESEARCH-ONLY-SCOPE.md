@@ -110,10 +110,14 @@ Recorded implementation gaps still included in that list:
   cancellation/deadline, and local English OCR are fixed and fixture-tested.
   Arbitrary scanned layouts, hard native-parser RAM bounds, DSH use and complete
   clean-install acceptance are not proved. See DOCUMENT-EXTRACTION-EVIDENCE-2026-09-02.md.
-- Recognized sensitive final PDF/browser citation URLs are redacted and not disk-cached;
-  equivalent final-redirect checks for generic HTTP/non-PDF fallback remain open.
-- Memory snapshot retention is not bounded; local/GitHub retrieval needs
-  response/shared-limit hardening, and arbitrary job fields need bounds.
+- Recognized sensitive final HTTP/non-PDF/PDF/browser citation URLs are redacted
+  and not disk-cached; intermediate-hop and embedded/prose URL handling remain open.
+- Snapshot retention is bounded by count, serialized bytes and idle age. Cursors
+  bind immutable evidence; full collected prose survives bounded pages, and
+  unavailable/oversized results fail explicitly. Native two-client MCP/exact-local
+  HTTP eviction/restart and existing job recovery pass. See RESULT-RETENTION-EVIDENCE-2026-09-02.md.
+- Total process/native peak memory, regular disk-cache eviction on ordinary reads,
+  local/GitHub response/shared limits and arbitrary job-field bounds remain open.
 - Background creation-time/duplicate-owner safeguards are fixed and native-tested;
   foreground ownership, strict wall-clock startup bounds, logon, long-running
   and clean-install acceptance remain.

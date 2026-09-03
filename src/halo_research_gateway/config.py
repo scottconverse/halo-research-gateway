@@ -73,7 +73,9 @@ class OutputProfile(StrictModel):
 class OutputConfig(StrictModel):
     unidentified_default_chars: int = 6000
     unidentified_ceiling_chars: int = 6000
-    cursor_ttl_seconds: int = 3600
+    cursor_ttl_seconds: int = Field(3600, ge=1, le=86400)
+    snapshot_max_entries: int = Field(128, ge=1, le=4096)
+    snapshot_max_bytes: int = Field(67_108_864, ge=1, le=1_073_741_824)
     profiles: dict[str, OutputProfile] = {}
 
 

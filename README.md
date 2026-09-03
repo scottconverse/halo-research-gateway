@@ -17,6 +17,13 @@ Current acceptance is partial. Local regression, disposable native background-la
 
 ## Why it exists
 
+Continuation now binds immutable evidence and retains all collected prose across
+bounded output pages. Refreshed sources cannot silently replace an older cursor's
+evidence. In-memory snapshots have configurable count/byte/idle-retention limits
+and visible statistics; unavailable snapshots fail explicitly. Recognized sensitive
+final direct-HTTP/document URLs are redacted and bypass disk cache. See
+[retention evidence and upgrade limits](docs/RESULT-RETENTION-EVIDENCE-2026-09-02.md).
+
 Browser crawling now follows a bounded page/depth frontier, returns each source
 with its own citation, distinguishes scrolling from page traversal, and retains
 usable pages when another fails. Native Chrome fixtures cover redirect checks,

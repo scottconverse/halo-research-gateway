@@ -7,6 +7,7 @@ import hashlib
 import json
 import sqlite3
 import uuid
+from collections import OrderedDict
 from pathlib import Path
 
 import httpx
@@ -98,7 +99,8 @@ class HaloService:
         self.cursors = CursorCodec(
             Path(config.storage.database).parent / "cursor-hmac.key", config.output.cursor_ttl_seconds
         )
-        self._snapshots: dict[str, ProviderResult] = {}
+        self._snapshots: OrderedDict[str, tuple[bytes, float]] = OrderedDict()
+        self._snapshot_bytes = 0
         self.started_at = rfc3339(self.clock.utcnow())
         self._job_tasks: dict[str, asyncio.Task] = {}
         self._job_lock = asyncio.Lock()
@@ -115,6 +117,8 @@ class HaloService:
         if self._oauth_tasks:
             await asyncio.gather(*self._oauth_tasks.values(), return_exceptions=True)
         await self.crawler.close()
+        self._snapshots.clear()
+        self._snapshot_bytes = 0
 
     async def oauth_begin(self, **values) -> dict:
         begun = await self.oauth.begin(**values)
@@ -162,14 +166,22 @@ class HaloService:
     ) -> dict:
         now = rfc3339(self.clock.utcnow())
         budget = self._budget(max_chars)
+        payload = self._encode_result(result)
+        digest = hashlib.sha256(payload).hexdigest()
+        snapshot_key = digest
+        self._snapshot_put(snapshot_key, payload)
         items = self._chunk_items([x.as_dict() for x in result.items], budget)
-        snapshot_key = result.cache_key or "snapshot:" + uuid.uuid4().hex
-        result.cache_key = snapshot_key
-        self._snapshots[snapshot_key] = result
 
         def encode_cursor(page: dict) -> str:
             return self.cursors.encode(
-                page | {"tool": tool, "snapshot": snapshot_key, "budget": budget, "schema": "1.5"}
+                page
+                | {
+                    "t": tool,
+                    "s": snapshot_key,
+                    "k": result.cache_key,
+                    "b": budget,
+                    "v": 2,
+                }
             )
 
         return build_envelope(
@@ -193,21 +205,67 @@ class HaloService:
     def _resume(self, tool: str, cursor: str, max_chars: int | None) -> dict:
         try:
             state = self.cursors.decode(cursor)
-            if state.get("tool") != tool or state.get("schema") != "1.5":
+            if state.get("v") != 2:
+                return self._error(tool, "pagination", ValueError("CURSOR_EVICTED"))
+            if state.get("t") != tool:
                 raise CursorError("cursor does not match tool or schema")
-            cursor_budget = int(state["budget"])
+            cursor_budget = int(state["b"])
             if max_chars is not None and self._budget(max_chars) != cursor_budget:
                 raise CursorError("cursor does not match output profile")
-            snapshot_key = state["snapshot"]
-            result = self._snapshots.get(snapshot_key)
-            if result is None:
-                cached = self.cache.get_with_age(snapshot_key)
-                if cached is None:
+            snapshot_key = state["s"]
+            cache_key = state.get("k", "")
+            payload = self._snapshot_get(snapshot_key)
+            age = 0
+            if payload is None:
+                cached = self.cache.get_with_age(cache_key) if cache_key else None
+                if cached is None or hashlib.sha256(cached[0]).hexdigest() != snapshot_key:
                     return self._error(tool, "pagination", ValueError("CURSOR_EVICTED"))
-                result = self._decode_result(cached[0], snapshot_key, cached[1])
+                payload, age = cached
+            result = self._decode_result(payload, cache_key, age)
             return self._envelope(tool, result, cursor_budget, state)
         except Exception as exc:
             return self._error(tool, "pagination", exc)
+
+    def _prune_snapshots(self) -> None:
+        now = self.clock.monotonic()
+        for key, (payload, expires) in list(self._snapshots.items()):
+            if expires <= now:
+                del self._snapshots[key]
+                self._snapshot_bytes -= len(payload)
+
+    def _snapshot_put(self, key: str, payload: bytes) -> None:
+        self._prune_snapshots()
+        limits = self.config.output
+        if len(payload) > limits.snapshot_max_bytes:
+            raise ValueError("SNAPSHOT_TOO_LARGE")
+        prior = self._snapshots.pop(key, None)
+        if prior is not None:
+            self._snapshot_bytes -= len(prior[0])
+        while self._snapshots and (
+            len(self._snapshots) >= limits.snapshot_max_entries
+            or self._snapshot_bytes + len(payload) > limits.snapshot_max_bytes
+        ):
+            _, (removed, _) = self._snapshots.popitem(last=False)
+            self._snapshot_bytes -= len(removed)
+        self._snapshots[key] = (payload, self.clock.monotonic() + limits.cursor_ttl_seconds)
+        self._snapshot_bytes += len(payload)
+
+    def _snapshot_get(self, key: str) -> bytes | None:
+        self._prune_snapshots()
+        entry = self._snapshots.get(key)
+        if entry is None:
+            return None
+        self._snapshots.move_to_end(key)
+        return entry[0]
+
+    def _snapshot_stats(self) -> dict:
+        self._prune_snapshots()
+        return {
+            "entries": len(self._snapshots),
+            "payload_bytes": self._snapshot_bytes,
+            "max_entries": self.config.output.snapshot_max_entries,
+            "max_payload_bytes": self.config.output.snapshot_max_bytes,
+        }
 
     @staticmethod
     def _encode_result(result: ProviderResult) -> bytes:
@@ -253,8 +311,9 @@ class HaloService:
             if cached is not None:
                 return self._decode_result(cached[0], cache_key, cached[1])
         result = await self.coordinator.run(queue, client, cache_key, operation)
-        result.cache_key = cache_key
-        if cacheable and "SENSITIVE_URL_NOT_CACHED" not in result.warnings:
+        persist = cacheable and "SENSITIVE_URL_NOT_CACHED" not in result.warnings
+        result.cache_key = cache_key if persist else ""
+        if persist:
             self.cache.put(cache_key, self._encode_result(result), ttl_seconds)
         return result
 
@@ -281,6 +340,8 @@ class HaloService:
             for number, part in enumerate(parts, 1):
                 chunk = dict(item)
                 chunk["content"] = part
+                if number > 1:
+                    chunk["snippet"] = None
                 chunk["metadata"] = {key: value for key, value in metadata.items() if key != "links"} | {
                     "content_part": number,
                     "content_parts": len(parts),
@@ -320,6 +381,32 @@ class HaloService:
             return self._error("web_search", "policy", ValueError("QUERY_REQUIRED"))
         if "reddit.com" in (include_domains or []):
             return self._error("web_search", "policy", ValueError("REDDIT_USE_REDDIT_SEARCH"))
+        try:
+            result = await self._search_result(
+                query,
+                max_results,
+                content_type,
+                include_domains,
+                exclude_domains,
+                freshness_days,
+                client,
+                max_age_seconds,
+            )
+            return self._envelope("web_search", result, max_chars, requested=max_results)
+        except Exception as exc:
+            return self._error("web_search", "search", exc)
+
+    async def _search_result(
+        self,
+        query,
+        max_results,
+        content_type,
+        include_domains,
+        exclude_domains,
+        freshness_days,
+        client,
+        max_age_seconds,
+    ) -> ProviderResult:
         key = (
             "search:"
             + hashlib.sha256(
@@ -328,40 +415,36 @@ class HaloService:
                 ).encode()
             ).hexdigest()
         )
-        try:
 
-            async def run():
-                # This anonymous Exa tool accepts only query/result count here.
-                # Route controls it cannot express to the accountless provider.
-                if content_type == "web" and freshness_days is None:
-                    try:
-                        self.rate.admit("exa-anonymous", self.config.exa.daily_soft_limit)
-                        count = min(30, max_results * 2) if include_domains or exclude_domains else max_results
-                        result = await self.exa.search(query, count)
-                        self.rate.success("exa-anonymous")
-                        result.items = [
-                            item for item in result.items if domain_allowed(item.url, include_domains, exclude_domains)
-                        ][:max_results]
-                        result.available = len(result.items)
-                        if result.items:
-                            return result
-                    except ExaRateLimited:
-                        self.rate.rate_limited("exa-anonymous", threshold=1, cooldown_seconds=3600)
-                    except Exception:
-                        pass
-                return await self.ddgs.search(
-                    query,
-                    max_results=max_results,
-                    content_type=content_type,
-                    include_domains=include_domains,
-                    exclude_domains=exclude_domains,
-                    freshness_days=freshness_days,
-                )
+        async def run():
+            # This anonymous Exa tool accepts only query/result count here.
+            # Route controls it cannot express to the accountless provider.
+            if content_type == "web" and freshness_days is None:
+                try:
+                    self.rate.admit("exa-anonymous", self.config.exa.daily_soft_limit)
+                    count = min(30, max_results * 2) if include_domains or exclude_domains else max_results
+                    result = await self.exa.search(query, count)
+                    self.rate.success("exa-anonymous")
+                    result.items = [
+                        item for item in result.items if domain_allowed(item.url, include_domains, exclude_domains)
+                    ][:max_results]
+                    result.available = len(result.items)
+                    if result.items:
+                        return result
+                except ExaRateLimited:
+                    self.rate.rate_limited("exa-anonymous", threshold=1, cooldown_seconds=3600)
+                except Exception:
+                    pass
+            return await self.ddgs.search(
+                query,
+                max_results=max_results,
+                content_type=content_type,
+                include_domains=include_domains,
+                exclude_domains=exclude_domains,
+                freshness_days=freshness_days,
+            )
 
-            result = await self._cached_run("exa", client, key, 21600, run, max_age_seconds=max_age_seconds)
-            return self._envelope("web_search", result, max_chars, requested=max_results)
-        except Exception as exc:
-            return self._error("web_search", "search", exc)
+        return await self._cached_run("exa", client, key, 21600, run, max_age_seconds=max_age_seconds)
 
     async def web_fetch(
         self, url: str | None = None, max_chars=None, cursor=None, client="unidentified", max_age_seconds=None
@@ -370,7 +453,7 @@ class HaloService:
             return self._resume("web_fetch", cursor, max_chars)
         if not url:
             return self._error("web_fetch", "policy", ValueError("URL_REQUIRED"))
-        key = "fetch:" + hashlib.sha256(url.encode()).hexdigest()
+        key = "fetch:v2:" + hashlib.sha256(url.encode()).hexdigest()
         try:
             from .security import is_sensitive_url
 
@@ -537,7 +620,7 @@ class HaloService:
             return self._resume("document_extract", cursor, max_chars)
         if not url:
             return self._error("document_extract", "policy", ValueError("URL_REQUIRED"))
-        key = "document:v2:" + hashlib.sha256(json.dumps([url, pages, include_tables, ocr]).encode()).hexdigest()
+        key = "document:v3:" + hashlib.sha256(json.dumps([url, pages, include_tables, ocr]).encode()).hexdigest()
         try:
             from .security import is_sensitive_url
 
@@ -782,23 +865,11 @@ class HaloService:
             # Anonymous public discovery remains useful, but is explicitly not
             # represented as structured/authenticated GitHub API coverage.
             public_query = f"site:github.com/{repository} {query}" if repository else f"site:github.com {query}"
-            public = await self.web_search(
-                public_query,
-                max_results,
-                "web",
-                ["github.com"],
-                None,
-                None,
-                max_chars,
-                None,
-                client=client,
+            search_result = await self._search_result(
+                public_query, max_results, "web", ["github.com"], None, None, client, None
             )
-            if not public["ok"]:
-                public["tool"] = "github_research"
-                return public
-            # Repage the full normalized snapshot under the correct tool. Editing
-            # a rendered search page leaves its signed cursor bound to web_search.
-            search_result = self._snapshots[public["cache"]["key"]]
+            # Repage complete normalized evidence, never an already rendered page
+            # or a mutable/evictable side effect of another tool's envelope.
             fallback = ProviderResult(
                 "github-public-discovery",
                 search_result.items,
@@ -1239,6 +1310,7 @@ class HaloService:
             "started_at": self.started_at,
             "queues": self.coordinator.stats(),
             "cache": self.cache.stats(),
+            "snapshots": self._snapshot_stats(),
             "jobs": self._job_counts(),
             "profiles": {
                 "unidentified": {

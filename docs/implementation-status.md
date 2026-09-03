@@ -18,6 +18,17 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+Immutable, bounded pagination snapshots prevent refreshed/provider-mutated results
+from replacing existing cursor evidence. Count/byte/retention budgets and statistics
+are implemented; disk recovery requires a matching hash and is absent for private
+results. Formatter pagination retains collected snippet/content text, including at
+2000 characters; oversized metadata fails explicitly. Final direct-HTTP/non-PDF
+sensitive citations are redacted and not cached, with legacy namespaces bypassed.
+Local full gate: 314 tests; separate native regression: 13 tests. A native Gateway/two-client/exact-local-HTTP fixture
+proves lossless wire pages, shared eviction and private restart behavior; the
+existing native job-crash canary still passes. Exact failures, limits and upgrade
+behavior: RESULT-RETENTION-EVIDENCE-2026-09-02.md. This is not full DSH acceptance.
+
 Crawl page/depth/site controls now govern collection; local wrapper controls and
 option-specific cache keys are preserved. Scrolling is separate from navigation.
 Partial failures/timeouts retain useful evidence, public navigation shares the
@@ -38,7 +49,7 @@ PDF redirects are redacted and bypass disk cache. Exact commands, outputs and
 limits are in DOCUMENT-EXTRACTION-EVIDENCE-2026-09-02.md. The explicit native OCR
 fixture invokes the real MCP dispatcher but replaces the download with generated
 PDF bytes: it is not live-upstream, network-MCP or DSH acceptance. Advanced crawl
-interactions/captures and generic HTTP/non-PDF sensitive-redirect handling remain open.
+interactions/captures and sensitive intermediate-hop/embedded-URL handling remain open.
 
 The background-launcher checkpoint passes 227 unit/fixture tests and two explicit
 native lifecycle tests (one per PowerShell version). It fixes process identity,

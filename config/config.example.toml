@@ -16,6 +16,8 @@ backup_directory = "C:\\Users\\scott\\AppData\\Local\\HaloResearchGateway\\state
 unidentified_default_chars = 6000
 unidentified_ceiling_chars = 6000
 cursor_ttl_seconds = 3600
+snapshot_max_entries = 128
+snapshot_max_bytes = 67108864
 
 [queues]
 exa_max_pending = 20

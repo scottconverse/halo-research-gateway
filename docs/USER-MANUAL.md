@@ -140,7 +140,47 @@ Ordinary web search prefers anonymous Exa and falls back to DDGS. Domain inclusi
 
 For `web_crawl.wait_for`, supply a CSS selector such as `.quote` or `#ready`, without a `css:` prefix.
 
-Results are bounded for local-model reliability. A signed cursor means more evidence exists. Call the same tool with that cursor; continuation uses the cached snapshot and does not repeat upstream traffic. Each page remains independently citable. Models may request `2000`, `4000`, or `6000` characters within their tested host ceiling.
+Results are bounded for local-model reliability. A signed cursor means more
+collected evidence remains. Call the same tool with that cursor; continuation
+does not repeat upstream traffic. Each page remains independently citable.
+Models may request `2000`, `4000`, or `6000` characters within their host ceiling.
+Use the same output budget throughout a continuation.
+
+The cursor now identifies immutable serialized evidence by SHA-256. Refreshing
+the same URL cannot replace an older cursor's text. After restart or memory
+eviction, public disk-backed results resume only if the current cache payload
+has the identical hash. Non-cacheable/private results have no disk fallback.
+Missing/replaced results return `CURSOR_EVICTED`; expired signatures return
+`CURSOR_EXPIRED`. Start a fresh request in either case. Unexpired cursors issued
+before this update also return `CURSOR_EVICTED` because they did not bind immutable
+content. This does not delete durable jobs, vault data or source profiles.
+
+Long `snippet` and `content` fields continue on subsequent pages without silently
+trimming their tails or repeating snippets on every content chunk. Partial item
+metadata includes `text_offset` and `text_total`; these describe the snippet-plus-
+content stream within that evidence chunk. Returned-item counts count emitted
+fragments, not unique sources. Provider-level content limits still apply, and
+existing link-metadata summaries are not a complete link inventory. If an item's
+non-prose fields cannot fit even with a minimal text fragment, the call returns
+`OUTPUT_ITEM_TOO_LARGE`; request a larger allowed budget rather than treating an
+empty/truncated citation as success.
+
+Under `[output]`, `snapshot_max_entries` defaults to 128 and
+`snapshot_max_bytes` to 67108864 (64 MiB of retained UTF-8 JSON payloads). Oldest
+unused snapshots are evicted to stay within both limits. Each stored/continued
+snapshot has an idle-retention deadline using `cursor_ttl_seconds` (default 3600);
+expired entries are pruned on snapshot operations or statistics reads. Normal
+service close releases them. `/stats.snapshots` reports count, payload bytes and
+limits without source content. A single result above the configured byte budget
+fails with `SNAPSHOT_TOO_LARGE`. These are retained-payload bounds, not a hard
+bound on total Python/native RAM, temporary serialization or provider buffers.
+
+Direct HTTP and non-PDF document fallback now redact recognized sensitive final
+URL query values and skip disk caching, as PDF/browser results already do. New
+fetch/document cache namespaces prevent reuse of older unsafe entries; historical
+cache data is not scrubbed. This is not universal redaction of source prose,
+embedded links or intermediate redirect hops. See
+[evidence and remaining limits](RESULT-RETENTION-EVIDENCE-2026-09-02.md).
 
 ## 5. Connections and OAuth
 

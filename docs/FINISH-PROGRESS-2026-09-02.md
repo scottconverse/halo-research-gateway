@@ -5,6 +5,7 @@ the goal. The research-only scope remains unchanged.
 
 | Requirement | Current evidence/status |
 | --- | --- |
+| Result retention and pagination | Snapshots now bind immutable content, enforce count/serialized-byte/idle-retention limits and expose usage. All collected snippet/content text survives bounded pages; oversized metadata fails explicitly. Final HTTP/non-PDF sensitive citations are redacted/not cached. Native Gateway/two-client/exact-local-HTTP eviction/restart fixture and existing native job recovery pass. Total process memory, intermediate/embedded URLs, regular disk-cache eviction and larger retrieval/job-field limits remain open. See RESULT-RETENTION-EVIDENCE-2026-09-02.md. |
 | GitHub fallback pagination | Fixed with a full normalized snapshot and GitHub-bound cursor; regression passes without a second upstream request. |
 | Local browser requests | Exact target is passed into immutable per-context guards; host/port/path/method checks and decoded traversal rejection added. Real Chrome fixture passed. |
 | WebSocket handling | Async close is awaited; allowed local socket returns evidence and forbidden socket never reaches the server in real Chrome. |
