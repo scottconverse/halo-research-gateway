@@ -18,6 +18,15 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+GitHub whole-operation bounds now cover token setup and all follow-up requests
+with one HTTP elapsed-time and aggregate decoded-byte budget. Explicit failures
+do not return partial source collections as successful or trigger public fallback.
+Twelve new unit cases plus a native two-MCP-client/fake-API fixture cover timeout,
+overflow, independent callers, cancellation, disconnect and successful follow-up.
+No installed authenticated GitHub or DSH pass is implied; the installed service
+has not been reloaded for this source change. See
+GITHUB-OPERATION-BOUNDS-EVIDENCE-2026-09-03.md.
+
 Job request/status bounds now have source and native concurrent-client evidence:
 finite question/profile/ID fields, only the three numeric limits, explicit
 misdirected-cursor rejection, whole-status output sizing, marked previews and

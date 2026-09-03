@@ -23,6 +23,13 @@ Current acceptance is partial. The DSH tools-package mismatch was repaired on Se
 
 ## Why it exists
 
+GitHub research now shares one elapsed-time and decoded-response-byte budget
+across token setup and all API follow-ups. Exhaustion returns an explicit error,
+not an apparently successful incomplete collection. Concurrent clients have
+separate operation budgets. Native MCP/fake-API checks prove failures, connection
+cleanup and subsequent usable sources; installed authenticated/DSH acceptance
+is separate. See [GitHub operation limits](docs/GITHUB-OPERATION-BOUNDS-EVIDENCE-2026-09-03.md).
+
 Job requests now reject oversized or unknown fields before creating work, and
 the whole status reply respects the requested output size. Shortened question
 previews are marked; stored questions and evidence stay intact. Three concurrent

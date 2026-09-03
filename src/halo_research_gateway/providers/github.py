@@ -8,6 +8,8 @@ import json
 import re
 import urllib.parse
 from collections.abc import Awaitable, Callable
+from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -70,6 +72,27 @@ class GitHubProvider:
         self._installation_token_expires_at = None
         self._installation_token_connection_id: str | None = None
         self._mint_lock = asyncio.Lock()
+        self._remaining_operation_bytes: ContextVar[int | None] = ContextVar("github_operation_bytes", default=None)
+
+    @asynccontextmanager
+    async def _operation(self):
+        # Task-local accounting: parallel callers must not spend each other's
+        # budget. Token setup and every REST/GraphQL follow-up share this scope.
+        budget = self._remaining_operation_bytes.set(self.max_response_bytes)
+        deadline = asyncio.timeout(self.timeout_seconds)
+        try:
+            async with deadline:
+                yield
+                # Synchronous parsing cannot be preempted, but an over-deadline
+                # result must not be reported as successful after it returns.
+                if asyncio.get_running_loop().time() >= deadline.when():
+                    raise TimeoutError("GITHUB_OPERATION_TIMEOUT")
+        except TimeoutError:
+            if deadline.expired():
+                raise TimeoutError("GITHUB_OPERATION_TIMEOUT") from None
+            raise
+        finally:
+            self._remaining_operation_bytes.reset(budget)
 
     def _connection(self) -> dict | None:
         for connection in self.connections.list():
@@ -105,6 +128,11 @@ class GitHubProvider:
                         async for chunk in response.aiter_bytes():
                             if len(payload) + len(chunk) > self.max_response_bytes:
                                 raise ValueError("GITHUB_RESPONSE_TOO_LARGE")
+                            remaining = self._remaining_operation_bytes.get()
+                            if remaining is not None:
+                                if len(chunk) > remaining:
+                                    raise ValueError("GITHUB_OPERATION_TOO_LARGE")
+                                self._remaining_operation_bytes.set(remaining - len(chunk))
                             payload.extend(chunk)
         except (TimeoutError, httpx.TimeoutException):
             raise TimeoutError("GITHUB_REQUEST_TIMEOUT") from None
@@ -196,6 +224,17 @@ class GitHubProvider:
         )
 
     async def research(
+        self,
+        query: str,
+        repository: str | None,
+        kinds: list[str] | None,
+        ref: str | None,
+        max_results: int,
+    ) -> ProviderResult:
+        async with self._operation():
+            return await self._research(query, repository, kinds, ref, max_results)
+
+    async def _research(
         self,
         query: str,
         repository: str | None,
@@ -343,6 +382,10 @@ class GitHubProvider:
         return ProviderResult("github-api", items, warnings, found.get("discussionCount", len(items)))
 
     async def discussion_thread(self, repository: str, number: int, max_replies: int) -> ProviderResult:
+        async with self._operation():
+            return await self._discussion_thread(repository, number, max_replies)
+
+    async def _discussion_thread(self, repository: str, number: int, max_replies: int) -> ProviderResult:
         if (
             not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository)
             or not 0 <= max_replies <= 100

@@ -33,9 +33,11 @@ global_concurrency = 4
 per_origin_concurrency = 1
 per_origin_interval_seconds = 1.0
 connect_timeout_seconds = 10
+# Also shared by each complete GitHub operation, including token setup/follow-ups.
 total_timeout_seconds = 30
 max_redirects = 5
 max_compressed_bytes = 10485760
+# Also the sum of decoded response bytes for one GitHub research/discussion call.
 max_decompressed_bytes = 20971520
 
 [reddit]

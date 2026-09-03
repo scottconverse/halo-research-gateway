@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-03T10:26:15.9128643Z",
+  "generated_at": "2026-09-03T11:00:51.2379935Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -29,13 +29,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "1af8ad28d2241ae64e4ee3ad27f6d029d8ecbca8785836931ebc51aeeb259727",
-      "bytes": 12855
+      "sha256": "6f30ba0a11f4908731c4d9b0ce4f5c0fb3309b58295dff84668c635b3605e419",
+      "bytes": 13231
     },
     {
       "path": "config/config.example.toml",
-      "sha256": "19f5d6a274152fcdd5692fdfdfa9e0e9d63fbca0bd97cd6e6bfaf8fe0c0977f1",
-      "bytes": 2991
+      "sha256": "702c3b395e06207820316f6f69d19ccafe0ba5b41504cfcb66895f1e928fe130",
+      "bytes": 3156
     },
     {
       "path": "debug_cache.py",
@@ -118,6 +118,11 @@
       "bytes": 4478
     },
     {
+      "path": "docs/evidence/github-operation-bounds-20260903.json",
+      "sha256": "a2926b20f8765dd1374909fc7f3639ccd1ad0cca63cb9012c464feec0d866a0b",
+      "bytes": 65766
+    },
+    {
       "path": "docs/evidence/job-bounds-20260903.json",
       "sha256": "47c7ec94253cf9e34b898d499ba20c29369208a3cb43798cd524ae4752a2e6bc",
       "bytes": 96265
@@ -126,6 +131,11 @@
       "path": "docs/FINISH-PROGRESS-2026-09-02.md",
       "sha256": "eb8251377cd61774842a281434690fa71f59d98b345945a670f041b46b8fda99",
       "bytes": 25305
+    },
+    {
+      "path": "docs/GITHUB-OPERATION-BOUNDS-EVIDENCE-2026-09-03.md",
+      "sha256": "bee9c2d788e2dc07d71c7f0386453002f341bfeba4fa58a7965388b1d0c01888",
+      "bytes": 7806
     },
     {
       "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
@@ -149,8 +159,8 @@
     },
     {
       "path": "docs/implementation-status.md",
-      "sha256": "350e2f0d306326441939b3243940c667326c01bd822eb18b1de8366d6e101c6e",
-      "bytes": 15729
+      "sha256": "0e9aae4dcea7c6c1c50905024e294928bde8213554484556acbe780e1339495e",
+      "bytes": 16315
     },
     {
       "path": "docs/JOB-BOUNDS-EVIDENCE-2026-09-03.md",
@@ -204,8 +214,8 @@
     },
     {
       "path": "docs/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "04859ab8fad858b12ac66b0cc6ef790c29827580e054bfc30b9b73e6ba98117d",
-      "bytes": 11429
+      "sha256": "776cc3e05677e2f984bee7e872ba6a8e7718aec164525fb33e5d66865b987a9d",
+      "bytes": 11625
     },
     {
       "path": "docs/RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md",
@@ -244,8 +254,8 @@
     },
     {
       "path": "docs/USER-MANUAL.md",
-      "sha256": "628a016f19aa04fe17a2a7387a08d38d254cb4cdf29c66846f34289ee873632a",
-      "bytes": 50789
+      "sha256": "36eb923664faef1f92cb690387945993fced95d57310005d64d8384386caf59f",
+      "bytes": 51655
     },
     {
       "path": "pyproject.toml",
@@ -254,8 +264,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "6a4aacf4024c9923b131f02b8ae897008b9219096ae1329d5ee6966faf46249b",
-      "bytes": 17229
+      "sha256": "2ef376b4412c2d45fd7234d7dbdade97a6cf4ba8953896b6b060d7ecb90a7bd9",
+      "bytes": 17721
     },
     {
       "path": "scripts/HaloLifecycle.ps1",
@@ -329,8 +339,8 @@
     },
     {
       "path": "skills/halo-research/references/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "04859ab8fad858b12ac66b0cc6ef790c29827580e054bfc30b9b73e6ba98117d",
-      "bytes": 11429
+      "sha256": "776cc3e05677e2f984bee7e872ba6a8e7718aec164525fb33e5d66865b987a9d",
+      "bytes": 11625
     },
     {
       "path": "skills/halo-research/references/source-selection.md",
@@ -494,8 +504,8 @@
     },
     {
       "path": "src/halo_research_gateway/providers/github.py",
-      "sha256": "89be68836c66093dc92c1f8a747f2c8810e99513d5fe01328a9ccab0a00dcf97",
-      "bytes": 22630
+      "sha256": "35e9b82021ad7acb638e0f04f44aaaa22818b87b66950256d73634955de4b4fa",
+      "bytes": 24689
     },
     {
       "path": "src/halo_research_gateway/providers/html.py",
@@ -648,6 +658,11 @@
       "bytes": 3369
     },
     {
+      "path": "tests/acceptance/test_github_operation_native.py",
+      "sha256": "6e3869345d2cc598f49f60beac99eeca698e415fd921aade8b7860ddc260cadd",
+      "bytes": 8076
+    },
+    {
       "path": "tests/acceptance/test_human_handoff_native.py",
       "sha256": "442ad905e1c4fccc22ff9331802e0e8cc7d329f51975233cf544dc5f2693e95e",
       "bytes": 10200
@@ -776,6 +791,11 @@
       "path": "tests/unit/test_exa.py",
       "sha256": "25391331d336c3098edd7886ee39bff90b6428be27888311f49309027ee33f3c",
       "bytes": 1353
+    },
+    {
+      "path": "tests/unit/test_github_operation_bounds.py",
+      "sha256": "879dfd9c317d5ce81fe1a46f57e30774dbd4e33a8bb6eebda5efc82f802cbb80",
+      "bytes": 11248
     },
     {
       "path": "tests/unit/test_github_provider.py",

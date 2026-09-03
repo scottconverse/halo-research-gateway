@@ -145,8 +145,11 @@ Recorded implementation gaps still included in that list:
   I/O and total process/native peak memory remain open. Local/GitHub per-response
   streaming caps and active request deadlines now pass source/native checks, and
   local fetches share HTTP admission/origin pacing. Installed identity requires a
-  separate reload receipt. Whole GitHub-operation deadlines, wider shared-origin coverage,
-  decompression/JSON allocation remain. Job request fields and whole status
+  separate reload receipt. Whole GitHub-operation deadlines and aggregate decoded
+  response bytes now have unit/native MCP evidence, including token setup and
+  follow-ups. See GITHUB-OPERATION-BOUNDS-EVIDENCE-2026-09-03.md. Installed/DSH
+  acceptance, wider shared-origin coverage and decompression/JSON allocation remain.
+  Job request fields and whole status
   output are now bounded with source/native concurrent-client evidence;
   installed/DSH proof remains separate. See JOB-BOUNDS-EVIDENCE-2026-09-03.md.
   See RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md.

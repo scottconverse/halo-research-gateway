@@ -146,16 +146,29 @@ For code or documents at a particular branch, tag, or commit, pass both `reposit
 
 Discussion threads return at most the requested number of replies (up to 100), including nested replies, with at most ten additional reply-page requests. Any remaining replies are explicitly marked partial. Cursor continuation returns already-collected evidence; it does not claim to exhaust all GitHub search results.
 
-The September 3 response-bound source checkpoint applies
-`http.max_decompressed_bytes` (default 20 MiB) to each streamed GitHub API response
-and `http.total_timeout_seconds` (default 30 seconds) to its network request,
-including DNS and body reading. Oversized responses fail with
-`GITHUB_RESPONSE_TOO_LARGE`; timeout is `GITHUB_REQUEST_TIMEOUT`; invalid JSON or
-a non-object/non-array response is `GITHUB_RESPONSE_INVALID`. No partial response
-is presented as a successful source. This is per request, not the complete
-multi-request GitHub operation, and does not bound JSON object expansion,
-decompression internals or total process memory. Installed acceptance requires
-a separate verified reload receipt. See [evidence](RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md).
+`http.max_decompressed_bytes` (default 20 MiB) caps both each streamed GitHub
+API response and the sum of decoded response bytes in one research or discussion
+operation. `http.total_timeout_seconds` (default 30 seconds) also covers the
+whole operation: token-lock waiting/minting, DNS, response reading, and every
+REST/GraphQL follow-up share it. Queue admission time is separate. Concurrent
+operations receive separate budgets; cached-token reuse does not spend response
+bytes, but a new token response does.
+
+Per-request failures remain `GITHUB_RESPONSE_TOO_LARGE`, `GITHUB_REQUEST_TIMEOUT`
+and `GITHUB_RESPONSE_INVALID`. Whole-operation exhaustion reports
+`GITHUB_OPERATION_TOO_LARGE` or `GITHUB_OPERATION_TIMEOUT`. The failed operation
+returns no items or evidence continuation; any sources already read in that
+failed attempt are not retained. It does not silently switch to public search
+or call an incomplete collection successful. Narrow the query/kinds/ref scan or
+deliberately adjust the existing HTTP settings before retrying. Normal completed
+collections retain their existing partial warnings and evidence pagination.
+
+These bounds do not preempt synchronous/native parsing or bound JSON expansion,
+decompression internals or total process memory. A synchronous over-deadline
+result is rejected when control returns. Whole mixed-community searches have
+other providers outside this GitHub-specific deadline. Installed/DSH acceptance
+requires separate evidence. See [request-level evidence](RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md)
+and [whole-operation tests and limits](GITHUB-OPERATION-BOUNDS-EVIDENCE-2026-09-03.md).
 
 ### Pagination
 
