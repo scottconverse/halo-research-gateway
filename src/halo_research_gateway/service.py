@@ -639,7 +639,7 @@ class HaloService:
 
     async def deep_research(
         self,
-        question: str,
+        question: str | None = None,
         seed_urls=None,
         include_domains=None,
         exclude_domains=None,
@@ -655,7 +655,13 @@ class HaloService:
     ) -> dict:
         if cursor:
             return self._resume("deep_research", cursor, max_chars)
-        if not question.strip() or not 1 <= max_sources <= 50 or not 1 <= max_pages <= 250 or not 0 <= max_depth <= 3:
+        if (
+            not question
+            or not question.strip()
+            or not 1 <= max_sources <= 50
+            or not 1 <= max_pages <= 250
+            or not 0 <= max_depth <= 3
+        ):
             return self._error("deep_research", "policy", ValueError("INVALID_DEEP_RESEARCH_LIMITS"))
         seed_urls = list(seed_urls or [])
         key = (
@@ -884,7 +890,7 @@ class HaloService:
 
     async def transcript_fetch(
         self,
-        url: str | None,
+        url: str | None = None,
         language: str | None = None,
         prefer_human: bool = True,
         max_chars=None,
@@ -920,7 +926,7 @@ class HaloService:
 
     async def community_search(
         self,
-        query: str,
+        query: str | None = None,
         sources: list[str] | None = None,
         max_results: int = 10,
         freshness_days: int | None = None,
@@ -930,7 +936,7 @@ class HaloService:
     ) -> dict:
         if cursor:
             return self._resume("community_search", cursor, max_chars)
-        if not query.strip() or len(query) > 500 or not 1 <= max_results <= 25:
+        if not query or not query.strip() or len(query) > 500 or not 1 <= max_results <= 25:
             return self._error("community_search", "policy", ValueError("INVALID_COMMUNITY_QUERY"))
         if freshness_days is not None and freshness_days < 0:
             return self._error("community_search", "policy", ValueError("INVALID_FRESHNESS"))
@@ -957,7 +963,7 @@ class HaloService:
 
     async def community_thread(
         self,
-        url: str | None,
+        url: str | None = None,
         max_replies: int = 40,
         sort: str = "source_default",
         max_chars=None,

@@ -17,6 +17,13 @@ Current acceptance is partial. Local regression, disposable native background-la
 
 ## Why it exists
 
+All thirteen pageable readers now accept cursor-only continuation, including
+transcripts, communities and deep/job evidence. Native MCP checks prove real
+Exa-to-DDGS quota fallback and authenticated public GitHub discussion/nested-reply/
+commit-pinned document pagination in disposable instances. A fresh DSH run still
+fails before dispatch; these checks do not substitute for DSH acceptance. See
+[cursor and source evidence](docs/CURSOR-CONTRACT-AND-SOURCE-EVIDENCE-2026-09-02.md).
+
 Continuation now binds immutable evidence and retains all collected prose across
 bounded output pages. Refreshed sources cannot silently replace an older cursor's
 evidence. In-memory snapshots have configurable count/byte/idle-retention limits

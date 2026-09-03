@@ -166,7 +166,7 @@ def create_application(config: GatewayConfig | None = None):
     @server.tool(description="Collect a bounded multi-source evidence packet; returns evidence, not an uncited answer.")
     async def deep_research(
         ctx: Context,
-        question: str,
+        question: str | None = None,
         seed_urls: list[str] | None = None,
         include_domains: list[str] | None = None,
         exclude_domains: list[str] | None = None,
@@ -218,7 +218,7 @@ def create_application(config: GatewayConfig | None = None):
     @server.tool(description="Retrieve public captions or transcript text for a known media URL.")
     async def transcript_fetch(
         ctx: Context,
-        url: str,
+        url: str | None = None,
         language: str | None = None,
         prefer_human: bool = True,
         max_chars: Literal[2000, 4000, 6000] | None = None,
@@ -229,7 +229,7 @@ def create_application(config: GatewayConfig | None = None):
     @server.tool(description="Search public technical discussions outside Reddit.")
     async def community_search(
         ctx: Context,
-        query: str,
+        query: str | None = None,
         sources: list[str] | None = None,
         max_results: int = 10,
         freshness_days: int | None = None,
@@ -249,7 +249,7 @@ def create_application(config: GatewayConfig | None = None):
     @server.tool(description="Read one public community discussion thread; Reddit routes to reddit_thread.")
     async def community_thread(
         ctx: Context,
-        url: str,
+        url: str | None = None,
         max_replies: int = 40,
         sort: Literal["source_default", "top", "oldest", "newest"] = "source_default",
         max_chars: Literal[2000, 4000, 6000] | None = None,

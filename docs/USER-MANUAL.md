@@ -146,6 +146,20 @@ does not repeat upstream traffic. Each page remains independently citable.
 Models may request `2000`, `4000`, or `6000` characters within their host ceiling.
 Use the same output budget throughout a continuation.
 
+All thirteen pageable readers accept a cursor without repeating the original
+URL, query, target or research question. That includes transcripts, community
+search/threads and deep research. A new request without its required starting
+information still returns a policy error. For a research job, use the cursor
+inside `progress.result` with `deep_research` and the nested page's 4000-character
+budget; do not send it to the job-control tool or invent a placeholder question.
+
+Explicit live acceptance scripts are `tests/acceptance/search_fallback_native_live.py`
+and `tests/acceptance/github_mcp_native_live.py`. Run them from the repository with
+`uv run --locked python <script>`. Both start disposable native Gateway processes;
+they do not reconfigure the installed service. The second reuses the existing
+`gh` login in a temporary DPAPI-encrypted vault to read public GitHub sources,
+then removes that vault. It does not create a production research connection.
+
 The cursor now identifies immutable serialized evidence by SHA-256. Refreshing
 the same URL cannot replace an older cursor's text. After restart or memory
 eviction, public disk-backed results resume only if the current cache payload

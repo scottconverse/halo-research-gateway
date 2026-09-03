@@ -83,9 +83,12 @@ was proven at adapter level. These do not complete the following work:
    honors configured port/health, and cleans failed launches. Disposable native
    duplicate-start/stop/restart passes in both PowerShell versions; foreground,
    logon, browser-tree and clean-install acceptance are not covered by that test.
-5. **Close source-provider coverage gaps.** Prove the actual DDGS fallback path,
-   connected Gateway/DSH authenticated GitHub, larger/nested discussions, and
-   honest source/coverage limits. Keep intermittent upstream throttling visible.
+5. **Close source-provider coverage gaps.** Real native MCP now proves an actual
+   Exa request followed by configured-quota failover to DDGS and a fetched source.
+   Authenticated MCP in a disposable instance proves a 19-comment GitHub thread,
+   nested replies and commit-pinned document pagination. Installed connection/
+   DSH acceptance and wider provider/source limits remain; these are not proved
+   by the disposable test. Keep intermittent upstream throttling visible.
 6. **Finish delivery.** The corrected owner-only landing page is published.
    Keep operator copies aligned, finish metadata/documentation and verify CI
    for the final revision after the remaining functional acceptance work.

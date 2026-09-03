@@ -18,6 +18,17 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+Live authenticated MCP caught cursor-only requests being rejected at the interface
+for deep research, transcripts and community search/threads. Four schemas/service
+signatures are corrected; 29 new cases exercise all thirteen pageable readers,
+missing-input errors and invalid cursors. Full local gate: 343 tests. Real native
+MCP quota-driven Exa/DDGS fallback, authenticated GitHub discussion/nested replies
+and commit-pinned content pagination pass in disposable instances. DSH was rerun
+in session-21cc0995-f351-4d3e-ab03-7cac579cfd96 using its existing local Halo model:
+the same prepare error occurs before any tool result; all 120 prior sessions remain.
+No installed connection or DSH configuration was changed. Exact failures/results:
+CURSOR-CONTRACT-AND-SOURCE-EVIDENCE-2026-09-02.md. Full acceptance remains open.
+
 Immutable, bounded pagination snapshots prevent refreshed/provider-mutated results
 from replacing existing cursor evidence. Count/byte/retention budgets and statistics
 are implemented; disk recovery requires a matching hash and is absent for private
