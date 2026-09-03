@@ -10,12 +10,13 @@ from contextlib import asynccontextmanager
 
 import httpx
 
+from .. import __version__
 from ..clock import SystemClock, rfc3339
 from ..models import EvidenceItem, ProviderResult
 from ..security import ParsedTarget, is_sensitive_url, redact_url, validate_redirect, validate_resolved, validate_url
 from .html import extract_html
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) halo-research-gateway/0.1 (+local-personal-research)"
+USER_AGENT = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) halo-research-gateway/{__version__} (+local-personal-research)"
 
 
 class PinnedTransport(httpx.AsyncBaseTransport):

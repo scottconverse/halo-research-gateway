@@ -5,7 +5,7 @@ def test_package_imports():
     """Test that the package imports correctly"""
     import halo_research_gateway
 
-    assert halo_research_gateway.__version__ == "0.2.0"
+    assert halo_research_gateway.__version__ == "0.3.0"
 
 
 def test_application_has_mcp_and_operator_routes(tmp_path):
@@ -32,7 +32,7 @@ def test_application_has_mcp_and_operator_routes(tmp_path):
 
 def test_version_matches_pyproject():
     """Test that the version in __init__.py matches pyproject.toml"""
-    assert __version__ == "0.2.0"
+    assert __version__ == "0.3.0"
 
 
 async def _job_owner_for_header(tmp_path, header):

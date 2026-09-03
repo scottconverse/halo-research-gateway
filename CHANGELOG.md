@@ -2,6 +2,23 @@
 
 All notable Halo Research Gateway product releases are recorded here.
 
+## 0.3.0 — 2026-09-03 (tag pending owner approval)
+
+- Keep the Windows Gateway agent/model-neutral: DSH is the first client, while
+  Codex Desktop/CLI, Cowork and Claude Desktop/Code, OpenCode Desktop, LM Studio
+  Bionic and other local MCP clients use the same standard fourteen-tool MCP API.
+- Package the optional DSH research-state/acceptance adapter and reproducible
+  request-retention and invalid-summary patches under `integrations/dsh` without
+  changing Gateway core policy or DSH models, presets, permissions or routing.
+- Record the complete DSH workflow pass: eight successful Gateway calls, three
+  distinct required sources, continuation, two automatic compactions and a
+  supported final answer inside the six-minute and 250-word limits.
+- Align package, HTTP identity, README, user manual, implementation status,
+  release notes and landing-page source at 0.3.0. Extend the Windows quality gate
+  with the DSH Node tests and make CI lint/build the landing page.
+- Preserve the research-only boundary: no email, GitHub writes, shopping,
+  general form submission or account-operation tools.
+
 ## Unreleased — research-only scope correction (2026-09-02)
 
 - Record failed actual-model DSH summary diagnostics separately from source tests and installed behavior. Reject three prompt/composition variants without deploying them; retain the open supported-answer gate and correct the suspected crawl-forwarding defect as already working. No product code, installed configuration or version changes in this documentation checkpoint.

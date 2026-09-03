@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "halo-research-gateway"
-version = "0.2.0"
-description = ""
+version = "0.3.0"
+description = "Windows-native, agent-neutral MCP research gateway for evidence-backed web and connected-source research."
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "mcp[cli]",
@@ -51,4 +51,13 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [tool.hatch.build.targets.sdist]
-packages = ["src/halo_research_gateway"]
+include = [
+    "/src/halo_research_gateway",
+    "/README.md",
+    "/CONTRIBUTING.md",
+    "/CHANGELOG.md",
+    "/docs/USER-MANUAL.md",
+    "/docs/RELEASE-NOTES-v0.3.0.md",
+    "/docs/DSH-VERIFIED-WORKFLOW-EVIDENCE-2026-09-03.md",
+    "/integrations/dsh",
+]
