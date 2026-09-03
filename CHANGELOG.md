@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Page retained transcript timing metadata and long caption text without loss or repeated segments. Preserve citations, timestamp values, empty timing records and explicit fragment offsets at every supported output size. Native public-source MCP and process/client restart prove identical evidence at 2000/4000/6000 characters. Cursor layout 3 rejects older cursors explicitly; restart the original request. Provider collection limits and unrelated oversized metadata remain unchanged.
+
 - Fix MCP cursor-only continuation for deep research, transcripts and community search/threads; initial requests still require their starting question/query/URL. Add all-reader regression coverage and explicit native live scripts for real Exa-to-DDGS quota fallback and authenticated GitHub discussion/nested-reply/ref pagination. Fresh DSH acceptance still fails before dispatch; no DSH settings, models or permissions changed.
 
 - Bind pagination to immutable evidence; keep collected text across bounded pages instead of trimming it away or repeating snippets. Bound retained snapshots by count, serialized bytes and idle age, expose usage, and reject oversized/unavailable results explicitly. Public disk continuation requires the original content hash; private results cannot recover old disk entries. Redact recognized sensitive final direct-HTTP/non-PDF citation URLs and bypass legacy fetch/document cache namespaces. Old cursors need a fresh request; durable jobs and historical data remain intact. Total native/process memory, broader source limits and full DSH acceptance remain separate.

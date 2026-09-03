@@ -18,6 +18,16 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+Transcript metadata-aware paging fixes the installed 2000-character rejection
+and repeated-segment behavior. The first nine corrected assertion failures were
+observed before implementation; focused regression and real native public-source
+MCP now preserve text and timestamps at every supported budget and across a new
+process/client. Cursor layout 3 rejects earlier layouts explicitly. Provider
+5000-content-segment/200-structured-segment limits and unrelated oversized metadata
+remain unchanged; this is not full source-size or DSH acceptance. Full local gate:
+359 tests. Exact commands, test-author mistakes, native SDK error and corrected results are retained in
+TRANSCRIPT-PAGING-EVIDENCE-2026-09-02.md.
+
 Live authenticated MCP caught cursor-only requests being rejected at the interface
 for deep research, transcripts and community search/threads. Four schemas/service
 signatures are corrected; 29 new cases exercise all thirteen pageable readers,

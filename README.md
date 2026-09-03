@@ -17,6 +17,12 @@ Current acceptance is partial. Local regression, disposable native background-la
 
 ## Why it exists
 
+Transcript timing metadata now continues across bounded pages instead of making
+short captions fail or repeating every segment. Native MCP returns identical
+text and timestamps at 2000/4000/6000 characters and after process/client restart.
+Older cursor layouts require a fresh request; no jobs or source data are deleted.
+See [transcript paging evidence and limits](docs/TRANSCRIPT-PAGING-EVIDENCE-2026-09-02.md).
+
 All thirteen pageable readers now accept cursor-only continuation, including
 transcripts, communities and deep/job evidence. Native MCP checks prove real
 Exa-to-DDGS quota fallback and authenticated public GitHub discussion/nested-reply/

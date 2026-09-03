@@ -20,11 +20,11 @@ def build_envelope(
     encode_cursor=None,
     warnings=None,
 ):
-    """Page complete evidence, carrying unreturned prose in the cursor offset.
+    """Page complete evidence, carrying unreturned data in the cursor offset.
 
     The exact MCP JSON representation includes the cursor and all metadata.
-    An item whose non-prose fields cannot fit fails explicitly; citations and
-    evidence text are never silently deleted to meet a character budget.
+    Caption segment text is pageable alongside prose; its timestamps accompany
+    each fragment. Other oversized non-prose fields still fail explicitly.
     """
     state = cursor_state or {}
     index, offset = state.get("i", 0), state.get("o", 0)
@@ -68,30 +68,59 @@ def build_envelope(
             value["page"]["serialized_chars"] = size
         return value
 
-    def prose_slice(item, start, count):
+    def data_size(item):
+        segments = (item.get("metadata") or {}).get("segments") or []
+        return (
+            len(item.get("snippet") or "")
+            + len(item.get("content") or "")
+            + sum(max(1, len(segment["text"])) for segment in segments)
+        )
+
+    def evidence_slice(item, start, count):
         copied = dict(item)
         snippet, content = item.get("snippet") or "", item.get("content") or ""
         end = start + count
+        metadata = dict(item.get("metadata") or {})
+        segments = metadata.get("segments") or []
+        total = data_size(item)
+        split = bool(start or count < total)
         if snippet:
             copied["snippet"] = snippet[start : min(end, len(snippet))]
         if content:
             copied["content"] = content[max(0, start - len(snippet)) : max(0, end - len(snippet))]
-        if start or count < len(snippet) + len(content):
-            copied["metadata"] = dict(item.get("metadata") or {}) | {
-                "text_offset": start,
-                "text_total": len(snippet) + len(content),
-            }
+        if segments:
+            selected_segments = []
+            position = len(snippet) + len(content)
+            for segment_index, segment in enumerate(segments):
+                text = segment["text"]
+                # Empty captions occupy one cursor unit, retaining their timing.
+                span = max(1, len(text))
+                if start < position + span and end > position:
+                    left, right = max(0, start - position), min(len(text), end - position)
+                    part = dict(segment) | {"text": text[left:right]}
+                    if split:
+                        part["segment_index"] = segment_index
+                    if left or right < len(text):
+                        part.update(text_offset=left, text_total=len(text))
+                    selected_segments.append(part)
+                position += span
+            metadata["segments"] = selected_segments
+        if split:
+            prefix = "data" if segments else "text"
+            metadata.update({f"{prefix}_offset": start, f"{prefix}_total": total})
+        if metadata or "metadata" in item:
+            copied["metadata"] = metadata
         return copied
 
     selected = []
     best = render([], index, offset)
     while index < len(items):
         item = items[index]
-        total = len(item.get("snippet") or "") + len(item.get("content") or "")
+        total = data_size(item)
         if not 0 <= offset <= total:
             raise ValueError("CURSOR_INVALID")
         remaining = total - offset
-        whole = prose_slice(item, offset, remaining)
+        whole = evidence_slice(item, offset, remaining)
         candidate = render([*selected, whole], index + 1)
         if candidate["page"]["serialized_chars"] <= char_budget:
             selected.append(whole)
@@ -100,11 +129,11 @@ def build_envelope(
         if selected:
             break
         # No complete item fits. Find the largest prefix of this one item's
-        # remaining prose that fits with its actual signed continuation cursor.
+        # remaining data that fits with its actual signed continuation cursor.
         low, high, partial = 1, remaining - 1, None
         while low <= high:
             count = (low + high) // 2
-            candidate = render([prose_slice(item, offset, count)], index, offset + count)
+            candidate = render([evidence_slice(item, offset, count)], index, offset + count)
             if candidate["page"]["serialized_chars"] <= char_budget:
                 partial = candidate
                 low = count + 1

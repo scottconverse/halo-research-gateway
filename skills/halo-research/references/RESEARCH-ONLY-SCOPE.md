@@ -119,6 +119,10 @@ Recorded implementation gaps still included in that list:
   bind immutable evidence; full collected prose survives bounded pages, and
   unavailable/oversized results fail explicitly. Native two-client MCP/exact-local
   HTTP eviction/restart and existing job recovery pass. See RESULT-RETENTION-EVIDENCE-2026-09-02.md.
+- Retained transcript timing metadata now pages losslessly at all supported output
+  sizes, including long/Unicode captions; a real public source and native restart
+  pass. Provider collection caps and unrelated oversized metadata remain. See
+  TRANSCRIPT-PAGING-EVIDENCE-2026-09-02.md.
 - Total process/native peak memory, regular disk-cache eviction on ordinary reads,
   local/GitHub response/shared limits and arbitrary job-field bounds remain open.
 - Background creation-time/duplicate-owner safeguards are fixed and native-tested;

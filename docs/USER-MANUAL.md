@@ -166,8 +166,9 @@ eviction, public disk-backed results resume only if the current cache payload
 has the identical hash. Non-cacheable/private results have no disk fallback.
 Missing/replaced results return `CURSOR_EVICTED`; expired signatures return
 `CURSOR_EXPIRED`. Start a fresh request in either case. Unexpired cursors issued
-before this update also return `CURSOR_EVICTED` because they did not bind immutable
-content. This does not delete durable jobs, vault data or source profiles.
+before metadata-aware cursor layout 3 also return `CURSOR_EVICTED`: the paging
+layout changed, so old positions must not be silently reinterpreted. This does
+not delete durable jobs, vault data or source profiles.
 
 Long `snippet` and `content` fields continue on subsequent pages without silently
 trimming their tails or repeating snippets on every content chunk. Partial item
@@ -178,6 +179,29 @@ existing link-metadata summaries are not a complete link inventory. If an item's
 non-prose fields cannot fit even with a minimal text fragment, the call returns
 `OUTPUT_ITEM_TOO_LARGE`; request a larger allowed budget rather than treating an
 empty/truncated citation as success.
+
+Transcript pages also carry `metadata.segments` incrementally. Follow every cursor
+to collect both the readable transcript and the retained structured timestamps;
+some later pages contain timing metadata without additional `content`. Do not
+treat an empty `content` field as completion when a cursor remains. Each fragment
+still contains the citation and language/source metadata.
+
+For structured reassembly, use each segment's zero-based `segment_index` when
+present. A segment split across pages preserves its start/end time and supplies
+`text_offset`/`text_total` for its text fragment. Concatenate fragments in offset
+order. A complete, unsplit result keeps the ordinary segment array. Item-level
+`data_offset`/`data_total` describe the logical snippet/content/segment-text stream;
+an empty timing record consumes one position. Ordinary non-caption item offsets
+remain `text_offset`/`text_total`. Returned-item counts are fragments, not sources.
+
+Run `uv run --locked python tests/acceptance/transcript_mcp_native_live.py` for
+the explicit public-source/native-restart proof. It checks identical text and
+timestamps at all three page sizes in disposable processes. No installed service,
+account or personal profile is changed. The provider still collects at most 5000
+caption segments and retains structured metadata for the first 200; beyond that
+it reports truncation warnings while the collected readable transcript keeps its
+timestamps. This change does not invent unavailable captions, run speech-to-text,
+or make arbitrary oversized titles/publishers/other metadata fit.
 
 Under `[output]`, `snapshot_max_entries` defaults to 128 and
 `snapshot_max_bytes` to 67108864 (64 MiB of retained UTF-8 JSON payloads). Oldest

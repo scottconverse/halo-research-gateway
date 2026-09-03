@@ -180,7 +180,7 @@ class HaloService:
                     "s": snapshot_key,
                     "k": result.cache_key,
                     "b": budget,
-                    "v": 2,
+                    "v": 3,
                 }
             )
 
@@ -205,7 +205,7 @@ class HaloService:
     def _resume(self, tool: str, cursor: str, max_chars: int | None) -> dict:
         try:
             state = self.cursors.decode(cursor)
-            if state.get("v") != 2:
+            if state.get("v") != 3:
                 return self._error(tool, "pagination", ValueError("CURSOR_EVICTED"))
             if state.get("t") != tool:
                 raise CursorError("cursor does not match tool or schema")
@@ -332,6 +332,11 @@ class HaloService:
             if "links" in metadata:
                 metadata["links"] = metadata["links"][:10]
             item["metadata"] = metadata
+            if metadata.get("segments"):
+                # The envelope pages caption text and timing metadata together.
+                # Pre-chunking prose would repeat the entire segment array.
+                output.append(item)
+                continue
             content = item.get("content") or ""
             if len(content) <= chunk_size:
                 output.append(item)

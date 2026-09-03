@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-03T03:59:03.0972747Z",
+  "generated_at": "2026-09-03T04:28:34.1166337Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -29,8 +29,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "b83ecf0b78b65fcb58e8aabdc854991982a367791b9a6dca7a388ad749d5616f",
-      "bytes": 7522
+      "sha256": "4f6cd6bd340794c9d825dfae013e63c6dd4241c69feba6cf212398615be21d43",
+      "bytes": 8009
     },
     {
       "path": "config/config.example.toml",
@@ -94,8 +94,8 @@
     },
     {
       "path": "docs/FINISH-PROGRESS-2026-09-02.md",
-      "sha256": "948227f7d8b8ad2dc3805664f1072f7ad9a236ca943473c2525ee5c606e14b2b",
-      "bytes": 22311
+      "sha256": "d2c1c3d12960972b11eabc5852abdc6fd33067e42396e3299d7c3ff8370ad232",
+      "bytes": 22817
     },
     {
       "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
@@ -114,8 +114,8 @@
     },
     {
       "path": "docs/implementation-status.md",
-      "sha256": "6a478bf7f7d431ec789d5b1e2ec8a5c4ac9c2f00323ea3303115652f9058b799",
-      "bytes": 7939
+      "sha256": "6f69e1a11f83591b3124dd2470e2a5e5b052ed33f247c65d37700fe40f3db2a0",
+      "bytes": 8649
     },
     {
       "path": "docs/JOB-CONTROL-EVIDENCE-2026-09-02.md",
@@ -159,8 +159,8 @@
     },
     {
       "path": "docs/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "ce6e17309cfdb0e4b847bab94a066c3da3700ae9564ca37e7d377d097278f779",
-      "bytes": 8744
+      "sha256": "3cd94286d6303949996137620c207dd1f53b2caf8f401c5e39a743b31176534d",
+      "bytes": 9031
     },
     {
       "path": "docs/RESULT-RETENTION-EVIDENCE-2026-09-02.md",
@@ -183,9 +183,14 @@
       "bytes": 6047
     },
     {
+      "path": "docs/TRANSCRIPT-PAGING-EVIDENCE-2026-09-02.md",
+      "sha256": "bfffb050a2c4b7f9853ff05dc2e2c2b5c02e5675357a54865a06e79cc295464b",
+      "bytes": 59346
+    },
+    {
       "path": "docs/USER-MANUAL.md",
-      "sha256": "062325986820a245cb0239ff8fae88e5542acf8dacf146966d4f58c26c4e68ae",
-      "bytes": 33105
+      "sha256": "71d87e651bfb876c657edf71a9cc30e76f705ccc78a5059b7d810cbe458a760b",
+      "bytes": 34742
     },
     {
       "path": "pyproject.toml",
@@ -194,8 +199,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "ac3ac6b497e7947177a7b2b21d2338950014f9bf7888c50d06a1bde7de1bc168",
-      "bytes": 12292
+      "sha256": "1b513d86074377801191f72ef766d9f4714424c4743aa04a6aa6e7b840f7a8a4",
+      "bytes": 12707
     },
     {
       "path": "scripts/HaloLifecycle.ps1",
@@ -269,8 +274,8 @@
     },
     {
       "path": "skills/halo-research/references/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "ce6e17309cfdb0e4b847bab94a066c3da3700ae9564ca37e7d377d097278f779",
-      "bytes": 8744
+      "sha256": "3cd94286d6303949996137620c207dd1f53b2caf8f401c5e39a743b31176534d",
+      "bytes": 9031
     },
     {
       "path": "skills/halo-research/references/source-selection.md",
@@ -359,8 +364,8 @@
     },
     {
       "path": "src/halo_research_gateway/envelope.py",
-      "sha256": "c2333a67a4d2c113ffe6f74a5b16f975534078263d82768662a6dd0da0aabea1",
-      "bytes": 5710
+      "sha256": "7be6df67fcd10bda1dd0058a692422c374f2c2303af6d1dbfe36c37ce0aba564",
+      "bytes": 7044
     },
     {
       "path": "src/halo_research_gateway/jobs/__init__.py",
@@ -479,8 +484,8 @@
     },
     {
       "path": "src/halo_research_gateway/service.py",
-      "sha256": "b22e600cc388eab561f8488d979084673c80539cc4baa8f86f292c32824990e8",
-      "bytes": 56501
+      "sha256": "9a69a5ef547e9bf4f8b4837f891f2477e4ea8060898637daeff1b0d89d67bcfa",
+      "bytes": 56759
     },
     {
       "path": "src/halo_research_gateway/tools/__init__.py",
@@ -586,6 +591,11 @@
       "path": "tests/acceptance/test_result_retention_native.py",
       "sha256": "6a5b07c0a0291b521cd87b17be48c0ba7b99eb72a0af4640547172da77d88b03",
       "bytes": 6249
+    },
+    {
+      "path": "tests/acceptance/transcript_mcp_native_live.py",
+      "sha256": "f516c9d8029dd3bc317bac5a31d8ba11888fe12ba5d687eac0c37282aa5107e7",
+      "bytes": 9273
     },
     {
       "path": "tests/unit/test_active_cancellation.py",
@@ -751,6 +761,11 @@
       "path": "tests/unit/test_transcript_community.py",
       "sha256": "0d75a2af294a99feb1d06770b0f683f82ebbb16eee9df977a2da7fd7c85169c7",
       "bytes": 19960
+    },
+    {
+      "path": "tests/unit/test_transcript_paging.py",
+      "sha256": "ca860f04905ee2ac0916eca49cd4d4d5d0d8ac840cae541b80c082c37a02d782",
+      "bytes": 6125
     },
     {
       "path": "tests/unit/test_v15_state.py",
