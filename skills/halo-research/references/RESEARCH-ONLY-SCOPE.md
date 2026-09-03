@@ -123,8 +123,12 @@ Recorded implementation gaps still included in that list:
   sizes, including long/Unicode captions; a real public source and native restart
   pass. Provider collection caps and unrelated oversized metadata remain. See
   TRANSCRIPT-PAGING-EVIDENCE-2026-09-02.md.
-- Total process/native peak memory, regular disk-cache eviction on ordinary reads,
-  local/GitHub response/shared limits and arbitrary job-field bounds remain open.
+- Ordinary disk-cache reads/writes now prune expiry and enforce compressed-payload
+  capacity; writes commit atomically and oversized evidence remains readable with
+  an explicit uncached warning. Native two-client/restart/lowered-limit checks pass.
+  See CACHE-LIMITS-EVIDENCE-2026-09-02.md. Physical SQLite/WAL size, synchronous cache
+  I/O and total process/native peak memory remain open, alongside local/GitHub
+  response/shared limits and arbitrary job-field bounds.
 - Background creation-time/duplicate-owner safeguards are fixed and native-tested;
   foreground ownership, strict wall-clock startup bounds, logon, long-running
   and clean-install acceptance remain.

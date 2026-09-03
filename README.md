@@ -17,6 +17,13 @@ Current acceptance is partial. Local regression, disposable native background-la
 
 ## Why it exists
 
+Ordinary research traffic now keeps the shared disk cache within its configured
+compressed-payload limits. Expired or over-limit entries are removed atomically;
+results too large to save remain readable with an explicit uncached warning.
+Two native clients and restart/lowered-limit tests pass. This does not bound the
+physical database file or total process memory. See
+[cache-limit evidence and operating limits](docs/CACHE-LIMITS-EVIDENCE-2026-09-02.md).
+
 Transcript timing metadata now continues across bounded pages instead of making
 short captions fail or repeating every segment. Native MCP returns identical
 text and timestamps at 2000/4000/6000 characters and after process/client restart.

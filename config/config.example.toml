@@ -6,6 +6,8 @@ log_level = "INFO"
 
 [storage]
 database = "C:\\Users\\scott\\AppData\\Local\\HaloResearchGateway\\state\\gateway.db"
+# Positive compressed-payload limits; not physical SQLite/WAL file-size limits.
+# Gateway reads/writes prune expired/over-limit rows. Oversized results stay readable uncached.
 cache_max_bytes = 1073741824
 entry_max_bytes = 5242880
 inline_payload_max_bytes = 262144

@@ -29,6 +29,23 @@ If port 8765 is occupied, identify the owning PID and command line; do not kill 
 
 The registered task is `Halo Research Gateway`. The 2026-09-01 recovery drill performed an ownership-checked stop, invoked the task, restored `status=ok`, and recorded task result `0x00000000`. A future recovery claim must repeat the drill against the current source/installer identity rather than relying on that historical receipt.
 
+## Shared disk-cache limits
+
+The Gateway enforces positive `[storage]` cache/entry limits on compressed payload
+bytes. Every write prunes within its SQLite transaction; ordinary cache reads
+also reconcile expiry and lowered limits. `/stats.cache` exposes both caps.
+Only `cache_entries` rows are pruned. Never delete the shared database to clear
+research cache: it also contains durable jobs, connections and provider state.
+
+This is not a physical SQLite/WAL/log/backup size cap or idle cleanup timer.
+The database may retain allocated free pages; no VACUUM is performed. SQLite I/O
+and gzip remain synchronous and do not yet have a strict event-loop deadline or
+peak-memory guarantee. In-memory cursor traffic alone does not prune disk rows.
+
+`RESULT_NOT_CACHED_TOO_LARGE` preserves usable evidence without a disk-recoverable
+key. An evicted/uncached cursor may need a fresh request after restart. Native
+validation and exact bounds: [cache-limit evidence](CACHE-LIMITS-EVIDENCE-2026-09-02.md).
+
 ## Research provider setup
 
 - Use the operator console's read-only GitHub App form for research.

@@ -18,6 +18,15 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+Shared disk-cache capacity now applies atomically to every Gateway write, with
+expiry/lowered-limit pruning on ordinary reads. Oversized source/job evidence stays
+readable without advertising disk recovery. Positive limits and visible caps have
+regressions; the low-level manual-eviction API remains compatible. The full local
+gate passes 382 tests. Native two-client public fetches, actual eviction, process
+restart and lowered limits pass. Physical SQLite/WAL size, synchronous I/O,
+native memory and broad DSH acceptance remain open. See
+CACHE-LIMITS-EVIDENCE-2026-09-02.md for baseline, assertion failures and exact results.
+
 Transcript metadata-aware paging fixes the installed 2000-character rejection
 and repeated-segment behavior. The first nine corrected assertion failures were
 observed before implementation; focused regression and real native public-source

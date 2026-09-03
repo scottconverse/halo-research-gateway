@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Enforce shared compressed cache capacity atomically on every Gateway write; ordinary cache hits/misses also remove expired and over-limit rows. Reject nonpositive limits, expose configured limits in statistics, and reconcile previously oversized entries after lowering limits. Oversized research/job results remain readable with `RESULT_NOT_CACHED_TOO_LARGE` and no disk-recovery key. Native two-client/restart/lowered-limit checks pass. Physical SQLite/WAL size, synchronous cache I/O, broader source bounds and DSH acceptance remain separate.
+
 - Page retained transcript timing metadata and long caption text without loss or repeated segments. Preserve citations, timestamp values, empty timing records and explicit fragment offsets at every supported output size. Native public-source MCP and process/client restart prove identical evidence at 2000/4000/6000 characters. Cursor layout 3 rejects older cursors explicitly; restart the original request. Provider collection limits and unrelated oversized metadata remain unchanged.
 
 - Fix MCP cursor-only continuation for deep research, transcripts and community search/threads; initial requests still require their starting question/query/URL. Add all-reader regression coverage and explicit native live scripts for real Exa-to-DDGS quota fallback and authenticated GitHub discussion/nested-reply/ref pagination. Fresh DSH acceptance still fails before dispatch; no DSH settings, models or permissions changed.

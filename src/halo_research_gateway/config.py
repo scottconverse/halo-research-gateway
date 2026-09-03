@@ -43,8 +43,8 @@ class ServerConfig(StrictModel):
 
 class StorageConfig(StrictModel):
     database: str = str(ROOT / "state" / "gateway.db")
-    cache_max_bytes: int = 1_073_741_824
-    entry_max_bytes: int = 5_242_880
+    cache_max_bytes: int = Field(1_073_741_824, ge=1)
+    entry_max_bytes: int = Field(5_242_880, ge=1)
     inline_payload_max_bytes: int = 262_144
     content_directory: str = str(ROOT / "state" / "content" / "sha256")
     backup_directory: str = str(ROOT / "state" / "backups")

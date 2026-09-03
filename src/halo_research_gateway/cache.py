@@ -11,7 +11,7 @@ from halo_research_gateway.cache_errors import EntryTooLargeError
 class Cache:
     """SQLite-backed cache with TTL and LRU eviction."""
 
-    def __init__(self, db_path: str, max_bytes: int, entry_max_bytes: int, clock=None):
+    def __init__(self, db_path: str, max_bytes: int, entry_max_bytes: int, clock=None, *, enforce_limits: bool = False):
         """
         Initialize the cache.
 
@@ -20,11 +20,14 @@ class Cache:
             max_bytes: Maximum total bytes to use for cached entries
             entry_max_bytes: Maximum size (in bytes) for a single cache entry
             clock: Callable returning UTC datetime (defaults to datetime.utcnow)
+            enforce_limits: Atomically bound every write. HaloService always
+                enables this; the low-level manual-eviction API stays compatible.
         """
         self.db_path = db_path
         self.max_bytes = max_bytes
         self.entry_max_bytes = entry_max_bytes
         self.clock = clock or (lambda: datetime.now(UTC))
+        self.enforce_limits = enforce_limits
 
     def put(self, key: str, value: bytes, ttl_seconds: int) -> None:
         """
@@ -36,7 +39,7 @@ class Cache:
             ttl_seconds: Time-to-live in seconds
 
         Raises:
-            EntryTooLargeError: If the compressed entry exceeds entry_max_bytes
+            EntryTooLargeError: If the compressed entry exceeds an admission limit
         """
         # Compress the value
         try:
@@ -44,13 +47,14 @@ class Cache:
         except Exception as e:
             raise EntryTooLargeError(f"Failed to compress entry: {str(e)}") from e
 
-        if len(compressed_value) > self.entry_max_bytes:
-            raise EntryTooLargeError(
-                f"Entry size {len(compressed_value)} exceeds maximum allowed {self.entry_max_bytes} bytes"
-            )
+        limit = min(self.entry_max_bytes, self.max_bytes) if self.enforce_limits else self.entry_max_bytes
+        if len(compressed_value) > limit:
+            raise EntryTooLargeError(f"Entry size {len(compressed_value)} exceeds maximum allowed {limit} bytes")
 
         with closing(sqlite3.connect(self.db_path)) as conn:
             conn.execute("PRAGMA journal_mode=WAL")
+            if self.enforce_limits:
+                conn.execute("BEGIN IMMEDIATE")
 
             # Calculate expiry time
             now = self.clock()
@@ -82,6 +86,8 @@ class Cache:
                 ),
             )
 
+            if self.enforce_limits:
+                self._evict_in_transaction(conn, now.isoformat())
             conn.commit()
 
     def get(self, key: str, max_age_seconds: int | None = None) -> bytes | None:
@@ -101,6 +107,7 @@ class Cache:
         """
         with closing(sqlite3.connect(self.db_path)) as conn:
             conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("BEGIN IMMEDIATE")
 
             # Get the cache entry
             cursor = conn.execute(
@@ -112,59 +119,56 @@ class Cache:
             )
 
             row = cursor.fetchone()
-            if not row:
-                return None
-
-            compressed_value, uncompressed_size, expires_at_str, created_at_str = row
-
-            # Check expiration
             now = self.clock()
-            expires_at = datetime.fromisoformat(expires_at_str)
-
-            if now > expires_at:
-                return None
-
-            # If max_age_seconds is specified and entry is too old, return None
-            if max_age_seconds is not None:
-                created_at = datetime.fromisoformat(created_at_str)
-                age_seconds = (now - created_at).total_seconds()
-                if age_seconds > max_age_seconds:
-                    return None
-
-            # Update last accessed time
-            conn.execute(
-                """
-                UPDATE cache_entries SET last_accessed_at = ?
-                WHERE cache_key = ?
-            """,
-                (now.isoformat(), key),
-            )
+            usable = False
+            if row:
+                compressed_value, _, expires_at_str, created_at_str = row
+                age_seconds = max(0, (now - datetime.fromisoformat(created_at_str)).total_seconds())
+                usable = (
+                    len(compressed_value) <= min(self.entry_max_bytes, self.max_bytes)
+                    and now < datetime.fromisoformat(expires_at_str)
+                    and (max_age_seconds is None or age_seconds <= max_age_seconds)
+                )
+                if usable:
+                    # Touch before pruning so an accessed pre-upgrade entry is
+                    # considered recent. A max-age miss alone never deletes it.
+                    conn.execute(
+                        "UPDATE cache_entries SET last_accessed_at = ? WHERE cache_key = ?", (now.isoformat(), key)
+                    )
+            self._evict_in_transaction(conn, now.isoformat())
             conn.commit()
+            if usable:
+                return gzip.decompress(compressed_value), int(age_seconds)
+            return None
 
-            # Decompress and return value
-            created_at = datetime.fromisoformat(created_at_str)
-            age_seconds = max(0, int((now - created_at).total_seconds()))
-            return gzip.decompress(compressed_value), age_seconds
+    def _evict_in_transaction(self, conn, now: str) -> None:
+        """Prune only cache rows, inside the caller's serialized transaction."""
+        conn.execute(
+            "DELETE FROM cache_entries WHERE expires_at <= ? OR compressed_bytes > ?",
+            (now, min(self.entry_max_bytes, self.max_bytes)),
+        )
+        conn.execute(
+            """
+            WITH newest_first AS (
+                SELECT cache_key, SUM(compressed_bytes) OVER (
+                    ORDER BY last_accessed_at DESC, rowid DESC
+                ) AS retained_bytes
+                FROM cache_entries
+            )
+            DELETE FROM cache_entries WHERE cache_key IN (
+                SELECT cache_key FROM newest_first WHERE retained_bytes > ?
+            )
+            """,
+            (self.max_bytes,),
+        )
 
     def evict(self) -> None:
         now = self.clock().isoformat()
         with closing(sqlite3.connect(self.db_path)) as conn:
             conn.execute("PRAGMA journal_mode=WAL")
-            # 1. expired entries first
-            conn.execute("DELETE FROM cache_entries WHERE expires_at <= ?", (now,))
+            conn.execute("BEGIN IMMEDIATE")
+            self._evict_in_transaction(conn, now)
             conn.commit()
-            # 2. then least-recently-accessed until the total fits
-            while True:
-                total = conn.execute("SELECT COALESCE(SUM(compressed_bytes), 0) FROM cache_entries").fetchone()[0]
-                if total <= self.max_bytes:
-                    break
-                row = conn.execute(
-                    "SELECT cache_key FROM cache_entries ORDER BY last_accessed_at ASC, rowid ASC LIMIT 1"
-                ).fetchone()
-                if row is None:
-                    break  # nothing left to remove
-                conn.execute("DELETE FROM cache_entries WHERE cache_key = ?", (row[0],))
-                conn.commit()
 
     def delete(self, key: str) -> None:
         with closing(sqlite3.connect(self.db_path)) as conn:
@@ -186,4 +190,9 @@ class Cache:
             """)
             count, size = cursor.fetchone()
 
-            return {"entries": count or 0, "total_compressed_bytes": size or 0}
+            return {
+                "entries": count or 0,
+                "total_compressed_bytes": size or 0,
+                "max_bytes": self.max_bytes,
+                "entry_max_bytes": self.entry_max_bytes,
+            }

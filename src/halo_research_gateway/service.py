@@ -14,6 +14,7 @@ import httpx
 
 from . import __version__
 from .cache import Cache
+from .cache_errors import EntryTooLargeError
 from .clock import SystemClock, rfc3339
 from .config import GatewayConfig
 from .connections.chrome_import import ChromeImporter
@@ -49,7 +50,9 @@ class HaloService:
         self.clock = SystemClock()
         config.ensure_directories()
         migrate(config.storage.database, config.storage.backup_directory)
-        self.cache = Cache(config.storage.database, config.storage.cache_max_bytes, config.storage.entry_max_bytes)
+        self.cache = Cache(
+            config.storage.database, config.storage.cache_max_bytes, config.storage.entry_max_bytes, enforce_limits=True
+        )
         self.coordinator = Coordinator(
             {
                 "exa": QueuePolicy(
@@ -314,8 +317,19 @@ class HaloService:
         persist = cacheable and "SENSITIVE_URL_NOT_CACHED" not in result.warnings
         result.cache_key = cache_key if persist else ""
         if persist:
-            self.cache.put(cache_key, self._encode_result(result), ttl_seconds)
+            self._cache_result(result, cache_key, ttl_seconds)
         return result
+
+    def _cache_result(self, result: ProviderResult, key: str, ttl: int, encoded: bytes | None = None) -> None:
+        """Cache capacity must not turn already-collected evidence into a failure."""
+        result.cache_key = ""
+        try:
+            self.cache.put(key, encoded if encoded is not None else self._encode_result(result), ttl)
+        except EntryTooLargeError:
+            if "RESULT_NOT_CACHED_TOO_LARGE" not in result.warnings:
+                result.warnings.append("RESULT_NOT_CACHED_TOO_LARGE")
+        else:
+            result.cache_key = key
 
     @staticmethod
     def _chunk_items(items: list[dict], budget: int) -> list[dict]:
@@ -1157,9 +1171,8 @@ class HaloService:
                     warnings.append(status["error_code"])
                 result = ProviderResult("halo-deep", items, sorted(set(warnings)), len(items))
                 encoded = self._encode_result(result)
-                result.cache_key = "job-evidence:" + hashlib.sha256(encoded).hexdigest()
-                self.cache.put(result.cache_key, encoded, self.config.output.cursor_ttl_seconds)
-                self.cache.evict()
+                key = "job-evidence:" + hashlib.sha256(encoded).hexdigest()
+                self._cache_result(result, key, self.config.output.cursor_ttl_seconds, encoded)
                 progress["result"] = self._envelope("deep_research", result, 4000)
                 progress["partial"] = bool(
                     warnings or progress["result"]["page"]["next_cursor"] or status["state"] != "complete"

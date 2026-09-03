@@ -220,6 +220,35 @@ cache data is not scrubbed. This is not universal redaction of source prose,
 embedded links or intermediate redirect hops. See
 [evidence and remaining limits](RESULT-RETENTION-EVIDENCE-2026-09-02.md).
 
+### Disk-cache capacity
+
+Under `[storage]`, `cache_max_bytes` defaults to 1073741824 (1 GiB) and
+`entry_max_bytes` to 5242880 (5 MiB). Both must be positive. They limit compressed
+research payloads, not the physical SQLite file, WAL, backups, logs or total RAM.
+`/stats.cache` reports entries, compressed bytes and both configured limits.
+
+Every Gateway cache write removes expired or over-limit entries before committing,
+so other clients cannot observe a committed overshoot. Ordinary disk-cache hits
+and misses also prune old entries; lowering a limit takes effect on that traffic
+or explicit cache maintenance. This is activity-driven, not an idle timer.
+In-memory cursor continuation and statistics reads alone do not prune disk rows.
+Least-recently-used evidence is discarded first. Other tables, including jobs,
+connections, provider limits and historical receipts, are not deleted.
+
+When a result cannot fit either cache limit, the source evidence remains readable
+and pageable within the existing snapshot limits. It includes
+`RESULT_NOT_CACHED_TOO_LARGE` and an empty `cache.key`. That warning means the
+result was not saved in this cache; it does not mean retrieval failed. Its cursor
+cannot recover after process restart and may expire or be evicted from memory.
+Start a fresh request if it becomes unavailable. Durable job checkpoints are
+separate; a large job result does not become unreadable merely because its cached
+view is too large. Other storage errors are not covered by this guarantee.
+
+Run `uv run --locked python tests/acceptance/cache_limits_native_live.py` for the
+explicit native two-client/public-source eviction, restart and lowered-limit test.
+It uses disposable loopback instances and changes no installed configuration.
+See [exact evidence and limits](CACHE-LIMITS-EVIDENCE-2026-09-02.md).
+
 ## 5. Connections and OAuth
 
 The operator console is the only supported interface for setting up research connections and reviewing session imports. Models never receive CSRF state, OAuth verifiers, raw secrets, or approval tokens.
