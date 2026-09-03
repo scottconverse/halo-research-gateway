@@ -54,13 +54,13 @@ filter fixes, and cookie-only fixture repair are committed. Pushed checkpoint
 Reddit search/thread and Hacker News discussion evidence. Authenticated GitHub
 was proven at adapter level. These do not complete the following work:
 
-1. **Repair the DSH integration, then prove the whole workflow.** The local
-   model selected the correct Gateway search tool but DSH failed before dispatch:
-   `Cannot read properties of undefined (reading 'prepare')`. Its host and agent
-   loop resolve different tools-package instances and scheduler symbols.
-   Approval is requested for a scoped DSH package-resolution repair/restart,
-   preserving all model choices, permissions, presets and conversations. Then
-   rerun discovery, pagination, multi-source reading and cited synthesis.
+1. **Prove the whole DSH workflow after the package repair.** The September 3
+   repair removes the shadow package identity without changing DSH code, models,
+   permissions, presets or old conversations. Real search, multi-page reading and
+   one exact-cursor continuation now dispatch. The broad run still timed out
+   after four miscopied cursor rejections and seven compactions, without a final
+   answer. The strengthened acceptance checker rejects failed/unissued cursors
+   and failed/duplicate source reads. See DSH-RESOLUTION-EVIDENCE-2026-09-03.md.
 2. **Finish durable research jobs.** Pause/cancel, admission/argument bounds,
    state protection and honest empty/partial outcomes now pass isolated tests.
    Source checkpoints, cumulative budgets, lease renewal and bounded status now
@@ -96,7 +96,8 @@ was proven at adapter level. These do not complete the following work:
 6. **Finish delivery.** The corrected owner-only landing page is published.
    Keep operator copies aligned, finish metadata/documentation and verify CI
    for the final revision after the remaining functional acceptance work.
-   Product version remains `0.2.0`; no new release tag or package is claimed.
+   Product version remains `0.2.0`; final target is `0.3.0` only after the
+   required acceptance is green. No new release tag or package is claimed.
 
 Optional fallback-host integrations do not justify expanding the core product.
 No Gmail, publishing, shopping, account management, broad personal-data migration,

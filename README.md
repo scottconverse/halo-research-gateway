@@ -19,7 +19,7 @@ dated evidence snapshot, not a live dashboard or full-acceptance claim. See
 
 The governing product scope and finish list are [Research-only scope](docs/RESEARCH-ONLY-SCOPE.md); this supersedes conflicting requirements in the original v1.5 design. The operator handbook is the [complete user manual](docs/USER-MANUAL.md).
 
-Current acceptance is partial. Local regression, disposable native background-launcher and job crash/restart, live Gateway job-control, and loopback HTTP cancellation tests pass; public-source probes have returned usable evidence. PDF option forwarding, table extraction, isolated parsing and local English OCR now have regression/native-fixture evidence. The latest full DSH workflow failed before search dispatch due to a DSH tools-package mismatch. Human handoff now has a controlled visible-browser fixture, not real-account or DSH acceptance. Real login, live paid-provider use and wider installation/stress checks remain open. See [current evidence](docs/FINISH-PROGRESS-2026-09-02.md) and the newer capability records below, not historical release counts, for what is and is not proved.
+Current acceptance is partial. The DSH tools-package mismatch was repaired on September 3 without changing models, presets, permissions or existing conversations. Real DSH search, multiple source reads and one exact-cursor continuation now dispatch successfully. The broad run nevertheless timed out without a final answer, after repeated token-copy errors and compaction; it is not a workflow pass. The acceptance checker now requires successful returned evidence, an actually issued continuation and distinct source pages. See [DSH repair and acceptance evidence](docs/DSH-RESOLUTION-EVIDENCE-2026-09-03.md). Real login, optional paid-provider use and wider installation/stress checks remain separately unproved. The final target is `0.3.0`, but it has not been released or tagged.
 
 ## Why it exists
 
@@ -72,8 +72,8 @@ See [transcript paging evidence and limits](docs/TRANSCRIPT-PAGING-EVIDENCE-2026
 All thirteen pageable readers now accept cursor-only continuation, including
 transcripts, communities and deep/job evidence. Native MCP checks prove real
 Exa-to-DDGS quota fallback and authenticated public GitHub discussion/nested-reply/
-commit-pinned document pagination in disposable instances. A fresh DSH run still
-fails before dispatch; these checks do not substitute for DSH acceptance. See
+commit-pinned document pagination in disposable instances. The September 3 DSH
+repair restores dispatch, but a complete workflow remains a separate check. See
 [cursor and source evidence](docs/CURSOR-CONTRACT-AND-SOURCE-EVIDENCE-2026-09-02.md).
 
 Continuation now binds immutable evidence and retains all collected prose across

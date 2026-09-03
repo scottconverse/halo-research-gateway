@@ -18,6 +18,16 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+September 3 DSH repair: the shadow tools package was preserved as a backup and
+replaced with a junction to the identical existing package used by the agent loop.
+The real identity assertion changes from failure to success. All 121 prior sessions
+and 130 protected files survive the idle DSH-only restart unchanged. Real search,
+source reading and one exact-cursor continuation now dispatch. The broad six-minute
+run still failed to finish, with four miscopied cursor rejections and seven
+compactions. A stricter result-based acceptance checker has five new regression
+tests; it does not turn that failed run green. See
+DSH-RESOLUTION-EVIDENCE-2026-09-03.md. Final target is `0.3.0`, not yet released.
+
 Handoff followup before push: completion responses now retain their original
 session identity across a concurrent new start, and the exposed deadline uses
 the lower configured limit. Cancellation during Playwright startup no longer

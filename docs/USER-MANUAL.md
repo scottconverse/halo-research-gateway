@@ -58,6 +58,18 @@ A disposable native test proved background duplicate-start prevention, listener 
 
 ## 4. Daily research use
 
+On Halo, a September 3 deployment repair corrected a duplicate DSH tools package
+that prevented calls from dispatching. It preserved models, presets, permissions
+and all existing conversations. Search and reading now dispatch, but the broad
+research acceptance task timed out after cursor-copy errors and compaction. Do
+not treat a running server or a selected tool as proof of a supported final answer.
+See [the exact repair and acceptance record](DSH-RESOLUTION-EVIDENCE-2026-09-03.md).
+
+Pagination cursors are opaque text. Copy `page.next_cursor` exactly into the same
+tool's `cursor` argument; do not decode, shorten, reconstruct or edit it. An error
+is not a read page. A partial page can support the facts actually returned; it
+does not establish that the whole source was read.
+
 Ask DSH naturally. Examples:
 
 - "Search for the current official documentation, then fetch the two best sources."

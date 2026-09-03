@@ -9,6 +9,7 @@ import json
 import time
 import uuid
 from pathlib import Path
+from urllib.parse import urldefrag
 
 import httpx
 
@@ -26,16 +27,63 @@ def evaluate_history(history):
     results = [event["data"] for event in events if event["type"] == "tool/result"]
     fetched = set()
     cursor_used = False
-    for call in calls:
-        arguments = call.get("arguments") or {}
-        if isinstance(arguments, str):
-            try:
-                arguments = json.loads(arguments)
-            except ValueError:
-                arguments = {}
-        cursor_used |= bool(arguments.get("cursor"))
-        if call["name"].endswith("__web_fetch") and arguments.get("url"):
-            fetched.add(arguments["url"])
+    pending = {}
+    issued = {}
+    successful_search = False
+    successful_results = 0
+    failures = []
+    # Correlate durable results to actual calls, in event order. Merely trying a
+    # cursor or printing a URL does not prove continuation or source retrieval.
+    for event in events:
+        data = event["data"]
+        if event["type"] == "tool/call":
+            arguments = data.get("arguments") or {}
+            if isinstance(arguments, str):
+                try:
+                    arguments = json.loads(arguments)
+                except ValueError:
+                    arguments = {}
+            pending[data.get("callId")] = (data["name"], arguments if isinstance(arguments, dict) else {})
+        elif event["type"] == "tool/result":
+            for block in data.get("message", {}).get("content", []):
+                if block.get("type") != "tool-result":
+                    continue
+                call = pending.pop(block.get("toolCallId"), None)
+                if call is None:
+                    continue
+                name, arguments = call
+                if not name.startswith("mcp__halo_research__"):
+                    continue
+                for content in block.get("content", []):
+                    if content.get("type") != "text":
+                        continue
+                    try:
+                        envelope = json.loads(content.get("text", ""))
+                    except ValueError:
+                        continue
+                    if not isinstance(envelope, dict):
+                        continue
+                    if block.get("isError") or envelope.get("ok") is not True:
+                        failures.append({"tool": name, "code": envelope.get("error", {}).get("code", "TOOL_ERROR")})
+                        continue
+                    items = envelope.get("items", [])
+                    evidence = [
+                        item
+                        for item in items
+                        if isinstance(item, dict) and item.get("url") and (item.get("content") or item.get("snippet"))
+                    ]
+                    if not evidence:
+                        continue
+                    successful_results += 1
+                    page = envelope.get("page", {})
+                    used = arguments.get("cursor")
+                    cursor_used |= bool(used and issued.get(used) == name and page.get("number", 0) > 1)
+                    if page.get("next_cursor"):
+                        issued[page["next_cursor"]] = name
+                    if name.endswith("__web_search"):
+                        successful_search = True
+                    if name.endswith("__web_fetch"):
+                        fetched.update(urldefrag(item["url"])[0] for item in evidence)
     messages = [event["data"]["message"] for event in events if event["type"] == "assistant/message"]
     final = (
         "\n".join(block.get("text", "") for block in messages[-1].get("content", []) if block.get("type") == "text")
@@ -44,11 +92,11 @@ def evaluate_history(history):
     )
     passed = bool(
         endings
-        and endings[-1].get("kind") != "error"
-        and any(call["name"].endswith("__web_search") for call in calls)
+        and endings[-1].get("kind") not in {"error", "aborted", "cancelled"}
+        and successful_search
         and cursor_used
         and len(fetched) >= 2
-        and len(results) >= 4
+        and successful_results >= 4
         and all(url in final for url in fetched)
     )
     return {
@@ -56,6 +104,8 @@ def evaluate_history(history):
         "turn_end": endings[-1] if endings else None,
         "calls": [call["name"] for call in calls],
         "result_events": len(results),
+        "successful_evidence_results": successful_results,
+        "failed_results": failures,
         "cursor_used": cursor_used,
         "fetched_urls": sorted(fetched),
         "final": final,

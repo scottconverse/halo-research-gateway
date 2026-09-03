@@ -1,5 +1,12 @@
 # Host integration matrix — 2026-09-01
 
+This is a historical September 1 registration snapshot, not current acceptance or
+DSH capability policy. The Gateway now exposes fourteen research tools. Current
+DSH dispatch repair and workflow limits are recorded in
+[September 3 evidence](DSH-RESOLUTION-EVIDENCE-2026-09-03.md); a one-search canary
+does not prove a complete research workflow. DSH's current native permissions and
+operator-selected models remain outside Gateway configuration ownership.
+
 | Host/runtime | Registration | Current disposition |
 |---|---|---|
 | DSH Halo planner | `halo_research` MCP insert in canonical and live web composition; persona routes to `mcp__halo_research__*` | Passed: real Qwen3.6 35B planner called `web_search` and completed `HALO-GATEWAY-DSH-OK` |
