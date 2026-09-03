@@ -316,6 +316,53 @@ The source remains untouched. Replace stages the new destination and retains the
 
 For an imported session, installed Chrome reads the encrypted cookie copy and passes cookies in memory to the isolated research browser. No plaintext cookie export is saved. Session changes in that research browser last for its current context; they are not written back to the source or imported profile. Chrome may create fresh empty housekeeping databases in the owned copy; those are not imported passwords/history. A real-Chrome loopback fixture passed, but site-specific login and Chrome app-bound cookie compatibility still require validation with the operator's chosen dedicated profile.
 
+### Human login or challenge handoff
+
+This is an operator control for reading a public research source, not a model
+browser-action tool. In the operator console, use **Sign in to a research source**:
+
+1. Enter the public page URL and an existing Gateway research profile name.
+2. Choose **Open research page**. An isolated visible Chrome window opens with
+   a copy of that profile's research cookies; no personal browser is attached.
+3. Complete the login or challenge yourself in that window.
+4. Choose **Done — use temporary session** in the console.
+5. Ask DSH to retry `web_crawl` with the original URL, `mode="managed_profile"`
+   and the same `profile` name. Inspect the returned evidence and warnings.
+
+Done means the cookies are ready to try, **not** that the source is now readable.
+The fixture proves cookie transfer and a subsequent read, not a real CAPTCHA,
+app-bound account, DSH workflow or universal login compatibility.
+
+One handoff may be active. Its deadline is at most 120 seconds (or a lower
+`crawl.job_timeout_seconds`), including waiting for the shared browser slot,
+profile loading, browser startup and the human step. Cleanup is separate and
+does not yet have a hard wall-clock/hung-browser guarantee. Ordinary reads wait
+for the same browser lock. The opening/waiting/ready/cancelled/timed-out/failed
+state appears in the console; health and statistics expose only the state name.
+
+Only one completed temporary cookie set is retained, at most 5000 cookies and
+2 MiB serialized JSON. It is held in memory until restart, shutdown, a subsequent
+completed handoff, or a successful cookie import into that same profile. The
+original imported cookie files are not updated. Site session expiry still
+applies. Ordinary crawls use a copy; they do not save later cookie changes.
+Local storage, passwords, browsing history and other login mechanisms are not
+transferred. Profile loading can create Chrome housekeeping files in its owned
+copy, as it already did before this handoff.
+
+Cancel, timeout, failure or closing the window discards that attempt's new
+cookies and does not replace a prior completed temporary session. Import and
+browser access share a lock: an already-started native import copy must settle
+and record its receipt before cancellation releases ownership. Check the receipt
+rather than retrying a disconnected import blindly.
+
+The handoff accepts public HTTP(S) sources only. Existing public request,
+redirect and WebSocket checks are installed before navigating. Same-tab public
+login redirects may work; popup logins, local/private targets and downloads are
+not supported. There are no model-operated clicks, selectors, form data, paid
+solver calls or automatic retry loops in this flow. Chromium DNS pinning, OOPIF
+coverage, resource bounds and a real operator-selected account remain separate
+acceptance work. See [handoff evidence](HUMAN-HANDOFF-EVIDENCE-2026-09-03.md).
+
 ## 7. Browser crawling
 
 `max_pages` now limits actual navigation attempts (1..25, or the lower configured
@@ -336,8 +383,9 @@ undetected modes are **not yet implemented**; requesting them returns
 `auto` begins with standard browsing; recognized challenges can use configured
 Bright Data fallback. Metadata says `mode=proxy` when used. Managed profiles,
 named local targets, recognized sensitive URLs and explicit scroll interactions
-are not outsourced. `standard` stays on the local browser path. Visible human
-handoff and CapSolver browser-token application remain unfinished.
+are not outsourced. `standard` stays on the local browser path. Human handoff
+has the operator-only flow above; real-account acceptance and CapSolver
+browser-token application remain unfinished.
 
 `managed_profile` requires an existing Gateway-owned profile. Supplying a profile
 with another mode fails explicitly instead of silently browsing anonymously.
@@ -386,7 +434,7 @@ Implemented boundaries:
 
 Reddit requests use the shared bounded HTTP downloader, including redirect revalidation and response-size limits. A rate-limit response reports `RATE_LIMITED` and a retry delay; the durable cooldown applies to all clients before another request is allowed.
 
-WebSocket handshakes are intercepted and passed through the same destination policy. Remaining hardening work includes Chromium-level DNS pinning and acceptance proof for a visible 120-second human-challenge handoff. These gaps do not make fetched content trusted and do not authorize actions.
+WebSocket handshakes are intercepted and passed through the same destination policy. A controlled visible human-handoff fixture passes; real-account and installed acceptance remain open, alongside Chromium-level DNS pinning. These gaps do not make fetched content trusted and do not authorize actions.
 
 ## 8. Exact local/private targets
 
@@ -458,7 +506,7 @@ A disposable native Windows process-crash/restart fixture passed, including pres
 
 The Gateway finds and reads sources. It does not compose or send email, create or edit GitHub issues/comments, submit general forms, post messages, purchase items, or manage/delete accounts. The two former action MCP tools and the general approval endpoint have been removed, not merely disabled.
 
-Only session-import review remains in the operator console. Existing historical receipts and encrypted connections are preserved; they cannot restore removed actions.
+Only session-import approval remains from the former action system. Research connections and the operator's bounded login handoff are separate research controls. Existing historical receipts and encrypted connections are preserved; they cannot restore removed actions.
 
 ## 11. Optional CAPTCHA/proxy providers
 
@@ -512,6 +560,8 @@ a local fake vendor. It proves routing, pagination, shared requests/cache,
 durable reservations and browser cleanup—not a real CAPTCHA bypass, live vendor
 success or operator login. No paid endpoint was contacted. Human handoff, real
 login/app-bound-cookie acceptance and CapSolver token application remain open.
+The newer controlled human-handoff fixture is recorded separately above; this
+older provider-routing test does not prove it.
 See [complete evidence](CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md).
 
 ## 12. Configuration reference

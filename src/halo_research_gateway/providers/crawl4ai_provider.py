@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import copy
+import json
 import re
 from collections import deque
 from pathlib import Path
@@ -73,6 +75,7 @@ class Crawl4AIProvider:
         self._active_policy: LocalTarget | None = None
         self._navigation_host: str | None = None
         self.optional_providers = None
+        self._human_cookies: tuple[str, list[dict]] | None = None
 
     async def start(
         self, profile: str | None = None, local_target: LocalTarget | None = None, *, navigation_host: str | None = None
@@ -116,64 +119,7 @@ class Crawl4AIProvider:
         self._crawler = AsyncWebCrawler(config=browser, base_directory=self.base_directory)
 
         async def guard_page(page, *, context, **__):
-            async def guard_route(route, request):
-                try:
-                    if (
-                        navigation_host is not None
-                        and request.is_navigation_request()
-                        and request.frame == page.main_frame
-                        and urlsplit(request.url).hostname != navigation_host
-                    ):
-                        raise ValueError("CRAWL_NAVIGATION_SCOPE")
-                    await self._validate_browser_request(
-                        request.url, local_target is None, local_target, request.method
-                    )
-                    await route.continue_()
-                except Exception:
-                    await route.abort("blockedbyclient")
-
-            await context.route("**/*", guard_route)
-            # Playwright route handlers do not see every HTTP redirect hop.
-            # Pause redirect responses before Chromium follows their Location.
-            cdp = await context.new_cdp_session(page)
-            main_frame = (await cdp.send("Page.getFrameTree"))["frameTree"]["frame"]["id"]
-
-            async def guard_response(event):
-                request_id = event["requestId"]
-                try:
-                    if event.get("responseStatusCode") in {301, 302, 303, 307, 308}:
-                        headers = {value["name"].lower(): value["value"] for value in event.get("responseHeaders", [])}
-                        if headers.get("location"):
-                            destination = urljoin(event["request"]["url"], headers["location"])
-                            if (
-                                navigation_host is not None
-                                and event.get("frameId") == main_frame
-                                and event.get("resourceType") == "Document"
-                                and urlsplit(destination).hostname != navigation_host
-                            ):
-                                raise ValueError("CRAWL_NAVIGATION_SCOPE")
-                            async with asyncio.timeout(5):
-                                await self._validate_browser_request(
-                                    destination,
-                                    local_target is None,
-                                    local_target,
-                                    event["request"].get("method", "GET"),
-                                )
-                    await cdp.send("Fetch.continueRequest", {"requestId": request_id})
-                except Exception:
-                    with contextlib.suppress(Exception):
-                        await cdp.send("Fetch.failRequest", {"requestId": request_id, "errorReason": "BlockedByClient"})
-
-            cdp.on("Fetch.requestPaused", guard_response)
-            await cdp.send("Fetch.enable", {"patterns": [{"urlPattern": "*", "requestStage": "Response"}]})
-
-            async def guard_websocket(websocket):
-                await self._handle_websocket(websocket, local_target is None, local_target)
-
-            route_websocket = getattr(context, "route_web_socket", None)
-            if route_websocket is None:
-                raise CrawlUnavailable("Playwright WebSocket routing is required")
-            await route_websocket("**/*", guard_websocket)
+            await self._guard_page(page, context, local_target, navigation_host)
 
         self._crawler.crawler_strategy.set_hook("on_page_context_created", guard_page)
         await self._crawler.start()
@@ -181,9 +127,122 @@ class Crawl4AIProvider:
         self._active_policy = local_target
         self._navigation_host = navigation_host
 
+    async def _guard_page(self, page, context, local_target=None, navigation_host=None, *, single_page=False) -> None:
+        async def guard_route(route, request):
+            try:
+                if single_page and request.frame.page != page:
+                    raise ValueError("RESEARCH_SESSION_SINGLE_PAGE")
+                if (
+                    navigation_host is not None
+                    and request.is_navigation_request()
+                    and request.frame == page.main_frame
+                    and urlsplit(request.url).hostname != navigation_host
+                ):
+                    raise ValueError("CRAWL_NAVIGATION_SCOPE")
+                await self._validate_browser_request(request.url, local_target is None, local_target, request.method)
+                await route.continue_()
+            except Exception:
+                await route.abort("blockedbyclient")
+
+        await context.route("**/*", guard_route)
+        # Playwright route handlers do not see every HTTP redirect hop.
+        # Pause redirect responses before Chromium follows their Location.
+        cdp = await context.new_cdp_session(page)
+        main_frame = (await cdp.send("Page.getFrameTree"))["frameTree"]["frame"]["id"]
+
+        async def guard_response(event):
+            request_id = event["requestId"]
+            try:
+                if event.get("responseStatusCode") in {301, 302, 303, 307, 308}:
+                    headers = {value["name"].lower(): value["value"] for value in event.get("responseHeaders", [])}
+                    if headers.get("location"):
+                        destination = urljoin(event["request"]["url"], headers["location"])
+                        if (
+                            navigation_host is not None
+                            and event.get("frameId") == main_frame
+                            and event.get("resourceType") == "Document"
+                            and urlsplit(destination).hostname != navigation_host
+                        ):
+                            raise ValueError("CRAWL_NAVIGATION_SCOPE")
+                        async with asyncio.timeout(5):
+                            await self._validate_browser_request(
+                                destination,
+                                local_target is None,
+                                local_target,
+                                event["request"].get("method", "GET"),
+                            )
+                await cdp.send("Fetch.continueRequest", {"requestId": request_id})
+            except Exception:
+                with contextlib.suppress(Exception):
+                    await cdp.send("Fetch.failRequest", {"requestId": request_id, "errorReason": "BlockedByClient"})
+
+        cdp.on("Fetch.requestPaused", guard_response)
+        await cdp.send("Fetch.enable", {"patterns": [{"urlPattern": "*", "requestStage": "Response"}]})
+
+        async def guard_websocket(websocket):
+            await self._handle_websocket(websocket, local_target is None, local_target)
+
+        route_websocket = getattr(context, "route_web_socket", None)
+        if route_websocket is None:
+            raise CrawlUnavailable("Playwright WebSocket routing is required")
+        await route_websocket("**/*", guard_websocket)
+
     async def close(self) -> None:
         async with self._lock:
             await self._settle_close()
+            self._human_cookies = None
+
+    async def human_handoff(self, url: str, profile: str, done: asyncio.Event, ready) -> None:
+        """Let the operator handle one public login; retain only temporary cookies.
+
+        Does not claim that a challenge was solved. Callers must retry the read.
+        No browser interaction primitives or cookies are returned to a model.
+        """
+        from playwright.async_api import async_playwright
+
+        validate_url(url)
+        self._profile_directory(profile)
+        cookies = None
+        async with asyncio.timeout(min(120, self.limits.job_timeout_seconds)):
+            async with self._lock:
+                await self._validate_browser_request(url, True)
+                seed = await self._profile_cookies(profile)
+                async with async_playwright() as playwright:
+                    browser = await playwright.chromium.launch(
+                        channel="chrome",
+                        headless=False,
+                        args=["--disable-background-networking", "--disable-sync", "--no-first-run"],
+                    )
+                    try:
+                        context = await browser.new_context(accept_downloads=False, service_workers="block")
+                        await context.add_cookies(seed)
+                        page = await context.new_page()
+                        await self._guard_page(page, context, single_page=True)
+                        closed = False
+
+                        def page_closed(*_):
+                            nonlocal closed
+                            closed = True
+                            done.set()
+
+                        async def close_popup(popup):
+                            if popup != page:
+                                await popup.close()
+
+                        context.on("page", close_popup)
+                        page.on("close", page_closed)
+                        await page.goto(url, wait_until="domcontentloaded", timeout=45_000)
+                        ready()
+                        await done.wait()
+                        if closed:
+                            raise ValueError("RESEARCH_SESSION_WINDOW_CLOSED")
+                        cookies = await context.cookies()
+                        if len(cookies) > 5000 or len(json.dumps(cookies).encode()) > 2_097_152:
+                            raise ValueError("RESEARCH_SESSION_TOO_LARGE")
+                    finally:
+                        await browser.close()
+                # Replace the one retained in-memory session only after successful cleanup.
+                self._human_cookies = (profile, copy.deepcopy(cookies))
 
     async def _settle_close(self) -> None:
         task = asyncio.create_task(self._close_browser())
@@ -505,6 +564,8 @@ class Crawl4AIProvider:
         from playwright.async_api import async_playwright
 
         directory = self._profile_directory(profile)
+        if self._human_cookies is not None and self._human_cookies[0] == profile:
+            return copy.deepcopy(self._human_cookies[1])
         args = ["--disable-background-networking", "--disable-sync", "--no-first-run"]
         if (directory / "Profile").is_dir():
             args.append("--profile-directory=Profile")

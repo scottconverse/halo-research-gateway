@@ -18,6 +18,18 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+September 3 human-handoff source checkpoint: a public research URL and existing
+owned profile can be opened by the operator in isolated visible Chrome, followed
+by Done/Cancel and a managed-profile retry using bounded memory-only cookies.
+Fifteen new unit cases cover operator authority, state, cancellation, timeout,
+cookie retention/caps, profile import ownership and redaction. Full gate:
+`466 passed in 78.72s (0:01:18)`. Separate native browser/UI plus prior traversal/
+challenge regression: `11 passed in 24.51s`. The synthetic challenge button is
+test-automated: this is not a real operator login, network-MCP or DSH handoff
+proof, paid use, installed reload or final release. See
+HUMAN-HANDOFF-EVIDENCE-2026-09-03.md. Earlier "human handoff unfinished" statements
+below describe their dated checkpoints, not the newer fixture-tested source.
+
 Local-reader policy followup: GET now requires operator permission before any
 network contact; recognized sensitive query values are redacted in citation and
 snapshot URLs; IPv6 brackets survive redaction. Native two-client MCP reads

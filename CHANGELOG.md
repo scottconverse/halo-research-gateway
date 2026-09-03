@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Add an operator-started public research-login/challenge window with Done/Cancel, a two-minute operation deadline, single-browser ownership, redacted status and bounded memory-only cookie reuse for managed-profile retries. No model action tool or persistent password/session export is added. Controlled visible Chrome and operator UI checks pass; real-account, installed and DSH acceptance remain separate. Serialize cookie imports with browser access and retain the profile lock through a cancelled native copy until its receipt is recorded.
+
 - Enforce the operator's local GET permission before network I/O; reject HEAD-only or empty method policies with `LOCAL_METHOD_NOT_ALLOWED`. Redact recognized sensitive query values from local citation/snapshot URLs without changing the authorized request or source text. Preserve IPv6 brackets during shared citation redaction. Native two-client MCP checks prove complete pagination, no denied-target request, no disk cache, and no synthetic session-query leak in Gateway output at ERROR/INFO/DEBUG levels.
 
 - Stream local HTTP and GitHub API responses instead of buffering whole downloads. Apply the configured decoded-body cap and per-request deadline, including GitHub DNS. Local fetches now use shared HTTP admission, cancellation and per-origin pacing. Preserve ordinary evidence/pagination; return precise oversize/timeout errors without partial evidence. This source-only checkpoint does not restart the installed service or claim total process-memory bounds.

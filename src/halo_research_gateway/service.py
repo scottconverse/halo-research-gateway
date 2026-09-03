@@ -18,6 +18,7 @@ from .cache_errors import EntryTooLargeError
 from .clock import SystemClock, rfc3339
 from .config import GatewayConfig
 from .connections.chrome_import import ChromeImporter
+from .connections.human_handoff import HumanHandoff
 from .connections.import_reviews import ImportReviewStore
 from .connections.oauth import OAuthManager
 from .connections.store import ConnectionStore
@@ -81,6 +82,7 @@ class HaloService:
         self.crawler = Crawl4AIProvider(
             config.crawl.base_directory, self.clock, limits=config.crawl, origin_gate=self.http._origin_gate
         )
+        self.research_session = HumanHandoff(self.crawler)
         self.documents = DocumentProvider(self.http, self.clock)
         self.jobs = JobManager(config.storage.database, self.clock)
         self.import_reviews = ImportReviewStore(
@@ -117,6 +119,7 @@ class HaloService:
         self.jobs.recover_expired(recover_queued=True)
 
     async def close(self) -> None:
+        await self.research_session.close()
         for task in self._job_tasks.values():
             task.cancel()
         for task in self._oauth_tasks.values():
@@ -151,12 +154,32 @@ class HaloService:
         return self.import_reviews.prepare({"action": "chrome_import", "import": preview})
 
     async def chrome_import_execute(self, plan_id: str, approval_token: str, idempotency_key: str) -> dict:
+        cancelled = False
+
         async def executor(plan):
+            nonlocal cancelled
             if plan.get("action") != "chrome_import":
                 raise ValueError("CHROME_IMPORT_PLAN_REQUIRED")
-            return await asyncio.to_thread(self.chrome_importer.execute, plan["import"])
+            async with self.crawler._lock:
+                copy_task = asyncio.create_task(asyncio.to_thread(self.chrome_importer.execute, plan["import"]))
+                while not copy_task.done():
+                    try:
+                        await asyncio.shield(copy_task)
+                    except asyncio.CancelledError:
+                        # A started native file copy cannot be cancelled. Keep
+                        # profile ownership until it settles and record its receipt.
+                        cancelled = True
+                result = copy_task.result()
+                temporary = self.crawler._human_cookies
+                if temporary is not None and temporary[0] == plan["import"]["destination_name"]:
+                    self.crawler._human_cookies = None
+                    self.research_session.invalidate(plan["import"]["destination_name"])
+                return result
 
-        return await self.import_reviews.execute(plan_id, approval_token, idempotency_key, executor)
+        result = await self.import_reviews.execute(plan_id, approval_token, idempotency_key, executor)
+        if cancelled:
+            raise asyncio.CancelledError
+        return result
 
     def _budget(self, max_chars: int | None) -> int:
         return min(
@@ -1354,6 +1377,7 @@ class HaloService:
             },
             "jobs": self._job_counts(),
             "optional_providers": self.optional_providers.status(),
+            "research_session": self.research_session.status()["state"],
             "cache_entries": self.cache.stats()["entries"],
             "started_at": self.started_at,
         }
@@ -1364,6 +1388,7 @@ class HaloService:
             "queues": self.coordinator.stats(),
             "cache": self.cache.stats(),
             "snapshots": self._snapshot_stats(),
+            "research_session": self.research_session.status()["state"],
             "jobs": self._job_counts(),
             "profiles": {
                 "unidentified": {

@@ -72,8 +72,10 @@ was proven at adapter level. These do not complete the following work:
 3. **Finish research login/challenge access.** A real Chrome v10 cookie fixture
    passes; app-bound cookies and an operator-chosen real login are unproven.
    Bright Data auto-crawl routing passes native Chrome/network MCP/local fake-
-   vendor checks; paid use is neither proved nor authorized. Complete visible
-   human handoff, real login and CapSolver token application. Use fixtures for
+   vendor checks; paid use is neither proved nor authorized. Operator-started
+   visible handoff with bounded temporary cookies now passes a controlled Chrome
+   fixture and UI checks; installed/DSH and real-login acceptance remain. Finish
+   real login and CapSolver token application. Use fixtures for
    paid adapters unless paid use is separately approved.
 4. **Finish reliability acceptance.** Verify shared concurrent clients, active
    cancellation, browser/process cleanup, startup/PID identity, restart recovery,
@@ -106,8 +108,13 @@ Recorded implementation gaps still included in that list:
   site scope, partial evidence, explicit scrolling, response-stage redirects,
   option-specific cache keys, profile cache policy and cleanup have regression/
   native Chrome evidence. See CRAWL-TRAVERSAL-EVIDENCE-2026-09-02.md.
+- Human handoff has a source/native fixture: public URL, existing owned profile,
+  two-minute operation, operator Done/Cancel, and one bounded memory-only cookie
+  set for managed reads. Import/browser ownership is serialized. Real-account,
+  installed/DSH, popup/local login and hard hung-browser cleanup remain unproved.
+  See HUMAN-HANDOFF-EVIDENCE-2026-09-03.md. No model action API is added.
 - Consent/load-more/pagination-button/site-search interactions, capture artifacts,
-  stealth/undetected modes, human handoff and CapSolver token application remain
+  stealth/undetected modes and CapSolver token application remain
   unfinished. Recognized challenges fail explicitly or use configured Bright Data
   auto fallback for eligible public reads. Native fake-vendor evidence passes;
   no paid call or universal bypass is claimed. See CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md.

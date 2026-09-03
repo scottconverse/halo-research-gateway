@@ -418,6 +418,27 @@ def create_application(config: GatewayConfig | None = None):
         except Exception:
             return JSONResponse({"error": "Chrome import failed"}, status_code=400)
 
+    async def research_session(request: Request):
+        if not mutation_allowed(request):
+            return JSONResponse({"error": "csrf denied"}, status_code=403)
+        try:
+            body = await request.json()
+            operation = request.path_params.get("operation")
+            if operation is None:
+                if not isinstance(body, dict) or set(body) != {"url", "profile"}:
+                    raise ValueError("invalid fields")
+                result = await service.research_session.begin(body["url"], body["profile"])
+                return JSONResponse(result, status_code=202)
+            if operation not in {"done", "cancel"} or not isinstance(body, dict) or set(body) != {"session_id"}:
+                raise ValueError("invalid operation")
+            return JSONResponse(await service.research_session.finish(body["session_id"], cancel=operation == "cancel"))
+        except RuntimeError:
+            return JSONResponse({"error": "Research session busy, not ready, or no longer current."}, status_code=409)
+        except Exception:
+            return JSONResponse(
+                {"error": "Use a public research URL and an existing Gateway-owned profile."}, status_code=400
+            )
+
     async def operator_state(_: Request):
         return JSONResponse(
             {
@@ -427,6 +448,7 @@ def create_application(config: GatewayConfig | None = None):
                 "imports": service.import_reviews.list_plans(),
                 "receipts": service.import_reviews.list_receipts(),
                 "stats": service.stats(),
+                "research_session": service.research_session.status(),
             }
         )
 
@@ -445,6 +467,8 @@ def create_application(config: GatewayConfig | None = None):
             Route("/operator/api/imports/chrome", chrome_import_preview, methods=["POST"]),
             Route("/operator/api/imports/chrome/{plan_id:str}/execute", chrome_import_execute, methods=["POST"]),
             Route("/operator/api/state", operator_state, methods=["GET"]),
+            Route("/operator/api/research-session", research_session, methods=["POST"]),
+            Route("/operator/api/research-session/{operation:str}", research_session, methods=["POST"]),
             Route("/operator/api/imports/chrome/{plan_id:str}/approve", approve, methods=["POST"]),
         ]
     )

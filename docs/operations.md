@@ -83,10 +83,27 @@ validation and exact bounds: [cache-limit evidence](CACHE-LIMITS-EVIDENCE-2026-0
 
 ## Research provider setup
 
+The operator console now has a public-source login/challenge handoff. It opens
+one isolated visible Chrome window from an existing research profile, and Done
+retains at most one bounded cookie set in memory for a managed-profile retry.
+Restart/shutdown, another completed handoff or reimporting that profile clears
+or replaces it. Cancel/timeout/window-close does not save the attempted update.
+Health/stats expose `research_session`; check opening/waiting state before an
+idle reload. Do not restart an active handoff. The operation deadline is at most
+120 seconds including lock/startup; cleanup has no hard hang deadline yet.
+
+Cookie imports share browser ownership. Once a native copy starts, cancellation
+waits for it to settle and its receipt to be recorded; it cannot abort a running
+file copy. No source profile, passwords or other browser data is imported by
+the handoff. Public request/redirect/WebSocket checks remain; popup/private/local
+login is unsupported. See [instructions](USER-MANUAL.md#human-login-or-challenge-handoff)
+and [source/native evidence](HUMAN-HANDOFF-EVIDENCE-2026-09-03.md). The controlled
+fixture is not installed, DSH, live-account or universal-challenge acceptance.
+
 - Use the operator console's read-only GitHub App form for research.
 - Cookie-only imported research profiles live under the gateway runtime browser directory and are copied capabilities. Never point Crawl4AI at the mutable source profile.
 - Provider use requires a vendor name, encrypted connection, exact requested domains, attempt/estimated-spend limits and positive `request_cost_usd`. Installed defaults remain disabled. Estimates are reserved, not reconciled vendor charges; use vendor-side billing controls.
-- Auto public crawl can route recognized challenges to Bright Data. Local/managed/sensitive reads and explicit standard/scroll modes are not outsourced; browser cookies/headers are not sent. Human handoff and CapSolver token application remain unfinished.
+- Auto public crawl can route recognized challenges to Bright Data. Local/managed/sensitive reads and explicit standard/scroll modes are not outsourced; browser cookies/headers are not sent. Human handoff is operator-started; real-account proof and CapSolver token application remain unfinished.
 - Requested-domain checks cannot independently enforce vendor-side redirects/DNS. Native proof uses a fake vendor, not paid acceptance. See [challenge routing evidence](CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md) and the user manual.
 
 ## Local document OCR data

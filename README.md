@@ -42,8 +42,16 @@ synthetic query secret in Gateway output at ERROR/INFO/DEBUG log levels. See
 Recognized challenge pages no longer count as research evidence. Auto public
 crawling can use configured Bright Data retrieval with exact requested-domain
 checks and reserved attempt/cost budgets. Native Chrome/two-client MCP tests
-use a public header echo and local fake vendor, not a paid endpoint. Human
-handoff remains unfinished. See [challenge routing evidence](docs/CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md).
+use a public header echo and local fake vendor, not a paid endpoint. See
+[challenge routing evidence](docs/CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md).
+
+The operator can now open a public research page in an isolated visible browser,
+complete a login/challenge, then retain temporary cookies for a managed-profile
+retry. No model click/form API is added. The two-minute flow and controlled
+Chrome fixture pass; real-account, installed and DSH acceptance are separate.
+Cookies stay in memory and the imported profile is not updated. See the
+[plain-English instructions](docs/USER-MANUAL.md#human-login-or-challenge-handoff)
+and [exact evidence and limits](docs/HUMAN-HANDOFF-EVIDENCE-2026-09-03.md).
 
 Ordinary research traffic now keeps the shared disk cache within its configured
 compressed-payload limits. Expired or over-limit entries are removed atomically;
@@ -79,7 +87,7 @@ Browser crawling now follows a bounded page/depth frontier, returns each source
 with its own citation, distinguishes scrolling from page traversal, and retains
 usable pages when another fails. Native Chrome fixtures cover redirect checks,
 exact local paths, scrolling, cookie reuse, WebSockets and cancellation cleanup.
-Advanced interactions/captures and visible human challenge handoff remain open;
+Advanced interactions/captures and real-account human challenge acceptance remain open;
 unimplemented options return explicit errors. See [crawl evidence and limits](docs/CRAWL-TRAVERSAL-EVIDENCE-2026-09-02.md).
 
 Agent hosts have inconsistent web access. Some can search but not crawl; others can fetch a URL but cannot discover it; separate instances can unknowingly spend the same anonymous quota or hammer Reddit. Halo centralizes that work without making DSH dependent on a cloud LLM.
@@ -161,7 +169,8 @@ The console supports:
 2. OAuth Authorization Code + PKCE connection setup;
 3. cookie-only research-session import into a gateway-owned copy;
 4. research jobs, queues, and provider budgets;
-5. review and confirmation of session imports only.
+5. review and confirmation of session imports only;
+6. a bounded, operator-started public research-login handoff with temporary cookies.
 
 Chrome import never silently attaches to a live personal profile. It creates a hash-bound preview, requires Chrome to be closed when consistency demands it, copies into gateway-owned state, and returns a redacted receipt.
 
@@ -188,7 +197,7 @@ The current working revision removes non-research features from the 0.2.0 codeba
 - no CAPTCHA solver or proxy is selected, enabled, or charged by default;
 - research-session import copies cookies and encryption metadata only, not passwords or other personal profile data; it is not site-filtered;
 - public caption extraction does not download media or run speech-to-text;
-- browser WebSocket handshakes are policy-checked, but Chromium-level DNS pinning and the visible human-challenge flow remain unproven.
+- browser WebSocket handshakes are policy-checked; human handoff has a controlled visible-Chrome fixture, not real-account or DSH proof. Chromium-level DNS pinning remains open.
 
 ## Repository map
 
