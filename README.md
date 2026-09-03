@@ -23,6 +23,14 @@ Current acceptance is partial. Local regression, disposable native background-la
 
 ## Why it exists
 
+The source now streams local HTTP and GitHub API responses with the configured
+decoded-body limit and per-request deadline. Local reads also share HTTP admission
+and per-origin pacing. Oversize/timeout failures return no partial source as
+successful evidence. Native two-client local reads and unauthenticated GitHub
+checks pass. This source checkpoint is not yet loaded by the installed service;
+the published page still describes runtime `7cdfe72`. See
+[response-bound evidence and limits](docs/RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md).
+
 Recognized challenge pages no longer count as research evidence. Auto public
 crawling can use configured Bright Data retrieval with exact requested-domain
 checks and reserved attempt/cost budgets. Native Chrome/two-client MCP tests

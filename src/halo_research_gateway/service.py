@@ -41,7 +41,7 @@ from .providers.reddit_rss import parse_atom, search_url, thread_rss_url
 from .providers.search import DdgsSearchProvider
 from .providers.transcripts import TranscriptProvider
 from .rate_limit import ProviderRateLimited, RateLedger
-from .security import UrlPolicyError, is_sensitive_url
+from .security import ParsedTarget, UrlPolicyError, is_sensitive_url
 
 
 class HaloService:
@@ -89,7 +89,12 @@ class HaloService:
         self.rate = RateLedger(config.storage.database, self.clock)
         runtime_root = Path(config.storage.database).parent.parent
         self.connections = ConnectionStore(config.storage.database, runtime_root / "vault", self.clock)
-        self.github = GitHubProvider(self.connections, self.clock)
+        self.github = GitHubProvider(
+            self.connections,
+            self.clock,
+            max_response_bytes=config.http.max_decompressed_bytes,
+            timeout_seconds=config.http.total_timeout_seconds,
+        )
         self.transcripts = TranscriptProvider(self.http, self.clock)
         self.community = CommunityProvider(self.http, self.github, self.ddgs, self.clock)
         self.optional_providers = OptionalProviderRegistry(
@@ -1040,7 +1045,6 @@ class HaloService:
         cursor=None,
         client="unidentified",
     ) -> dict:
-        del client
         if cursor:
             return self._resume("local_fetch", cursor, max_chars)
         if not target or path is None:
@@ -1060,28 +1064,42 @@ class HaloService:
         )
         try:
             url = policy.build_url(path)
-            async with httpx.AsyncClient(
-                trust_env=False, follow_redirects=False, timeout=self.config.http.total_timeout_seconds
-            ) as client:
-                response = await client.get(url)
-                response.raise_for_status()
-                if response.is_redirect:
-                    raise ValueError("LOCAL_REDIRECT_DENIED")
-                from .models import EvidenceItem
-
-                result = ProviderResult(
-                    "local-http",
-                    [
-                        EvidenceItem(
-                            url=url, retrieved_at=rfc3339(self.clock.utcnow()), source=target, content=response.text
-                        )
-                    ],
-                    [],
-                    1,
-                )
+            # Hash the exact named target and URL: queue diagnostics must not
+            # expose private source paths, and different local policies cannot join.
+            key = "local-http:" + hashlib.sha256(json.dumps([target, url]).encode()).hexdigest()
+            result = await self.coordinator.run("http", client, key, lambda: self._local_fetch_result(url, policy))
             return self._envelope("local_fetch", result, max_chars, requested=1)
         except Exception as exc:
             return self._error("local_fetch", "local-http", exc)
+
+    async def _local_fetch_result(self, url: str, policy: LocalTarget) -> ProviderResult:
+        origin = ParsedTarget(policy.scheme, policy.host, policy.port, "")
+        try:
+            async with (
+                asyncio.timeout(self.config.http.total_timeout_seconds),
+                self.http._origin_gate(origin),
+            ):
+                async with httpx.AsyncClient(
+                    trust_env=False, follow_redirects=False, timeout=self.config.http.total_timeout_seconds
+                ) as client:
+                    async with client.stream("GET", url) as response:
+                        if response.is_redirect:
+                            raise ValueError("LOCAL_REDIRECT_DENIED")
+                        response.raise_for_status()
+                        payload = bytearray()
+                        async for chunk in response.aiter_bytes():
+                            if len(payload) + len(chunk) > self.config.http.max_decompressed_bytes:
+                                raise ValueError("LOCAL_RESPONSE_TOO_LARGE")
+                            payload.extend(chunk)
+                        text = payload.decode(response.encoding or "utf-8", errors="replace")
+        except (TimeoutError, httpx.TimeoutException):
+            raise TimeoutError("LOCAL_REQUEST_TIMEOUT") from None
+        return ProviderResult(
+            "local-http",
+            [EvidenceItem(url=url, retrieved_at=rfc3339(self.clock.utcnow()), source=policy.target_id, content=text)],
+            [],
+            1,
+        )
 
     async def local_crawl(
         self,

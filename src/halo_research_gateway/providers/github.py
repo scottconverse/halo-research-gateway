@@ -57,10 +57,15 @@ class GitHubProvider:
         connections: ConnectionStore,
         clock=None,
         requester: RequestJson | None = None,
+        *,
+        max_response_bytes: int = 20_971_520,
+        timeout_seconds: float = 30,
     ) -> None:
         self.connections = connections
         self.clock = clock or SystemClock()
         self._requester = requester or self._request_json
+        self.max_response_bytes = max_response_bytes
+        self.timeout_seconds = timeout_seconds
         self._installation_token: str | None = None
         self._installation_token_expires_at = None
         self._installation_token_connection_id: str | None = None
@@ -85,17 +90,31 @@ class GitHubProvider:
     ) -> Any:
         url = API_BASE + path
         target = validate_url(url)
-        address = await resolve_public(target)
-        transport = PinnedTransport(target, address)
-        async with httpx.AsyncClient(
-            transport=transport,
-            trust_env=False,
-            timeout=30,
-            follow_redirects=False,
-        ) as client:
-            response = await client.request(method, url, headers=headers, json=body)
-            response.raise_for_status()
-            return response.json()
+        try:
+            async with asyncio.timeout(self.timeout_seconds):
+                address = await resolve_public(target)
+                async with httpx.AsyncClient(
+                    transport=PinnedTransport(target, address),
+                    trust_env=False,
+                    timeout=self.timeout_seconds,
+                    follow_redirects=False,
+                ) as client:
+                    async with client.stream(method, url, headers=headers, json=body) as response:
+                        response.raise_for_status()
+                        payload = bytearray()
+                        async for chunk in response.aiter_bytes():
+                            if len(payload) + len(chunk) > self.max_response_bytes:
+                                raise ValueError("GITHUB_RESPONSE_TOO_LARGE")
+                            payload.extend(chunk)
+        except (TimeoutError, httpx.TimeoutException):
+            raise TimeoutError("GITHUB_REQUEST_TIMEOUT") from None
+        try:
+            result = json.loads(payload)
+        except (ValueError, UnicodeError):
+            raise ValueError("GITHUB_RESPONSE_INVALID") from None
+        if not isinstance(result, (dict, list)):
+            raise ValueError("GITHUB_RESPONSE_INVALID")
+        return result
 
     @staticmethod
     def _headers(token: str | None) -> dict[str, str]:

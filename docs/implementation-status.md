@@ -18,6 +18,14 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+September 3 source-only response-bound checkpoint: local/GitHub HTTP streaming,
+per-response decoded-body caps and active request deadlines are implemented.
+Local reads now share HTTP admission/origin pacing and cancellation. Native
+disposable Gateway/two-MCP-client checks and a real unauthenticated GitHub API
+check pass. This is not installed-service, authenticated-account or DSH proof.
+See RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md for exact runs and remaining limits.
+Installed runtime and published site remain at the prior checkpoint below.
+
 The owner-only landing page was republished on September 3 as Sites version 4,
 source `b7bd4ff`, reflecting Gateway runtime `7cdfe72` and its 423-test CI proof.
 It distinguishes native/installed/fake-vendor checks and explicitly marks the

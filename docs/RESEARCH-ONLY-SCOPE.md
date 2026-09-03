@@ -131,8 +131,12 @@ Recorded implementation gaps still included in that list:
   capacity; writes commit atomically and oversized evidence remains readable with
   an explicit uncached warning. Native two-client/restart/lowered-limit checks pass.
   See CACHE-LIMITS-EVIDENCE-2026-09-02.md. Physical SQLite/WAL size, synchronous cache
-  I/O and total process/native peak memory remain open, alongside local/GitHub
-  response/shared limits and arbitrary job-field bounds.
+  I/O and total process/native peak memory remain open. Local/GitHub per-response
+  streaming caps and active request deadlines now pass source/native checks, and
+  local fetches share HTTP admission/origin pacing; the installed service has not
+  yet been reloaded. Whole GitHub-operation deadlines, wider shared-origin coverage,
+  decompression/JSON allocation and arbitrary job-field bounds remain.
+  See RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md.
 - Background creation-time/duplicate-owner safeguards are fixed and native-tested;
   foreground ownership, strict wall-clock startup bounds, logon, long-running
   and clean-install acceptance remain.

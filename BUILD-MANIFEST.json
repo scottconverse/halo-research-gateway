@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-03T06:17:43.3691804Z",
+  "generated_at": "2026-09-03T06:48:28.2903784Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -29,8 +29,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "d6a7969c188a7f8904db4ed65b3e7f625eb6d1637e7eef11df80b218e52ca296",
-      "bytes": 9897
+      "sha256": "727e2fd7ef7f1b9f2f433ed4f54d41206972a97c3915fbf0005f218a6ca6efbe",
+      "bytes": 10357
     },
     {
       "path": "config/config.example.toml",
@@ -104,8 +104,8 @@
     },
     {
       "path": "docs/FINISH-PROGRESS-2026-09-02.md",
-      "sha256": "ee0263af9d8029fb0ee1593a2dd21aaf028cb12e6eb6a0e63ba0d6605c61384e",
-      "bytes": 24223
+      "sha256": "86e9c77208846a11f9d154601be5fb32272b79e2622ba90db5c4443dcb9557ea",
+      "bytes": 24735
     },
     {
       "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
@@ -124,8 +124,8 @@
     },
     {
       "path": "docs/implementation-status.md",
-      "sha256": "15d18c26c9634e71eafc0171dc0fbd8608adae9e01c58ce372f838a4201c7789",
-      "bytes": 10836
+      "sha256": "4ee10c808d84bb53ff58f6da5d4cb9fa9a4ffde02b9c12ac2773d21d95339b45",
+      "bytes": 11383
     },
     {
       "path": "docs/JOB-CONTROL-EVIDENCE-2026-09-02.md",
@@ -149,8 +149,8 @@
     },
     {
       "path": "docs/operations.md",
-      "sha256": "848242181605f86339906d09ba6490e28038b9120f4c39d4224547024ab5a585",
-      "bytes": 7542
+      "sha256": "6d6eefc67fbc00c3e8227b20c257586b677f955f74121c877e6406e38a1090e0",
+      "bytes": 8683
     },
     {
       "path": "docs/quality-gate.md",
@@ -169,8 +169,13 @@
     },
     {
       "path": "docs/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "f8240a86584a0ef7bd77b4e6cf568ae6c1fadbfae035c7b06de872070fbf0de8",
-      "bytes": 9650
+      "sha256": "e825bacbef7cadd01d935b04d90bf1f08af39de4a0cfe4d11a985cddab243281",
+      "bytes": 9961
+    },
+    {
+      "path": "docs/RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md",
+      "sha256": "ea692d05a217cfcafd1688c6b056ac9363722056425fd688b8cfad0b295918d4",
+      "bytes": 37950
     },
     {
       "path": "docs/RESULT-RETENTION-EVIDENCE-2026-09-02.md",
@@ -204,8 +209,8 @@
     },
     {
       "path": "docs/USER-MANUAL.md",
-      "sha256": "19ec9c4992d0cb0e5b16249a8ef06b2d2d93b6009f3935f2db0934f49312b715",
-      "bytes": 39874
+      "sha256": "0022403ad1e296437a5af5defa70421de9714a0d8c4b2c482bc8eef31df2fb09",
+      "bytes": 41408
     },
     {
       "path": "pyproject.toml",
@@ -214,8 +219,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "33bdab64ef1a667cd02b442f7aec313c6c47c5ac14e9b6063d2b06d61849dab5",
-      "bytes": 14216
+      "sha256": "9bc18eba9300c5c6cfe0d4d417354d65c44f19fd410be596de22dbfc99868729",
+      "bytes": 14755
     },
     {
       "path": "scripts/HaloLifecycle.ps1",
@@ -289,8 +294,8 @@
     },
     {
       "path": "skills/halo-research/references/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "f8240a86584a0ef7bd77b4e6cf568ae6c1fadbfae035c7b06de872070fbf0de8",
-      "bytes": 9650
+      "sha256": "e825bacbef7cadd01d935b04d90bf1f08af39de4a0cfe4d11a985cddab243281",
+      "bytes": 9961
     },
     {
       "path": "skills/halo-research/references/source-selection.md",
@@ -449,8 +454,8 @@
     },
     {
       "path": "src/halo_research_gateway/providers/github.py",
-      "sha256": "2f68f59bd6aacbf66941588e61a63639ca5f01f5e05fc77512b23c9f5a9d9675",
-      "bytes": 21589
+      "sha256": "89be68836c66093dc92c1f8a747f2c8810e99513d5fe01328a9ccab0a00dcf97",
+      "bytes": 22630
     },
     {
       "path": "src/halo_research_gateway/providers/html.py",
@@ -499,8 +504,8 @@
     },
     {
       "path": "src/halo_research_gateway/service.py",
-      "sha256": "a763779c933099549105cae7f98c67280e08329688f9e0732d4f3d70b2b71e25",
-      "bytes": 57437
+      "sha256": "bcaf21d27e69251df2a17909a8a635b23caf4b4900ca3f7801521e6d48f07325",
+      "bytes": 58726
     },
     {
       "path": "src/halo_research_gateway/tools/__init__.py",
@@ -611,6 +616,11 @@
       "path": "tests/acceptance/test_local_research_browser.py",
       "sha256": "6dc4ca7a2d554653486342cb02abb2989e0774b862c8d59ca475f06d6e7516e6",
       "bytes": 7296
+    },
+    {
+      "path": "tests/acceptance/test_response_bounds_native.py",
+      "sha256": "c792afc92326a4bf09a84390cd84dd9141b4096c4a0e55407d0c0cd49a59569b",
+      "bytes": 6653
     },
     {
       "path": "tests/acceptance/test_result_retention_native.py",
@@ -781,6 +791,11 @@
       "path": "tests/unit/test_reddit_reliability.py",
       "sha256": "527edfad1853ac9feb4f9c9006701b3ed769845531fa88b90efc24af8b9340e2",
       "bytes": 2845
+    },
+    {
+      "path": "tests/unit/test_research_response_bounds.py",
+      "sha256": "9632b8b8e981384ff23ba38c50344d14a03785ddcc2b90866ce6b55b6af28c71",
+      "bytes": 9053
     },
     {
       "path": "tests/unit/test_research_scope.py",

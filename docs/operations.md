@@ -29,6 +29,25 @@ If port 8765 is occupied, identify the owning PID and command line; do not kill 
 
 The registered task is `Halo Research Gateway`. The 2026-09-01 recovery drill performed an ownership-checked stop, invoked the task, restored `status=ok`, and recorded task result `0x00000000`. A future recovery claim must repeat the drill against the current source/installer identity rather than relying on that historical receipt.
 
+## Local and GitHub response bounds — source checkpoint, not yet installed
+
+The September 3 response-bound source uses the existing HTTP decoded-body and
+total-time settings for local fetches and each GitHub API request. Local reads
+also use shared HTTP admission/origin pacing; a rejected request does not start
+network I/O. GitHub already used shared HTTP admission for `github_research`;
+this change does not add per-origin pacing to every GitHub/community path.
+
+Defaults are 20 MiB decoded body and 30 seconds of active network work. Time
+waiting in the shared queue is separate. Requests close on overflow, timeout or
+cancellation; an oversize body is not silently truncated into evidence.
+Do not equate this with a bound on decompressor/JSON allocations, wire bytes,
+all GitHub requests combined, or total process memory. Source and native proof:
+[response-bound evidence](RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md).
+
+Running Gateway and published site remain on the earlier runtime checkpoint.
+Use ownership-checked lifecycle scripts for a later reload; this work did not
+restart Gateway or DSH, change config, or touch credentials.
+
 ## Shared disk-cache limits
 
 The Gateway enforces positive `[storage]` cache/entry limits on compressed payload

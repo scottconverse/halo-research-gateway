@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Stream local HTTP and GitHub API responses instead of buffering whole downloads. Apply the configured decoded-body cap and per-request deadline, including GitHub DNS. Local fetches now use shared HTTP admission, cancellation and per-origin pacing. Preserve ordinary evidence/pagination; return precise oversize/timeout errors without partial evidence. This source-only checkpoint does not restart the installed service or claim total process-memory bounds.
+
 - Align the owner-only landing page with the September 3 verified runtime checkpoint: replace stale test counts, distinguish installed/native/fake-vendor evidence, link exact CI and the research-only finish list, and prominently disclose the blocked DSH workflow. Preserve design, access and product version 0.2.0; this is not full acceptance or a new package release.
 
 - Fix a cache-locking race exposed by the challenge-routing commit gate: prepare SQLite WAL before requests instead of changing journal mode during normal traffic. Bound simultaneous initialization waits; preserve existing eviction/concurrency assertions and database migration behavior.

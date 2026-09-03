@@ -134,6 +134,17 @@ For code or documents at a particular branch, tag, or commit, pass both `reposit
 
 Discussion threads return at most the requested number of replies (up to 100), including nested replies, with at most ten additional reply-page requests. Any remaining replies are explicitly marked partial. Cursor continuation returns already-collected evidence; it does not claim to exhaust all GitHub search results.
 
+The September 3 response-bound source checkpoint applies
+`http.max_decompressed_bytes` (default 20 MiB) to each streamed GitHub API response
+and `http.total_timeout_seconds` (default 30 seconds) to its network request,
+including DNS and body reading. Oversized responses fail with
+`GITHUB_RESPONSE_TOO_LARGE`; timeout is `GITHUB_REQUEST_TIMEOUT`; invalid JSON or
+a non-object/non-array response is `GITHUB_RESPONSE_INVALID`. No partial response
+is presented as a successful source. This is per request, not the complete
+multi-request GitHub operation, and does not bound JSON object expansion,
+decompression internals or total process memory. Current installed code remains
+the earlier checkpoint until a verified reload. See [evidence](RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md).
+
 ### Pagination
 
 Ordinary web search prefers anonymous Exa and falls back to DDGS. Domain inclusion/exclusion applies to either route. Freshness and non-web searches use DDGS because the anonymous Exa adapter does not pass those controls. Upstream freshness filtering is approximate, not a guarantee that every result has a verified publication date; inspect the source date. If Exa returns unrecognized text, links are marked as requiring fetch rather than borrowing an excerpt from another source.
@@ -393,6 +404,17 @@ cache_authenticated = false
 ```
 
 Use `local_fetch` or `local_crawl` with the target name. Never weaken public URL policy to expose a local service.
+
+In the September 3 response-bound source checkpoint, `local_fetch` shares the
+HTTP queue, cancellation handling and per-origin pacing with other readers.
+Queue saturation is `QUEUE_FULL`. Its active operation, including origin pacing,
+uses `http.total_timeout_seconds`; time waiting for shared queue admission is
+separate. Each decoded response uses `http.max_decompressed_bytes`.
+`LOCAL_RESPONSE_TOO_LARGE`, `LOCAL_REQUEST_TIMEOUT` and `LOCAL_REDIRECT_DENIED`
+return no successful partial source. Local reads remain uncached on disk and
+successful evidence still pages normally. These are not browser, compressed-wire,
+decompression-allocation or whole-process memory limits. The installed service
+has not yet been reloaded with this source checkpoint.
 
 ## 9. Durable research jobs
 
