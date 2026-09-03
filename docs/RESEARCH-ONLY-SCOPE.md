@@ -65,7 +65,9 @@ was proven at adapter level. These do not complete the following work:
    state protection and honest empty/partial outcomes now pass isolated tests.
    Source checkpoints, cumulative budgets, lease renewal and bounded status now
    have regression coverage and a native process-crash/restart fixture passes.
-   Prove production/DSH job use, long-running stress and provider cancellation;
+   A live Gateway MCP job now passes pause/frozen-state/resume, cumulative
+   budget checks and retained evidence pagination. DSH job use, long-running
+   stress and provider cancellation still need proof;
    an already-running synchronous DDGS request cannot be forcibly cancelled.
 3. **Finish research login/challenge access.** A real Chrome v10 cookie fixture
    passes; app-bound cookies and an operator-chosen real login are unproven.

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-02T23:53:12.8971082Z",
+  "generated_at": "2026-09-03T00:15:56.3223426Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -69,8 +69,8 @@
     },
     {
       "path": "docs/FINISH-PROGRESS-2026-09-02.md",
-      "sha256": "00e5c39944b2fbca2a4ac75597d808c8c2df9ce5b05fb1a10270bf0de41ea0fb",
-      "bytes": 19742
+      "sha256": "9f2a37333f451b8df3cc6be075477706a46ebdb4919401f994118f995350ecb2",
+      "bytes": 19811
     },
     {
       "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
@@ -89,13 +89,18 @@
     },
     {
       "path": "docs/implementation-status.md",
-      "sha256": "6629d6840445fc3f23f3c227e7a74bb2908f4adab0a07ce2d49d2ef55b43dd00",
-      "bytes": 3457
+      "sha256": "36b05c1ebd621505fd51a83718da9c9c7cc5417ae95b653a9fe421da99bdf619",
+      "bytes": 3653
     },
     {
       "path": "docs/JOB-CONTROL-EVIDENCE-2026-09-02.md",
       "sha256": "3dd5b68215fa4dff2bcd9938eb23872ceb38b61b8f44a014eb4147d5980fc2df",
       "bytes": 15116
+    },
+    {
+      "path": "docs/LIVE-CHECKPOINT-2026-09-02.md",
+      "sha256": "fbfaff644c063b138f00d4d888dac132386d2f14c97d96287c66bb9014cc07a3",
+      "bytes": 11020
     },
     {
       "path": "docs/LIVE-SOURCE-ACCEPTANCE-2026-09-02.md",
@@ -124,8 +129,8 @@
     },
     {
       "path": "docs/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "72c3bb45a020902cad311d113613520d19e5bbc17cb3f345924b8b1952c3cdd3",
-      "bytes": 5711
+      "sha256": "d96b529394aa480441f21c9e11772eec00a96783e18fe31d94f1c9db94e978ac",
+      "bytes": 5837
     },
     {
       "path": "docs/security.md",
@@ -219,13 +224,13 @@
     },
     {
       "path": "skills/halo-research/references/limitations.md",
-      "sha256": "998e1ec7edd8bda3de9369dd688778a45a68e1e677411a048cdd0f092f5cc0e1",
-      "bytes": 2324
+      "sha256": "758c23e7fd74cbd6a9becd83abc12b5d3887333ff27acb855c6aa56dc48f8482",
+      "bytes": 2379
     },
     {
       "path": "skills/halo-research/references/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "72c3bb45a020902cad311d113613520d19e5bbc17cb3f345924b8b1952c3cdd3",
-      "bytes": 5711
+      "sha256": "d96b529394aa480441f21c9e11772eec00a96783e18fe31d94f1c9db94e978ac",
+      "bytes": 5837
     },
     {
       "path": "skills/halo-research/references/source-selection.md",
@@ -481,6 +486,11 @@
       "path": "tests/acceptance/mcp_contract.py",
       "sha256": "7f66e8228d6ac01f3b3ed582a579305e4f2131dba8bc670d0e5e7bd3bc4bf2eb",
       "bytes": 2693
+    },
+    {
+      "path": "tests/acceptance/mcp_job_lifecycle.py",
+      "sha256": "3e942bd89d8d4da8aaa1df7454badc07f476a8978f461e649cc679b550edc4c2",
+      "bytes": 5068
     },
     {
       "path": "tests/acceptance/mcp_smoke.py",
