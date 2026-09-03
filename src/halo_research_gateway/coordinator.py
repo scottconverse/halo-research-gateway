@@ -51,6 +51,7 @@ class Coordinator:
         self._pacing_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._state_lock = asyncio.Lock()
         self._flights: dict[tuple[str, str], _QueuedOperation] = {}
+        self._cleanup_tasks: set[asyncio.Task] = set()
         self.rejections: dict[str, int] = defaultdict(int)
 
     async def run(
@@ -90,7 +91,19 @@ class Coordinator:
         try:
             return await asyncio.shield(item.future)
         finally:
-            await self._detach_waiter(item)
+            # Repeated caller cancellation must not cancel the bookkeeping itself.
+            await asyncio.shield(self._schedule_cleanup(self._detach_waiter(item)))
+
+    def _schedule_cleanup(self, operation) -> asyncio.Task:
+        task = asyncio.create_task(operation)
+        self._cleanup_tasks.add(task)
+        task.add_done_callback(self._cleanup_tasks.discard)
+        return task
+
+    def _forget_flight(self, item: _QueuedOperation) -> None:
+        key = (item.provider, item.operation_key)
+        if self._flights.get(key) is item:
+            self._flights.pop(key)
 
     async def _detach_waiter(self, item: _QueuedOperation) -> None:
         async with self._state_lock:
@@ -98,6 +111,10 @@ class Coordinator:
             if item.waiters:
                 return
             if item.state == "active":
+                # New callers must not attach to work that is already stopping.
+                # Keep its admission/active slot until the provider actually exits.
+                item.state = "cancelling"
+                self._forget_flight(item)
                 if item.task is not None:
                     item.task.cancel()
                 return
@@ -115,7 +132,7 @@ class Coordinator:
             item.state = "cancelled"
             self._pending[item.provider] -= 1
             self._client_pending[(item.provider, item.client)] -= 1
-            self._flights.pop((item.provider, item.operation_key), None)
+            self._forget_flight(item)
             item.future.cancel()
             self._dispatch_locked(item.provider)
 
@@ -136,17 +153,25 @@ class Coordinator:
             self._last_served[provider] = client
             self._active[provider] += 1
             item.task = asyncio.create_task(self._execute(item))
+            item.task.add_done_callback(
+                lambda completed, active=item: self._schedule_cleanup(self._settle(active, completed))
+            )
 
-    async def _execute(self, item: _QueuedOperation) -> None:
+    async def _execute(self, item: _QueuedOperation) -> Any:
+        policy = self.policies[item.provider]
+        async with self._pacing_locks[item.provider]:
+            delay = policy.min_interval_seconds - (self.clock.monotonic() - self._last_started[item.provider])
+            if delay > 0:
+                await self.clock.sleep(delay)
+            self._last_started[item.provider] = self.clock.monotonic()
+        return await item.operation()
+
+    async def _settle(self, item: _QueuedOperation, completed: asyncio.Task) -> None:
+        # Completion callbacks also run if a provider task never reached its first
+        # instruction. This task is not the one cancelled by departing callers.
         result = exception = None
         try:
-            policy = self.policies[item.provider]
-            async with self._pacing_locks[item.provider]:
-                delay = policy.min_interval_seconds - (self.clock.monotonic() - self._last_started[item.provider])
-                if delay > 0:
-                    await self.clock.sleep(delay)
-                self._last_started[item.provider] = self.clock.monotonic()
-            result = await item.operation()
+            result = completed.result()
         except BaseException as exc:  # the shared future must settle for every operation outcome
             exception = exc
         async with self._state_lock:
@@ -154,7 +179,7 @@ class Coordinator:
             self._active[item.provider] -= 1
             self._pending[item.provider] -= 1
             self._client_pending[(item.provider, item.client)] -= 1
-            self._flights.pop((item.provider, item.operation_key), None)
+            self._forget_flight(item)
             self._dispatch_locked(item.provider)
         if item.future.done():
             return

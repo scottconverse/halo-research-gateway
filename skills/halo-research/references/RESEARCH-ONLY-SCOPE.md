@@ -76,6 +76,9 @@ was proven at adapter level. These do not complete the following work:
 4. **Finish reliability acceptance.** Verify shared concurrent clients, active
    cancellation, browser/process cleanup, startup/PID identity, restart recovery,
    response/time bounds and installation. Unit tests alone are not host acceptance.
+   Three coordinator cancellation races are now fixed with regressions and a
+   real loopback HTTPX disconnect/restart fixture. This does not complete broad
+   provider cancellation, shutdown or installation acceptance.
 5. **Close source-provider coverage gaps.** Prove the actual DDGS fallback path,
    connected Gateway/DSH authenticated GitHub, larger/nested discussions, and
    honest source/coverage limits. Keep intermittent upstream throttling visible.
@@ -87,6 +90,18 @@ was proven at adapter level. These do not complete the following work:
 Optional fallback-host integrations do not justify expanding the core product.
 No Gmail, publishing, shopping, account management, broad personal-data migration,
 new dashboard, or general automation platform belongs in the finish list.
+
+Recorded implementation gaps still included in that list:
+
+- `web_crawl` discards depth/site-only/interaction/capture arguments;
+  `max_pages` currently enables full-page scrolling, not page traversal.
+- `document_extract` discards table/OCR options.
+- Memory snapshot retention is not bounded; local/GitHub retrieval needs
+  response/shared-limit hardening, and arbitrary job fields need bounds.
+- Startup scripts need recorded creation-time/duplicate-owner safeguards;
+  long-running and clean-install acceptance remains.
+- Two HTTP User-Agent strings still say `0.1`; package description/dependency
+  metadata, contributing guidance and a licensing decision remain unfinished.
 
 ## Change rule
 

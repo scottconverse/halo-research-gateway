@@ -18,6 +18,13 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+The coordinator cancellation checkpoint adds seven deterministic cases (183
+total passing tests) and a real loopback HTTPX cancellation/restart fixture.
+New calls cannot inherit an abandoned flight, and cancellation cannot strand
+queue settlement or waiter cleanup. The native job process-crash fixture was
+rerun successfully. See COORDINATOR-CANCELLATION-EVIDENCE-2026-09-02.md for
+RED/GREEN and exact limits; its deployment/CI identity is recorded separately.
+
 Removal, retrieval repairs, active cancellation, DSH failure reporting, durable jobs and corrected documentation are pushed to private main through `b178cbe`; CI run 33697543325 passed for that exact revision. Gateway-only reload at 2026-09-02T23:59:44.28445Z passed live MCP smoke. Version remains 0.2.0; no new tag or PR merge is claimed. Later evidence-only commits require their own delivery receipt. See [progress](FINISH-PROGRESS-2026-09-02.md) for evidence by capability.
 
 GitHub cursor/discussion/ref and exact local-browser/WebSocket repairs have tests; public-source live MCP/adapter probes returned useful evidence. A disposable real-Chrome v10 cookie-only login fixture passed. Real login/app-bound cookies, human challenge handling, optional-provider routing and complete DSH acceptance are not proved.

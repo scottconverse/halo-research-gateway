@@ -242,6 +242,11 @@ Unsafe global switches are not representable. Unknown and legacy banned keys fai
 - Sensitive URLs are not cached.
 - Bounded queues return visible saturation errors instead of growing forever.
 - Provider queues use round-robin scheduling across declared client profiles and FIFO within each profile. Missing or unknown `X-Halo-Client` values become `unidentified`; the value is scheduling metadata, never authentication or action authority.
+- Identical requests share an upstream read. Cancelling one caller leaves that read running for other callers. Once its last caller cancels, a new request gets fresh work rather than inheriting the old cancellation. The stopping provider keeps its active slot until it actually exits; cancellation does not allow temporary concurrency-limit overruns. Repeated cancellation cannot interrupt queue bookkeeping.
+
+These cancellation rules have deterministic race coverage and a real loopback
+HTTPX connection test. They do not forcibly stop synchronous DDGS work already
+running in a thread, or prove every external provider/browser shutdown path.
 
 A healthy gateway can still report an upstream outage honestly.
 
