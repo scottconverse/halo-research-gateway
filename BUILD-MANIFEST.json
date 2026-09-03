@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-03T00:34:24.2239827Z",
+  "generated_at": "2026-09-03T01:06:56.1659962Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -29,8 +29,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "5f52fcf75893e71ec83deb6e68079339cbd61098f81dd9b7129dd352e4640490",
-      "bytes": 4691
+      "sha256": "ec29796c0596b7dbd67d126567c5ee17aa72dfcaa275195656caccf88833fbfb",
+      "bytes": 5154
     },
     {
       "path": "config/config.example.toml",
@@ -74,8 +74,8 @@
     },
     {
       "path": "docs/FINISH-PROGRESS-2026-09-02.md",
-      "sha256": "69a0c4e37eb8644c39eaab43df7337582cc3850e460cb5dec5e58d8420e13c36",
-      "bytes": 20009
+      "sha256": "52f3a1ea7c8321e8b7ea15dffa76616689787a44ffbaf2fe7a5f2210bcfe71cf",
+      "bytes": 20127
     },
     {
       "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
@@ -94,13 +94,18 @@
     },
     {
       "path": "docs/implementation-status.md",
-      "sha256": "de08ccdcf9f8fb0a4cc8eea8adf9eb48de26c79b0b3b3abe3cc941ebd0c5007c",
-      "bytes": 4116
+      "sha256": "04887ac8b03b462c754ac03e5da4dab0b6b9a63e413df01090d8ace3f8e47064",
+      "bytes": 4652
     },
     {
       "path": "docs/JOB-CONTROL-EVIDENCE-2026-09-02.md",
       "sha256": "3dd5b68215fa4dff2bcd9938eb23872ceb38b61b8f44a014eb4147d5980fc2df",
       "bytes": 15116
+    },
+    {
+      "path": "docs/LAUNCHER-OWNERSHIP-EVIDENCE-2026-09-02.md",
+      "sha256": "09c939dbcac214ecaadb03f22d5eee5cfb511e70d0c991c33635d6a94cb6495a",
+      "bytes": 43865
     },
     {
       "path": "docs/LIVE-CHECKPOINT-2026-09-02.md",
@@ -134,8 +139,8 @@
     },
     {
       "path": "docs/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "be1fe18d5dc26bb0fc77a8db58016588dc14e8d81c6a5051719fa38b2a6288bb",
-      "bytes": 6738
+      "sha256": "a5aa9181c6f06cd6b1daa4be25314b7559cf1dc7b51506b9aeae8e8a204890ce",
+      "bytes": 7135
     },
     {
       "path": "docs/security.md",
@@ -154,8 +159,8 @@
     },
     {
       "path": "docs/USER-MANUAL.md",
-      "sha256": "6bf00f89f0ce581850f8b0452ec0063835c725aa9be97695e9ba94131f224904",
-      "bytes": 21425
+      "sha256": "ddcdd02d3856f2f562e3d2670f31f95fd3dc754a0e9da3ff455227ce79087963",
+      "bytes": 23018
     },
     {
       "path": "pyproject.toml",
@@ -164,8 +169,13 @@
     },
     {
       "path": "README.md",
-      "sha256": "93b196cd68ee0c2d5aa4b4ef8e35e4b8093d2ad5038160ed7eb070af4cf5c28f",
-      "bytes": 9849
+      "sha256": "34828d65a5ee0b57e6c0f620dc68a1ae53a9947fe52a24625a7fb52c1ebdeccf",
+      "bytes": 10280
+    },
+    {
+      "path": "scripts/HaloLifecycle.ps1",
+      "sha256": "8b0c39877c52930e3f34c389283398ad28d78eb8e95294ef0e8b13a5f69f425f",
+      "bytes": 6006
     },
     {
       "path": "scripts/Install-HaloResearch.ps1",
@@ -179,13 +189,13 @@
     },
     {
       "path": "scripts/Start-HaloResearch.ps1",
-      "sha256": "5b5a5f471f30f4a0802f9c1c5cdf80b6928fa57086b37b69f7c81104f8ed8384",
-      "bytes": 1964
+      "sha256": "9216a7611bbaa482851f4f527084a1ebe85dcae08a843c49c229c59a3c978062",
+      "bytes": 2490
     },
     {
       "path": "scripts/Stop-HaloResearch.ps1",
-      "sha256": "eed85fe29672f74348098209b03551138f5a92007ea5066ed94b9c6f6e221727",
-      "bytes": 950
+      "sha256": "9fb70a75cc5008d9945bb8260d934c528e88b424462852939d9d2166cde0d1c1",
+      "bytes": 799
     },
     {
       "path": "scripts/Test-HaloResearch.ps1",
@@ -234,8 +244,8 @@
     },
     {
       "path": "skills/halo-research/references/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "be1fe18d5dc26bb0fc77a8db58016588dc14e8d81c6a5051719fa38b2a6288bb",
-      "bytes": 6738
+      "sha256": "a5aa9181c6f06cd6b1daa4be25314b7559cf1dc7b51506b9aeae8e8a204890ce",
+      "bytes": 7135
     },
     {
       "path": "skills/halo-research/references/source-selection.md",
@@ -513,6 +523,11 @@
       "bytes": 3009
     },
     {
+      "path": "tests/acceptance/test_launcher_native.py",
+      "sha256": "46d49f2a25150c60e5ddf13fe1a8a69d31614e1cb63288eeb0329f9b1e42834e",
+      "bytes": 4673
+    },
+    {
       "path": "tests/acceptance/test_local_research_browser.py",
       "sha256": "6dc4ca7a2d554653486342cb02abb2989e0774b862c8d59ca475f06d6e7516e6",
       "bytes": 7296
@@ -586,6 +601,11 @@
       "path": "tests/unit/test_job_lifecycle.py",
       "sha256": "ae582cd1754f69572f949171cf087a2880a7b4ee6caf26faf8d821d4f055335f",
       "bytes": 9091
+    },
+    {
+      "path": "tests/unit/test_launcher_ownership.py",
+      "sha256": "25868dd145a52e87920d2d89f66209d4e6882fdd582ab9ba7b399d40a3ac37aa",
+      "bytes": 12634
     },
     {
       "path": "tests/unit/test_local_target_config.py",

@@ -1,14 +1,21 @@
 $ErrorActionPreference = 'Stop'
-$runtime = Join-Path $env:LOCALAPPDATA 'HaloResearchGateway'
-$pidFile = Join-Path $runtime 'run\gateway.json'
-if (-not (Test-Path -LiteralPath $pidFile)) { Write-Host 'Halo Research Gateway is not recorded as running.'; exit 0 }
-$identity = Get-Content -LiteralPath $pidFile -Raw | ConvertFrom-Json
-$live = Get-CimInstance Win32_Process -Filter "ProcessId=$($identity.pid)" -ErrorAction SilentlyContinue
-if (-not $live) { Remove-Item -LiteralPath $pidFile -Force; Write-Host 'Removed stale Halo PID record.'; exit 0 }
-if ($live.ExecutablePath -ne $identity.executable -or $live.CommandLine -notlike '*halo_research_gateway*') {
-    throw "PID $($identity.pid) no longer matches the recorded Halo process; refusing to stop it."
+. (Join-Path $PSScriptRoot 'HaloLifecycle.ps1')
+$context = Get-HaloLifecycleContext
+$mutex = Enter-HaloLifecycleLock $context
+$process = $null
+try {
+    if (-not (Test-Path -LiteralPath $context.PidFile)) {
+        Write-Host 'Halo Research Gateway is not recorded as running.'
+        exit 0
+    }
+    $identity = Get-Content -LiteralPath $context.PidFile -Raw | ConvertFrom-Json
+    $process = Get-HaloOwnedProcess $context $identity
+    if ($process) { Stop-HaloOwnedProcess $process }
+    Remove-Item -LiteralPath $context.PidFile -Force
+    if ($process) { Write-Host 'Halo Research Gateway stopped.' }
+    else { Write-Host 'Removed stale Halo PID record.' }
+} finally {
+    if ($process) { $process.Dispose() }
+    $mutex.ReleaseMutex()
+    $mutex.Dispose()
 }
-Stop-Process -Id $identity.pid
-Wait-Process -Id $identity.pid -Timeout 15 -ErrorAction SilentlyContinue
-Remove-Item -LiteralPath $pidFile -Force
-Write-Host 'Halo Research Gateway stopped.'

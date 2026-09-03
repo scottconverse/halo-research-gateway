@@ -1,40 +1,60 @@
 param([switch]$Foreground)
 $ErrorActionPreference = 'Stop'
-$repo = Split-Path -Parent $PSScriptRoot
-$runtime = Join-Path $env:LOCALAPPDATA 'HaloResearchGateway'
-$run = Join-Path $runtime 'run'
-$pidFile = Join-Path $run 'gateway.json'
-$python = Join-Path $repo '.venv\Scripts\python.exe'
-if (-not (Test-Path -LiteralPath $python)) { throw "Locked environment missing: $python" }
-New-Item -ItemType Directory -Force -Path $run | Out-Null
-
-if (Test-Path -LiteralPath $pidFile) {
-    $identity = Get-Content -LiteralPath $pidFile -Raw | ConvertFrom-Json
-    $live = Get-CimInstance Win32_Process -Filter "ProcessId=$($identity.pid)" -ErrorAction SilentlyContinue
-    if ($live -and $live.ExecutablePath -eq $python -and $live.CommandLine -like '*halo_research_gateway*') {
-        Write-Host "Halo Research Gateway already running (PID $($identity.pid))."
-        exit 0
+. (Join-Path $PSScriptRoot 'HaloLifecycle.ps1')
+$context = Get-HaloLifecycleContext
+if (-not (Test-Path -LiteralPath $context.Python)) { throw "Locked environment missing: $($context.Python)" }
+$server = Get-HaloServerSettings $context
+New-Item -ItemType Directory -Force -Path $context.Run | Out-Null
+$mutex = Enter-HaloLifecycleLock $context
+$process = $null
+$createdHere = $false
+$recordWritten = $false
+try {
+    if (Test-Path -LiteralPath $context.PidFile) {
+        $identity = Get-Content -LiteralPath $context.PidFile -Raw | ConvertFrom-Json
+        $process = Get-HaloOwnedProcess $context $identity
+        if ($process) {
+            if (-not (Test-HaloReady $process $server)) { throw 'Recorded Gateway is not ready; inspect it before restarting. No process was changed.' }
+            Write-Host "Halo Research Gateway already running (PID $($process.Id))."
+            exit 0
+        }
+        Remove-Item -LiteralPath $context.PidFile -Force
     }
-    Remove-Item -LiteralPath $pidFile -Force
+    $portOwner = @(Get-HaloListeners $server.port)
+    if ($portOwner.Count) { throw "Port $($server.port) is already owned by PID $($portOwner.OwningProcess)." }
+    if ($Foreground) {
+        # Legacy diagnostic foreground mode is not PID-managed. Never retain the
+        # lifecycle mutex for its lifetime and prevent other stop/start commands.
+        $mutex.ReleaseMutex()
+        $mutex.Dispose()
+        $mutex = $null
+        Set-Location -LiteralPath $context.Repository
+        & $context.Python -m halo_research_gateway
+        exit $LASTEXITCODE
+    }
+    $process = Start-Process -FilePath $context.Python -ArgumentList '-m','halo_research_gateway' -WorkingDirectory $context.Repository -WindowStyle Hidden -PassThru
+    $createdHere = $true
+    $null = $process.Handle
+    Write-HaloPidRecord $context $process
+    $recordWritten = $true
+    for ($i=0; $i -lt 30; $i++) {
+        if (Test-HaloReady $process $server) {
+            Write-Host "Halo Research Gateway ready (PID $($process.Id))."
+            exit 0
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    throw 'Gateway did not become ready within its startup window.'
+} catch {
+    if ($createdHere -and $process) {
+        Stop-HaloOwnedProcess $process
+        if ($recordWritten) { Remove-Item -LiteralPath $context.PidFile -Force }
+    }
+    throw
+} finally {
+    if ($process) { $process.Dispose() }
+    if ($mutex) {
+        $mutex.ReleaseMutex()
+        $mutex.Dispose()
+    }
 }
-
-$portOwner = Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue
-if ($portOwner) { throw "Port 8765 is already owned by PID $($portOwner.OwningProcess)." }
-
-if ($Foreground) {
-    Set-Location -LiteralPath $repo
-    & $python -m halo_research_gateway
-    exit $LASTEXITCODE
-}
-
-$process = Start-Process -FilePath $python -ArgumentList '-m','halo_research_gateway' -WorkingDirectory $repo -WindowStyle Hidden -PassThru
-$identity = [ordered]@{ pid=$process.Id; executable=$python; started_at=(Get-Date).ToUniversalTime().ToString('o'); repository=$repo }
-$identity | ConvertTo-Json | Set-Content -LiteralPath $pidFile -Encoding utf8
-for ($i=0; $i -lt 30; $i++) {
-    try {
-        $health = Invoke-RestMethod -Uri 'http://127.0.0.1:8765/health' -TimeoutSec 2
-        if ($health.status -in @('ok','degraded','starting')) { Write-Host "Halo Research Gateway $($health.status) (PID $($process.Id))."; exit 0 }
-    } catch {}
-    Start-Sleep -Milliseconds 500
-}
-throw 'Gateway did not become healthy within 15 seconds.'

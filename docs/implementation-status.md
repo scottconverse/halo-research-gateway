@@ -18,6 +18,14 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+The background-launcher checkpoint passes 227 unit/fixture tests and two explicit
+native lifecycle tests (one per PowerShell version). It fixes process identity,
+duplicate startup, configured health/port and failed-launch cleanup without
+restarting production Gateway or DSH. Exact RED/GREEN, baseline, security review,
+and remaining foreground/logon/install limits are in
+LAUNCHER-OWNERSHIP-EVIDENCE-2026-09-02.md. Commit/CI identity is recorded in the
+operator checkpoint after delivery; these tests alone are not a CI claim.
+
 The coordinator cancellation checkpoint adds seven deterministic cases (183
 total passing tests) and a real loopback HTTPX cancellation/restart fixture.
 New calls cannot inherit an abandoned flight, and cancellation cannot strand
@@ -31,6 +39,6 @@ GitHub cursor/discussion/ref and exact local-browser/WebSocket repairs have test
 
 DSH failed before Gateway dispatch because host and agent-loop resolve distinct tools-package scheduler symbols. Repair/restart approval was requested; no DSH settings, packages, permissions, models, presets or existing conversations were changed. See [DSH failure evidence](DSH-WORKFLOW-CANCELLATION-2026-09-02.md).
 
-Research-job controls stop the async worker, enforce admission/argument bounds, protect terminal states and preserve honest empty/partial outcomes. The continuation checkpoint adds saved sources/frontier, cumulative budgets, lease renewal and bounded pageable status. A native process-crash/restart fixture recovered evidence without repeating completed discovery/pages. After reload, a live Gateway MCP job passed pause/frozen-state/resume, budget and evidence-cursor checks. Broader provider cancellation (especially synchronous DDGS), DSH jobs, stress and startup ownership remain unproved. See DURABLE-JOB-EVIDENCE-2026-09-02.md and LIVE-CHECKPOINT-2026-09-02.md.
+Research-job controls stop the async worker, enforce admission/argument bounds, protect terminal states and preserve honest empty/partial outcomes. The continuation checkpoint adds saved sources/frontier, cumulative budgets, lease renewal and bounded pageable status. A native process-crash/restart fixture recovered evidence without repeating completed discovery/pages. After reload, a live Gateway MCP job passed pause/frozen-state/resume, budget and evidence-cursor checks. Broader provider cancellation (especially synchronous DDGS), DSH jobs, stress and foreground/logon/install remain unproved. See DURABLE-JOB-EVIDENCE-2026-09-02.md and LIVE-CHECKPOINT-2026-09-02.md.
 
 The six-part [finish list](RESEARCH-ONLY-SCOPE.md#needs-to-be-done-to-finish) covers DSH, durable continuation, login/challenges, reliability/install, source-provider gaps and final website/delivery. No outbound actions or general personal-assistant features belong in it.

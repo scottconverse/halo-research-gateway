@@ -44,7 +44,13 @@ Open `http://127.0.0.1:8765/operator`. Healthy means `status: ok`, version `0.2.
 .\scripts\Test-HaloResearch.ps1
 ```
 
-The launcher validates PID identity and refuses to steal port 8765. Stop closes only the gateway's Windows Job Object and owned Chromium descendants. It does not kill personal Chrome, DSH, LM Studio, Codex, Claude, OpenCode, Bionic, or Ollama.
+Background start/stop operations share a Windows lock. The launcher uses the configured server port (8765 by default) and health path, verifies listener ancestry and health before saying "already running", and refuses to steal an unrelated listener. Stop checks this repository's executable, the exact Gateway module command, and recorded process creation time; it retains that validated process handle through termination instead of looking up the PID again. A mismatched record or process-access error leaves the record and process untouched for inspection.
+
+New PID records use schema 2 and exact creation times. Legacy records written just after process creation are accepted only within a one-sided two-second compatibility window, with all other identity checks retained. Failed new starts stop only the process created by that invocation and remove its record after exit. Missing processes allow stale-record removal. Normal start/stop does not erase research state.
+
+A disposable native test proved background duplicate-start prevention, listener closure, restart, and preservation of an unrelated process in Windows PowerShell and PowerShell 7. The Gateway process uses a Windows Job Object for its descendants; this test did not open Chrome or prove all browser shutdown paths. No DSH, LM Studio, personal Chrome or other live stack process was stopped by that test.
+
+`-Foreground` remains the older diagnostic mode and is not PID-managed; use ordinary background start for managed lifecycle. Full foreground/logon/clean-install acceptance remains open. The readiness loop is bounded by attempts and per-request timeouts, not a strict 15-second wall-clock guarantee. See [launcher evidence](LAUNCHER-OWNERSHIP-EVIDENCE-2026-09-02.md).
 
 - Health: `http://127.0.0.1:8765/health`
 - Redacted statistics: `http://127.0.0.1:8765/stats`
@@ -198,7 +204,7 @@ Status returns checkpoint counts and a bounded evidence page instead of the whol
 
 Checkpoint size is bounded by `storage.entry_max_bytes`; overflow reports `JOB_CHECKPOINT_TOO_LARGE` and retains the previous checkpoint. Sources and extracted links with recognized sensitive query parameters are excluded from durable jobs with `SENSITIVE_SOURCE_NOT_PERSISTED`. This is pattern-based protection, not a guarantee that arbitrary page prose contains no sensitive information. Use jobs for public research.
 
-A disposable native Windows process-crash/restart fixture passed, including preserved evidence, no completed-source re-fetch, and cumulative attempts. Full DSH/live-provider job acceptance remains separate. DDGS performs synchronous work in a thread: cancellation stops the async research worker, but cannot forcibly terminate an already-running synchronous provider call. Broader provider cancellation/stress and single-process startup ownership still require acceptance testing.
+A disposable native Windows process-crash/restart fixture passed, including preserved evidence, no completed-source re-fetch, and cumulative attempts. Full DSH/live-provider job acceptance remains separate. DDGS performs synchronous work in a thread: cancellation stops the async research worker, but cannot forcibly terminate an already-running synchronous provider call. Broader provider cancellation/stress remains open. Background launcher ownership now has the separate native acceptance described in section 3; foreground/logon/clean-install acceptance remains open.
 
 ## 10. Research-only product boundary
 

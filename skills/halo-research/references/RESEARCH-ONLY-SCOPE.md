@@ -79,6 +79,10 @@ was proven at adapter level. These do not complete the following work:
    Three coordinator cancellation races are now fixed with regressions and a
    real loopback HTTPX disconnect/restart fixture. This does not complete broad
    provider cancellation, shutdown or installation acceptance.
+   Background startup now verifies exact process identity, serializes operations,
+   honors configured port/health, and cleans failed launches. Disposable native
+   duplicate-start/stop/restart passes in both PowerShell versions; foreground,
+   logon, browser-tree and clean-install acceptance are not covered by that test.
 5. **Close source-provider coverage gaps.** Prove the actual DDGS fallback path,
    connected Gateway/DSH authenticated GitHub, larger/nested discussions, and
    honest source/coverage limits. Keep intermittent upstream throttling visible.
@@ -98,8 +102,9 @@ Recorded implementation gaps still included in that list:
 - `document_extract` discards table/OCR options.
 - Memory snapshot retention is not bounded; local/GitHub retrieval needs
   response/shared-limit hardening, and arbitrary job fields need bounds.
-- Startup scripts need recorded creation-time/duplicate-owner safeguards;
-  long-running and clean-install acceptance remains.
+- Background creation-time/duplicate-owner safeguards are fixed and native-tested;
+  foreground ownership, strict wall-clock startup bounds, logon, long-running
+  and clean-install acceptance remain.
 - Two HTTP User-Agent strings still say `0.1`; package description/dependency
   metadata, contributing guidance and a licensing decision remain unfinished.
 

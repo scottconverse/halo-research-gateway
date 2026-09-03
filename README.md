@@ -13,7 +13,7 @@ Halo Research Gateway is a persistent, localhost-only MCP service that gives DSH
 
 The governing product scope and finish list are [Research-only scope](docs/RESEARCH-ONLY-SCOPE.md); this supersedes conflicting requirements in the original v1.5 design. The operator handbook is the [complete user manual](docs/USER-MANUAL.md).
 
-Current acceptance is partial: 183 local regression tests, disposable native job crash/restart, live Gateway job controls, and a loopback HTTP cancellation fixture pass; public-source probes have returned usable evidence. The latest full DSH workflow failed before search dispatch due to a DSH tools-package mismatch. Real login/challenge/provider routing and wider installation/stress checks remain open. See [current evidence](docs/FINISH-PROGRESS-2026-09-02.md), not historical release counts, for what is and is not proved.
+Current acceptance is partial: 227 local regression tests, disposable native background-launcher and job crash/restart tests, live Gateway job controls, and a loopback HTTP cancellation fixture pass; public-source probes have returned usable evidence. The latest full DSH workflow failed before search dispatch due to a DSH tools-package mismatch. Real login/challenge/provider routing and wider installation/stress checks remain open. See [current evidence](docs/FINISH-PROGRESS-2026-09-02.md), not historical release counts, for what is and is not proved.
 
 ## Why it exists
 
@@ -77,6 +77,8 @@ One process owns cache, rate limits, singleflight coordination, durable jobs, an
 ```
 
 The scheduled task is `Halo Research Gateway`. Runtime state is under `C:\Users\scott\AppData\Local\HaloResearchGateway`. Do not place credentials in TOML, command arguments, prompts, logs, or Git; create connections through the operator console. Models receive opaque connection IDs only.
+
+Background start/stop operations are serialized. The launcher checks the configured port and health path, while stop verifies the repository, executable, module command and process creation time before using a held process handle. A mismatched record is preserved for inspection, not silently deleted. See the [launcher evidence and remaining limits](docs/LAUNCHER-OWNERSHIP-EVIDENCE-2026-09-02.md).
 
 ## Configuration
 

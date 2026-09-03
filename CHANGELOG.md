@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Fix background launcher ownership: serialize simultaneous start/stop, validate repository/executable/module/creation time, retain a process handle through stop, refuse unrelated listeners, honor the configured port/health path, and clean up a failed new launch. Mismatched existing instances are left untouched. Native disposable start/stop/restart passed in Windows PowerShell and PowerShell 7; foreground, logon and clean-install acceptance remain separate.
+
 - Remove Gmail compose/draft/send, GitHub issue/comment writes, general form submission, the two action MCP tools, and the general action approval endpoint/UI.
 - Remove full/personal Chrome import; retain cookie-only research sessions and their import-specific review/receipts.
 - Preserve existing runtime data and historical receipts; old action plans cannot execute through import review.
