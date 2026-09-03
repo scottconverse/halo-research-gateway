@@ -4,6 +4,8 @@ All notable Halo Research Gateway product releases are recorded here.
 
 ## Unreleased — research-only scope correction (2026-09-02)
 
+- Apply configured CapSolver tokens to declared standalone Turnstile/reCAPTCHA v2 research-gate callbacks inside the guarded automatic public browser. Revalidate the page/widget, retain the observed final HTTP status, redact reflected tokens and close browsers on cancellation. Existing domain/attempt/estimated-spend policy still applies; no provider is enabled. Native Chrome with a local fake vendor proves this limited path, not real paid service or universal challenge access.
+
 - Bound each complete GitHub research/discussion operation by the configured HTTP deadline and aggregate decoded-response byte ceiling, including token minting and nested API follow-ups. Preserve per-request limits and external cancellation. Return explicit operation errors without public fallback or success-shaped incomplete evidence; isolate concurrent callers' budgets.
 
 - Bound job question/profile/ID fields and reject unknown limit fields or misdirected job cursors before admission. Apply the requested character budget to the entire job status, with marked question previews and optional metadata omissions. Preserve full stored evidence, compatible continuation budgets and job-control identity when evidence formatting/retention fails.

@@ -78,7 +78,10 @@ was proven at adapter level. These do not complete the following work:
    vendor checks; paid use is neither proved nor authorized. Operator-started
    visible handoff with bounded temporary cookies now passes a controlled Chrome
    fixture and UI checks; installed/DSH and real-login acceptance remain. Finish
-   real login and CapSolver token application. Use fixtures for
+   real login and installed/DSH challenge use. CapSolver token application to
+   declared standalone Turnstile/reCAPTCHA v2 widgets now passes unit/native
+   Chrome/MCP/fake-vendor checks; dynamic/enterprise widgets and real paid use
+   remain unproved. See CAPTCHA-TOKEN-EVIDENCE-2026-09-03.md. Use fixtures for
    paid adapters unless paid use is separately approved.
 4. **Finish reliability acceptance.** Verify shared concurrent clients, active
    cancellation, browser/process cleanup, startup/PID identity, restart recovery,
@@ -118,10 +121,16 @@ Recorded implementation gaps still included in that list:
   installed/DSH, popup/local login and hard hung-browser cleanup remain unproved.
   See HUMAN-HANDOFF-EVIDENCE-2026-09-03.md. No model action API is added.
 - Consent/load-more/pagination-button/site-search interactions, capture artifacts,
-  stealth/undetected modes and CapSolver token application remain
+  stealth/undetected modes and wider challenge-widget support remain
   unfinished. Recognized challenges fail explicitly or use configured Bright Data
   auto fallback for eligible public reads. Native fake-vendor evidence passes;
   no paid call or universal bypass is claimed. See CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md.
+- CapSolver can apply a token to a declared standalone Turnstile/reCAPTCHA v2
+  callback during automatic public browsing; final source/status and reflected
+  token redaction have native Chrome/MCP/fake-vendor evidence. Existing domains,
+  attempts and estimated-spend controls remain. Real paid, installed/DSH and
+  dynamic/enterprise-widget acceptance are separate, not waived. See
+  CAPTCHA-TOKEN-EVIDENCE-2026-09-03.md.
 - Browser subresource/redirect-origin scheduling, response-byte/peak-memory bounds,
   Chromium DNS pinning and cross-origin out-of-process iframe coverage remain open.
 - `document_extract` table/OCR forwarding, page-cited native tables, isolated

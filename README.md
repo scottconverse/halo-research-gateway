@@ -220,6 +220,7 @@ The current working revision removes non-research features from the 0.2.0 codeba
 - no personal Chrome data is imported automatically;
 - no OAuth or GitHub App is connected until the operator supplies its client/App identity and exact scopes;
 - no CAPTCHA solver or proxy is selected, enabled, or charged by default;
+- configured CapSolver can supply a token to a recognized public standalone Turnstile/reCAPTCHA v2 widget during automatic crawling. Controlled native Chrome/MCP checks pass; real paid use, dynamic/enterprise widgets and DSH acceptance are not proved. See [token-application evidence](docs/CAPTCHA-TOKEN-EVIDENCE-2026-09-03.md);
 - research-session import copies cookies and encryption metadata only, not passwords or other personal profile data; it is not site-filtered;
 - public caption extraction does not download media or run speech-to-text;
 - browser WebSocket handshakes are policy-checked; human handoff has a controlled visible-Chrome fixture, not real-account or DSH proof. Chromium-level DNS pinning remains open.

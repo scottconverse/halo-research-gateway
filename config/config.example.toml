@@ -80,6 +80,9 @@ lease_seconds = 30
 # exact domains, attempt ceiling, spend ceiling, and acceptance receipt.
 # request_cost_usd is an operator reservation estimate, not a vendor billing cap.
 # Zero or missing refuses automatic paid requests.
+# CapSolver token application covers declared standalone Turnstile/reCAPTCHA v2
+# widgets in automatic public crawl only. See USER-MANUAL section 11; not a
+# universal bypass or authorization to enable paid service.
 [captcha]
 enabled = false
 request_cost_usd = 0

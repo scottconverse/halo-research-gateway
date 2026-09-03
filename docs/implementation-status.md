@@ -18,6 +18,16 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+September 3 CapSolver source checkpoint: automatic public crawling can apply a
+token to one declared standalone Turnstile/reCAPTCHA v2 widget and read the final
+source inside the existing browser/domain/budget policy. Unit and native Chrome/
+two-network-MCP-client/fake-vendor checks cover application, DOM and HTTP 403-to-200
+navigation, redaction and cleanup; cancellation uses the native crawler directly.
+No real paid endpoint, installed reload, account login or DSH acceptance is claimed.
+Dynamic/enterprise/hidden widgets remain unproved. See
+CAPTCHA-TOKEN-EVIDENCE-2026-09-03.md. Older token-integration statements below
+describe their dated checkpoints, not the newer source implementation.
+
 GitHub whole-operation bounds now cover token setup and all follow-up requests
 with one HTTP elapsed-time and aggregate decoded-byte budget. Explicit failures
 do not return partial source collections as successful or trigger public fallback.

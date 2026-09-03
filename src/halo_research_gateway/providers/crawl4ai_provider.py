@@ -16,6 +16,7 @@ from ..clock import SystemClock, rfc3339
 from ..config import CrawlConfig
 from ..models import EvidenceItem, LocalTarget, ProviderResult
 from ..security import is_sensitive_url, redact_url, validate_url
+from .challenge_tokens import ChallengeTokenError, solve_widget
 from .deep import canonical_url
 from .html import extract_html
 from .http_fetch import resolve_public
@@ -403,6 +404,46 @@ class Crawl4AIProvider:
                 item.metadata.update({"attempted_pages": attempts, "returned_pages": len(items)})
             try:
                 await self._validate_browser_request(current, public, local_target)
+                captcha = {}
+                registry = self.optional_providers
+                if registry is not None and registry.configs["captcha"].enabled:
+                    self._crawler.crawler_strategy.set_hook("after_goto", None)
+                if (
+                    registry is not None
+                    and registry.configs["captcha"].enabled
+                    and public
+                    and mode == "auto"
+                    and profile is None
+                    and interaction == "none"
+                    and not any(is_sensitive_url(value) for value in (root, current))
+                ):
+
+                    async def validate_solver_url(value):
+                        if is_sensitive_url(value):
+                            raise ChallengeTokenError("CRAWL_CHALLENGE_REQUIRED")
+                        await self._validate_browser_request(value, True)
+                        if same_site_only and urlsplit(value).hostname != urlsplit(root).hostname:
+                            raise ChallengeTokenError("CRAWL_CHALLENGE_CHANGED")
+                        return validate_url(value)
+
+                    async def solver_hook(page, *, response=None, registry=registry, captcha=captcha, **_):
+                        try:
+                            captcha.update(
+                                await solve_widget(
+                                    page, registry, validate_solver_url, is_challenge_page, response, wait_for
+                                )
+                            )
+                        except (ChallengeTokenError, OptionalProviderError) as exc:
+                            captcha["error"] = str(exc)
+                        except asyncio.CancelledError:
+                            raise
+                        except TimeoutError:
+                            raise
+                        except Exception:
+                            captcha["error"] = "CRAWL_CHALLENGE_SOLVER_FAILED"
+                        return page
+
+                    self._crawler.crawler_strategy.set_hook("after_goto", solver_hook)
                 config = CrawlerRunConfig(
                     verbose=False,
                     cache_mode=CacheMode.BYPASS,
@@ -422,13 +463,31 @@ class Crawl4AIProvider:
                     )
                     async with gate:
                         result = await self._crawler.arun(url=current, config=config)
+                        if captcha.get("error"):
+                            raise CrawlSourceError(captcha["error"])
+                        if captcha.get("applied"):
+                            title, content, links = extract_html(captcha["html"])
+                            result = SimpleNamespace(
+                                success=200 <= captcha["status"] < 300,
+                                status_code=captcha["status"],
+                                url=captcha["url"],
+                                html=captcha["html"],
+                                markdown=content,
+                                metadata={"title": title},
+                                links={
+                                    "internal": [{"href": urljoin(captcha["url"], href)} for _, href in links[:250]],
+                                    "external": [],
+                                },
+                            )
+                            warnings.append("CAPTCHA_RETRIEVAL_USED")
                         result_url = (
                             canonical_url(getattr(result, "redirected_url", None) or getattr(result, "url", current))
                             or current
                         )
                         await self._validate_browser_request(result_url, public, local_target)
                         if is_challenge_page(
-                            getattr(result, "html", "") or "", getattr(result, "response_headers", None)
+                            getattr(result, "html", "") or "",
+                            None if captcha.get("applied") else getattr(result, "response_headers", None),
                         ):
                             if (
                                 not public
@@ -461,6 +520,12 @@ class Crawl4AIProvider:
             markdown = (
                 result.markdown.raw_markdown if hasattr(result.markdown, "raw_markdown") else str(result.markdown or "")
             )
+            token = captcha.get("token")
+            if token:
+                markdown = markdown.replace(token, "[redacted challenge token]")
+                if token in result_url:
+                    warnings.append("CRAWL_CHALLENGE_TOKEN_IN_URL")
+                    continue
             bounded = markdown[: min(50_000, remaining_chars)]
             if len(bounded) < len(markdown):
                 warnings.append("CRAWL_CONTENT_TRUNCATED")
@@ -471,7 +536,11 @@ class Crawl4AIProvider:
             if bounded.strip():
                 items.append(
                     EvidenceItem(
-                        title=str((getattr(result, "metadata", {}) or {}).get("title") or "")[:1000],
+                        title=str((getattr(result, "metadata", {}) or {}).get("title") or "").replace(
+                            token, "[redacted challenge token]"
+                        )[:1000]
+                        if token
+                        else str((getattr(result, "metadata", {}) or {}).get("title") or "")[:1000],
                         url=redact_url(result_url) if sensitive else result_url,
                         retrieved_at=rfc3339(self.clock.utcnow()),
                         source=urlsplit(result_url).hostname,
@@ -484,6 +553,9 @@ class Crawl4AIProvider:
                             "depth": depth,
                             "status_code": getattr(result, "status_code", None),
                             **getattr(result, "retrieval_metadata", {}),
+                            **(
+                                {"mode": "captcha", "retrieval_provider": "capsolver"} if captcha.get("applied") else {}
+                            ),
                         },
                     )
                 )
@@ -495,6 +567,9 @@ class Crawl4AIProvider:
                 if len(links.get("internal", [])) + len(links.get("external", [])) > 250:
                     warnings.append("CRAWL_LINK_LIMIT_REACHED")
                 for link in candidates[:250]:
+                    if token and token in str(link.get("href", "")):
+                        warnings.append("CRAWL_CHALLENGE_TOKEN_IN_URL")
+                        continue
                     candidate = canonical_url(link.get("href", ""), result_url)
                     if not candidate or candidate in seen:
                         continue

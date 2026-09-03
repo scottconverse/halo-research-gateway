@@ -434,11 +434,12 @@ undetected modes are **not yet implemented**; requesting them returns
 `CRAWL_INTERACTION_UNAVAILABLE`, `CRAWL_CAPTURE_UNAVAILABLE` or
 `CRAWL_MODE_UNAVAILABLE`. They remain research acceptance work, not removed scope.
 `auto` begins with standard browsing; recognized challenges can use configured
-Bright Data fallback. Metadata says `mode=proxy` when used. Managed profiles,
+CapSolver token application or Bright Data fallback (section 11).
+Metadata says `mode=captcha` or `mode=proxy` when used. Managed profiles,
 named local targets, recognized sensitive URLs and explicit scroll interactions
 are not outsourced. `standard` stays on the local browser path. Human handoff
-has the operator-only flow above; real-account acceptance and CapSolver
-browser-token application remain unfinished.
+has the operator-only flow above; real-account and installed/DSH acceptance
+remain unfinished. The token path has controlled native-browser evidence only.
 
 `managed_profile` requires an existing Gateway-owned profile. Supplying a profile
 with another mode fails explicitly instead of silently browsing anonymously.
@@ -634,11 +635,42 @@ verified canonical. Relative links are not resolved against an unknown final
 base. The vendor controls its own DNS, redirects and subresources; local
 requested-domain checks cannot prove the domain of every vendor-side hop.
 
-CapSolver remains an adapter, not automatic browser-token integration. Its entire
-create/poll sequence has a 120-second deadline and at most 40 polls, with no
-callback. Each fixed-API request has a 45-second total I/O deadline and 20 MiB
-decoded response ceiling. Crawl fallback also stays inside page/job deadlines.
-These limits are not hard native-memory or CPU-parser guarantees.
+When `[captcha]` is fully configured with `provider="capsolver"`, automatic public
+crawling can apply a returned token to a recognized **standalone** Turnstile or
+reCAPTCHA v2 widget. The page must declare one `data-sitekey` and a callable named
+`data-callback`. The Gateway fills the widget's response field and invokes that
+callback, then reads the resulting page. It does not submit a form, enter a
+password, inspect hidden CAPTCHA internals or offer a general script/action tool.
+Turnstile `data-action`/`data-cdata`, when declared, accompany the public URL and
+site key sent to the solver. No imported cookies, browser headers or connection
+secrets are sent to the research page. Solver credentials go only to the vendor.
+
+The existing exact-domain, connection, attempt and estimated-spend policy must
+permit the request. Local/sensitive URLs, managed profiles and explicit
+non-automatic modes/interactions do not use it. Missing, multiple, oversized or
+unsupported widgets return `CRAWL_CHALLENGE_UNSUPPORTED` without a solver attempt.
+The page URL and widget identity are checked again after the vendor response;
+a changed widget returns `CRAWL_CHALLENGE_CHANGED`. Invalid solutions return
+`CRAWL_CHALLENGE_SOLUTION_INVALID`; unexpected solver errors are sanitized.
+Configured solver failures do not silently spend against a second provider.
+
+Successful retrieval reports `CAPTCHA_RETRIEVAL_USED`, `mode=captcha` and
+`retrieval_provider=capsolver`. A solved callback alone is not success: the final
+page must no longer be recognized as a gate and have a successful observed HTTP
+status. A DOM change cannot turn an original HTTP 403 into success; a subsequent
+real main-frame 200 navigation can. The exact returned token is redacted if
+reflected into evidence; token-bearing citation/navigation URLs are rejected.
+This is not universal secret detection or a guarantee that every site's script
+keeps its own data private.
+
+CapSolver's create/poll sequence has a 120-second deadline and at most 40 polls,
+with no vendor callback URL. Each fixed-API request has a 45-second total I/O
+deadline and 20 MiB decoded response ceiling. Browser token application also stays
+inside the page/job deadline. Cancelled vendor attempts retain their estimated
+cost reservation. These are not hard native-memory or CPU-parser guarantees.
+Dynamic/enterprise widgets, hCaptcha, invisible/hidden-client integrations,
+real-vendor success and installed/DSH usage remain unproved. Both providers remain
+disabled on the installed host; this documentation does not enable paid calls.
 
 Earlier evidence survives later challenge/provider failures with visible warnings.
 Fresh crawl/forum requests bypass old cache namespaces that could contain gate
@@ -649,11 +681,14 @@ universal login/paywall/challenge detector.
 The native test uses actual Chrome, network MCP, a public header-echo signal and
 a local fake vendor. It proves routing, pagination, shared requests/cache,
 durable reservations and browser cleanup—not a real CAPTCHA bypass, live vendor
-success or operator login. No paid endpoint was contacted. Human handoff, real
-login/app-bound-cookie acceptance and CapSolver token application remain open.
-The newer controlled human-handoff fixture is recorded separately above; this
-older provider-routing test does not prove it.
-See [complete evidence](CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md).
+success or operator login. No paid endpoint was contacted. The newer token tests
+use actual Chrome, two network MCP clients and a loopback fake solver to prove
+callback/response-field application, readable DOM/navigation results, token
+redaction and cleanup. Native cancellation is exercised directly through the
+crawler, not by disconnecting an MCP client. Real login/app-bound cookies,
+paid-vendor and installed/DSH acceptance remain separate. See
+[token evidence](CAPTCHA-TOKEN-EVIDENCE-2026-09-03.md) and the earlier
+[proxy-routing evidence](CHALLENGE-ROUTING-EVIDENCE-2026-09-02.md).
 
 ## 12. Configuration reference
 
