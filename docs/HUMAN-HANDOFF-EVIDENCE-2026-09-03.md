@@ -1,5 +1,339 @@
 # Human research handoff evidence — 2026-09-03
 
+## Followup before push: session identity and driver-start cancellation
+
+The first local commit `23527af6301d92a6e7f6d29060a69993e57f4340` passed
+`466 passed in 77.35s (0:01:17)` in its commit gate and was not pushed yet.
+Review found a race where finishing an old session could return the new session's
+state, and a displayed 120-second deadline ignored a lower configured limit.
+Both were corrected with deterministic interleaving/lower-limit assertions.
+
+The first race-test attempt accidentally invoked real Playwright startup because
+the new deadline test lacked its browser stub. Cancelling during driver startup
+left the isolated test hung. It printed assertion-failure markers but never a
+complete pytest summary; that run is **not** a pass or a complete RED receipt.
+The known test-only node driver (40780, parent 53696) and then the isolated pytest
+process (53696, parent 56084) were stopped after PID, command, path, creation-time
+and parent checks. Installed Gateway PIDs 47164/36236 and DSH were untouched.
+The initial cleanup command refused an exact timestamp comparison; the retry
+retained a process handle and allowed only 1 ms of CIM/.NET timestamp precision.
+
+The tests were fixed to stay isolated. The two manager behaviors were replayed
+against their 23527af implementation (only those methods temporarily restored),
+producing complete assertion RED output, then the corrections were restored and
+passed. This replay is reported as a later reproduction, not fabricated original
+output from the interrupted run.
+
+The native incident exposed a shared profile-reader/visible-handoff startup
+cancellation hole. Driver entry now settles before a cancelled operation shuts
+that same driver down; exit is also protected against repeated cancellation.
+A genuinely hung initialization/shutdown still has no hard overall cleanup
+deadline. Two deterministic cases first failed on the missing shutdown.
+Two actual native driver-start cancellation cases now return and reap their
+children, alongside the visible-cookie-transfer and UI tests:
+`19 passed in 1.90s`, `4 passed in 6.82s`.
+These are disposable fixtures, not installed or DSH acceptance.
+
+
+### Interrupted race-test attempt (no complete pytest summary)
+
+```powershell
+uv run --locked python -m pytest -q tests/unit/test_human_handoff.py
+```
+
+```text
+...............FF
+
+```
+
+### Driver cleanup identity precision check refused before stopping anything
+
+```powershell
+$ErrorActionPreference='Stop'
+$taskDriver=Get-CimInstance Win32_Process -Filter 'ProcessId=40780'
+$taskOwner=Get-CimInstance Win32_Process -Filter 'ProcessId=53696'
+if($taskDriver.ParentProcessId -ne 53696 -or $taskOwner.Name -ne 'python.exe' -or $taskOwner.CommandLine -notmatch 'pytest.*tests/unit/test_human_handoff.py' -or $taskDriver.ExecutablePath -notlike '*\.venv\Lib\site-packages\playwright\driver\node.exe'){throw 'Test-driver ownership did not match'}
+$taskHandle=Get-Process -Id 40780
+if($taskHandle.StartTime.ToUniversalTime().ToString('o') -ne $taskDriver.CreationDate.ToUniversalTime().ToString('o')){throw 'Process identity changed'}
+$taskDriver | Select-Object ProcessId,ParentProcessId,CreationDate,ExecutablePath | ConvertTo-Json
+$taskHandle.Kill()
+$taskHandle.WaitForExit(10000)
+'Stopped only the verified stuck test Playwright driver; no browser or installed process targeted.'
+```
+
+```text
+Exception: 
+Line |
+   7 |  … te.ToUniversalTime().ToString('o')){throw 'Process identity changed'}
+     |                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Process identity changed
+
+```
+
+### Verified disposable driver cleanup
+
+```powershell
+$ErrorActionPreference='Stop'
+$taskDriver=Get-CimInstance Win32_Process -Filter 'ProcessId=40780'
+$taskOwner=Get-CimInstance Win32_Process -Filter 'ProcessId=53696'
+if($taskDriver.ParentProcessId -ne 53696 -or $taskOwner.Name -ne 'python.exe' -or $taskOwner.CommandLine -notmatch 'pytest.*tests/unit/test_human_handoff.py' -or $taskDriver.ExecutablePath -notlike '*\.venv\Lib\site-packages\playwright\driver\node.exe'){throw 'Test-driver ownership did not match'}
+$taskHandle=Get-Process -Id 40780
+$taskProcessHandle=$taskHandle.Handle
+if([Math]::Abs(($taskHandle.StartTime.ToUniversalTime()-$taskDriver.CreationDate.ToUniversalTime()).TotalMilliseconds) -gt 1){throw 'Process identity changed'}
+$taskDriver | Select-Object ProcessId,ParentProcessId,CreationDate,ExecutablePath | ConvertTo-Json
+$taskHandle.Kill()
+$taskHandle.WaitForExit(10000)
+'Stopped only the verified stuck test Playwright driver; no browser or installed process targeted.'
+```
+
+```text
+{
+  "ProcessId": 40780,
+  "ParentProcessId": 53696,
+  "CreationDate": "2026-09-03T01:51:18.750946-06:00",
+  "ExecutablePath": "C:\\Users\\scott\\Desktop\\Code\\halo-research-gateway\\.venv\\Lib\\site-packages\\playwright\\driver\\node.exe"
+}
+True
+Stopped only the verified stuck test Playwright driver; no browser or installed process targeted.
+
+```
+
+### Verified isolated pytest cleanup after its driver exited
+
+```powershell
+$ErrorActionPreference='Stop'
+$taskRunner=Get-CimInstance Win32_Process -Filter 'ProcessId=53696'
+if($taskRunner.ParentProcessId -ne 56084 -or $taskRunner.CommandLine -notmatch 'pytest.*tests/unit/test_human_handoff.py' -or $taskRunner.Name -ne 'python.exe'){throw 'Test runner identity mismatch'}
+if(Get-CimInstance Win32_Process -Filter 'ParentProcessId=53696'){throw 'Unexpected surviving child; inspect first'}
+$taskHandle=Get-Process -Id 53696
+$taskProcessHandle=$taskHandle.Handle
+if([Math]::Abs(($taskHandle.StartTime.ToUniversalTime()-$taskRunner.CreationDate.ToUniversalTime()).TotalMilliseconds) -gt 1){throw 'Process identity changed'}
+$taskHandle.Kill()
+$taskHandle.WaitForExit(10000)
+'Stopped the isolated hung pytest runner after its driver was removed. No installed process targeted.'
+```
+
+```text
+True
+Stopped the isolated hung pytest runner after its driver was removed. No installed process targeted.
+
+```
+
+### Completed race/deadline RED replay against 23527af method behavior
+
+```powershell
+uv run --locked python -m pytest -q tests/unit/test_human_handoff.py -k 'finished_response_cannot or lower_configured_deadline'
+```
+
+```text
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_______ test_finished_response_cannot_describe_a_newly_started_session ________
+
+handoff_app = (<starlette.applications.Starlette object at 0x00000237FE486F60>, [])
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000237FE4B17F0>
+
+    async def test_finished_response_cannot_describe_a_newly_started_session(handoff_app, monkeypatch):
+        app, _ = handoff_app
+        manager = app.state.halo_service.research_session
+    
+        async def browser(url, profile, done, ready):
+            ready()
+            await done.wait()
+    
+        monkeypatch.setattr(manager.crawler, "human_handoff", browser)
+        first = await manager.begin("https://example.org/first", "research")
+        original_gather = asyncio.gather
+    
+        async def interleave(*tasks, **kwargs):
+            result = await original_gather(*tasks, **kwargs)
+            await manager.begin("https://example.org/second", "research")
+            return result
+    
+        with monkeypatch.context() as race:
+            race.setattr(asyncio, "gather", interleave)
+            finished = await manager.finish(first["session_id"], cancel=True)
+>       assert finished["session_id"] == first["session_id"], "completion returned another request's session"
+E       AssertionError: completion returned another request's session
+E       assert '8ef3694f-324...-cd6d34b2b27b' == '73b6e830-7ac...-3a027550de7e'
+E         
+E         - 73b6e830-7ace-4288-998b-3a027550de7e
+E         + 8ef3694f-3248-4f3b-83ef-cd6d34b2b27b
+
+tests\unit\test_human_handoff.py:337: AssertionError
+__________ test_handoff_status_reports_the_lower_configured_deadline __________
+
+handoff_app = (<starlette.applications.Starlette object at 0x00000237FE54A3C0>, [])
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000237FE54AF60>
+
+    async def test_handoff_status_reports_the_lower_configured_deadline(handoff_app, monkeypatch):
+        app, _ = handoff_app
+        manager = app.state.halo_service.research_session
+    
+        async def browser(url, profile, done, ready):
+            ready()
+            await done.wait()
+    
+        monkeypatch.setattr(manager.crawler, "human_handoff", browser)
+        manager.crawler.limits.job_timeout_seconds = 30
+        status = await manager.begin("https://example.org", "research")
+>       assert status["timeout_seconds"] == 30
+E       assert 120 == 30
+
+tests\unit\test_human_handoff.py:354: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/unit/test_human_handoff.py::test_finished_response_cannot_describe_a_newly_started_session
+FAILED tests/unit/test_human_handoff.py::test_handoff_status_reports_the_lower_configured_deadline
+2 failed, 17 deselected in 1.01s
+
+```
+
+### Race/deadline GREEN after restoring corrections
+
+```powershell
+uv run --locked python -m pytest -q tests/unit/test_human_handoff.py -k 'finished_response_cannot or lower_configured_deadline'
+```
+
+```text
+..                                                                       [100%]
+2 passed, 17 deselected in 0.87s
+
+```
+
+### Driver-start cancellation assertion RED
+
+```powershell
+uv run --locked python -m pytest -q tests/unit/test_human_handoff.py
+```
+
+```text
+.................FF                                                      [100%]
+================================== FAILURES ===================================
+______ test_cancel_during_driver_start_still_closes_that_driver[profile] ______
+
+tmp_path = WindowsPath('C:/Users/scott/AppData/Local/Temp/pytest-of-scott/pytest-2151/test_cancel_during_driver_star0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001AE63843E00>
+operation = 'profile'
+
+    @pytest.mark.parametrize("operation", ["profile", "handoff"])
+    async def test_cancel_during_driver_start_still_closes_that_driver(tmp_path, monkeypatch, operation):
+        from playwright import async_api
+    
+        provider = Crawl4AIProvider(str(tmp_path))
+        (tmp_path / "profiles" / "research").mkdir(parents=True)
+        entered, release, stopped = asyncio.Event(), asyncio.Event(), asyncio.Event()
+    
+        class Driver:
+            async def __aenter__(self):
+                entered.set()
+                await release.wait()
+                return self
+    
+            async def __aexit__(self, *args):
+                stopped.set()
+    
+        async def validate(*args):
+            pass
+    
+        async def cookies(*args):
+            return []
+    
+        monkeypatch.setattr(async_api, "async_playwright", Driver)
+        monkeypatch.setattr(provider, "_validate_browser_request", validate)
+        if operation == "handoff":
+            monkeypatch.setattr(provider, "_profile_cookies", cookies)
+            work = provider.human_handoff("https://example.org", "research", asyncio.Event(), lambda: None)
+        else:
+            work = provider._profile_cookies("research")
+        task = asyncio.create_task(work)
+        await asyncio.wait_for(entered.wait(), 1)
+        task.cancel()
+        await asyncio.sleep(0)
+        release.set()
+        result = await asyncio.gather(task, return_exceptions=True)
+        assert isinstance(result[0], asyncio.CancelledError)
+>       assert stopped.is_set(), "driver startup cancellation skipped its shutdown"
+E       AssertionError: driver startup cancellation skipped its shutdown
+E       assert False
+E        +  where False = is_set()
+E        +    where is_set = <asyncio.locks.Event object at 0x000001AE6399E7B0 [unset]>.is_set
+
+tests\unit\test_human_handoff.py:394: AssertionError
+______ test_cancel_during_driver_start_still_closes_that_driver[handoff] ______
+
+tmp_path = WindowsPath('C:/Users/scott/AppData/Local/Temp/pytest-of-scott/pytest-2151/test_cancel_during_driver_star1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001AE6395E8D0>
+operation = 'handoff'
+
+    @pytest.mark.parametrize("operation", ["profile", "handoff"])
+    async def test_cancel_during_driver_start_still_closes_that_driver(tmp_path, monkeypatch, operation):
+        from playwright import async_api
+    
+        provider = Crawl4AIProvider(str(tmp_path))
+        (tmp_path / "profiles" / "research").mkdir(parents=True)
+        entered, release, stopped = asyncio.Event(), asyncio.Event(), asyncio.Event()
+    
+        class Driver:
+            async def __aenter__(self):
+                entered.set()
+                await release.wait()
+                return self
+    
+            async def __aexit__(self, *args):
+                stopped.set()
+    
+        async def validate(*args):
+            pass
+    
+        async def cookies(*args):
+            return []
+    
+        monkeypatch.setattr(async_api, "async_playwright", Driver)
+        monkeypatch.setattr(provider, "_validate_browser_request", validate)
+        if operation == "handoff":
+            monkeypatch.setattr(provider, "_profile_cookies", cookies)
+            work = provider.human_handoff("https://example.org", "research", asyncio.Event(), lambda: None)
+        else:
+            work = provider._profile_cookies("research")
+        task = asyncio.create_task(work)
+        await asyncio.wait_for(entered.wait(), 1)
+        task.cancel()
+        await asyncio.sleep(0)
+        release.set()
+        result = await asyncio.gather(task, return_exceptions=True)
+        assert isinstance(result[0], asyncio.CancelledError)
+>       assert stopped.is_set(), "driver startup cancellation skipped its shutdown"
+E       AssertionError: driver startup cancellation skipped its shutdown
+E       assert False
+E        +  where False = is_set()
+E        +    where is_set = <asyncio.locks.Event object at 0x000001AE6399DB50 [unset]>.is_set
+
+tests\unit\test_human_handoff.py:394: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/unit/test_human_handoff.py::test_cancel_during_driver_start_still_closes_that_driver[profile]
+FAILED tests/unit/test_human_handoff.py::test_cancel_during_driver_start_still_closes_that_driver[handoff]
+2 failed, 17 passed in 2.99s
+
+```
+
+### Focused/native GREEN after lifecycle correction
+
+```powershell
+uv run --locked ruff format src tests
+uv run --locked python -m pytest -q tests/unit/test_human_handoff.py
+uv run --locked python -m pytest -q tests/acceptance/test_human_handoff_native.py
+```
+
+```text
+109 files left unchanged
+...................                                                      [100%]
+19 passed in 1.90s
+..
+..                                                                     [100%]
+4 passed in 6.82s
+
+```
+
 ## Scope and delivery boundary
 
 Base checkpoint: `a9cb02f229a44fffd2db47f7b725e4150b6c7ced`, clean main at start.
@@ -1068,4 +1402,3 @@ uv run --locked python -m pytest -q tests/acceptance/test_human_handoff_native.p
 11 passed in 24.51s
 
 ```
-

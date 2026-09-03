@@ -15,6 +15,7 @@ from urllib.parse import urlsplit
 
 import httpx
 import psutil
+import pytest
 
 from halo_research_gateway.app import create_application
 from halo_research_gateway.config import GatewayConfig
@@ -180,3 +181,47 @@ async def test_operator_handoff_states_and_small_viewport(tmp_path):
                 await browser.close()
     finally:
         await service.close()
+
+
+@pytest.mark.parametrize("operation", ["profile", "handoff"])
+async def test_native_cancel_during_driver_start_reaps_driver(tmp_path, monkeypatch, operation):
+    from playwright import async_api
+
+    before = {p.pid for p in psutil.Process().children(recursive=True)}
+    provider = crawl4ai_provider.Crawl4AIProvider(str(tmp_path))
+    await asyncio.to_thread((tmp_path / "profiles" / "research").mkdir, parents=True)
+    original = async_api.async_playwright
+    entered = asyncio.Event()
+
+    class ObservedDriver:
+        def __init__(self):
+            self.manager = original()
+
+        async def __aenter__(self):
+            entered.set()
+            return await self.manager.__aenter__()
+
+        async def __aexit__(self, *args):
+            return await self.manager.__aexit__(*args)
+
+    async def validate(*args):
+        pass
+
+    async def cookies(*args):
+        return []
+
+    monkeypatch.setattr(async_api, "async_playwright", ObservedDriver)
+    monkeypatch.setattr(provider, "_validate_browser_request", validate)
+    if operation == "handoff":
+        monkeypatch.setattr(provider, "_profile_cookies", cookies)
+        work = provider.human_handoff(URL, "research", asyncio.Event(), lambda: None)
+    else:
+        work = provider._profile_cookies("research")
+    task = asyncio.create_task(work)
+    await asyncio.wait_for(entered.wait(), 5)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(task, 10)
+    remaining = [p for p in psutil.Process().children(recursive=True) if p.pid not in before]
+    _, alive = await asyncio.to_thread(psutil.wait_procs, remaining, timeout=10)
+    assert alive == [], "driver startup cancellation left an owned process"

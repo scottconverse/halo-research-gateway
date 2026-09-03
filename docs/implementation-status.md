@@ -18,6 +18,16 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+Handoff followup before push: completion responses now retain their original
+session identity across a concurrent new start, and the exposed deadline uses
+the lower configured limit. Cancellation during Playwright startup no longer
+abandons its driver in profile loading or visible handoff. Nineteen focused
+unit cases pass; four new native handoff/UI/startup-cancellation cases pass.
+The earlier race-test attempt accidentally entered real driver startup and hung;
+only its verified test driver and isolated pytest process were stopped. That run
+has no completed pytest summary and is not counted as a pass. Replayed assertion
+failures, corrected results and cleanup commands are retained in the evidence.
+
 September 3 human-handoff source checkpoint: a public research URL and existing
 owned profile can be opened by the operator in isolated visible Chrome, followed
 by Done/Cancel and a managed-profile retry using bounded memory-only cookies.

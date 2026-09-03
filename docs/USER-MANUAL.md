@@ -333,6 +333,12 @@ Done means the cookies are ready to try, **not** that the source is now readable
 The fixture proves cookie transfer and a subsequent read, not a real CAPTCHA,
 app-bound account, DSH workflow or universal login compatibility.
 
+Completion responses remain bound to their original session even if another
+session starts while the first HTTP response is returning. Status reports the
+actual configured deadline. Cancellation during Playwright startup waits for
+that driver to initialize and then shuts it down; repeated cancellation does not
+abandon the startup/shutdown pair. This does not bound a genuinely hung driver.
+
 One handoff may be active. Its deadline is at most 120 seconds (or a lower
 `crawl.job_timeout_seconds`), including waiting for the shared browser slot,
 profile loading, browser startup and the human step. Cleanup is separate and

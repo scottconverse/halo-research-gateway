@@ -35,7 +35,7 @@ class HumanHandoff:
             "state": "opening",
             "origin": target.origin,
             "profile": profile,
-            "timeout_seconds": 120,
+            "timeout_seconds": min(120, self.crawler.limits.job_timeout_seconds),
         }
         # No await between the single-session check and reservation.
         self._task = asyncio.create_task(self._run(url, profile))
@@ -59,17 +59,18 @@ class HumanHandoff:
     async def finish(self, session_id: str, *, cancel: bool = False) -> dict:
         if session_id != self._state.get("session_id") or self._task is None or self._task.done():
             raise RuntimeError("RESEARCH_SESSION_STALE")
+        task, state = self._task, self._state
         if cancel:
-            self._task.cancel()
+            task.cancel()
         else:
-            if self._state["state"] != "waiting_for_operator":
+            if state["state"] != "waiting_for_operator":
                 raise RuntimeError("RESEARCH_SESSION_NOT_READY")
             self._done.set()
-        await asyncio.gather(self._task, return_exceptions=True)
+        await asyncio.gather(task, return_exceptions=True)
         # A task cancelled before its first instruction cannot update its state.
-        if self._task.cancelled():
-            self._state["state"] = "cancelled"
-        return self.status()
+        if task.cancelled():
+            state["state"] = "cancelled"
+        return dict(state)
 
     async def close(self) -> None:
         if self._task is not None and not self._task.done():

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-03T07:48:31.2660473Z",
+  "generated_at": "2026-09-03T08:00:28.9850639Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -124,13 +124,13 @@
     },
     {
       "path": "docs/HUMAN-HANDOFF-EVIDENCE-2026-09-03.md",
-      "sha256": "304002b4a5ffebd792b9a054d8c02773792c022aaf18964e0f734184ac8e115e",
-      "bytes": 54430
+      "sha256": "ff3866c73b4a92702fbdfeaa2e59307b72b132ec4cbc954ff005b7e918d15528",
+      "bytes": 69294
     },
     {
       "path": "docs/implementation-status.md",
-      "sha256": "7cef93028d6dcb50f4db4c6a55e64241e8013ad8b77f666739da7a663d0e14d4",
-      "bytes": 12935
+      "sha256": "49192779d7ed3dca3aa8c6377cf770d02a66c705b445961a57c3f5f7e590754c",
+      "bytes": 13643
     },
     {
       "path": "docs/JOB-CONTROL-EVIDENCE-2026-09-02.md",
@@ -159,8 +159,8 @@
     },
     {
       "path": "docs/operations.md",
-      "sha256": "e328b8875b4b8ba4d093ddef4f9160c708a2bb884371c94eecdc3df6618bd266",
-      "bytes": 10477
+      "sha256": "e762c9c3fdb97d1ba98726c28f369380347f348a2cb8ced067492fbf8c108acc",
+      "bytes": 10945
     },
     {
       "path": "docs/quality-gate.md",
@@ -219,8 +219,8 @@
     },
     {
       "path": "docs/USER-MANUAL.md",
-      "sha256": "c3f17611bd220edaab139752aa2102a4518202d862e83f5c0d01756129d16331",
-      "bytes": 45560
+      "sha256": "55175e656510d6c56d1589c6e509197375933d5b0382cfee27676474dd860768",
+      "bytes": 45953
     },
     {
       "path": "pyproject.toml",
@@ -229,8 +229,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "4729a81dfafba484a0271fb35f662bceddb65626307f56cc8101e9a3f6b2d5da",
-      "bytes": 15952
+      "sha256": "a197a5dddafba4a9e1e2a256d7d821c5ddb7182601bab3b130aa1d33ebc8d47c",
+      "bytes": 16062
     },
     {
       "path": "scripts/HaloLifecycle.ps1",
@@ -364,8 +364,8 @@
     },
     {
       "path": "src/halo_research_gateway/connections/human_handoff.py",
-      "sha256": "8b5382e4d49de2dc5853333dbf91013a5b3be0a952ecb448ecd92161e24ba7bc",
-      "bytes": 2946
+      "sha256": "6f59bf994828b32e8799dd032531367ba2ba64f0bbe595486b3bf9eb026556c9",
+      "bytes": 3006
     },
     {
       "path": "src/halo_research_gateway/connections/import_reviews.py",
@@ -449,8 +449,8 @@
     },
     {
       "path": "src/halo_research_gateway/providers/crawl4ai_provider.py",
-      "sha256": "b3bd17141a7a01410d4b7dfd1d77f47ae8b1828e102d3f00c6136a82561995d8",
-      "bytes": 27382
+      "sha256": "c5e10ebaecccc8baf777edf5b9bbeb86aee190da50068a82d28c7253e27e00cb",
+      "bytes": 28130
     },
     {
       "path": "src/halo_research_gateway/providers/deep.py",
@@ -624,8 +624,8 @@
     },
     {
       "path": "tests/acceptance/test_human_handoff_native.py",
-      "sha256": "f1e48f84f3372b70c16156da72b777e74ff397d7ce884d5fb4a415e95bf52119",
-      "bytes": 8460
+      "sha256": "442ad905e1c4fccc22ff9331802e0e8cc7d329f51975233cf544dc5f2693e95e",
+      "bytes": 10200
     },
     {
       "path": "tests/acceptance/test_launcher_native.py",
@@ -744,8 +744,8 @@
     },
     {
       "path": "tests/unit/test_human_handoff.py",
-      "sha256": "c8f0eadba7e58dbbca1f10aeea794c293fbd19d92cda02a3ec994a6a327f910e",
-      "bytes": 11965
+      "sha256": "b71f29b49d2a955435939f92bd86ac4322d31d22bb52d20d3d07092fec29d919",
+      "bytes": 15013
     },
     {
       "path": "tests/unit/test_import_concurrency.py",

@@ -100,6 +100,13 @@ login is unsupported. See [instructions](USER-MANUAL.md#human-login-or-challenge
 and [source/native evidence](HUMAN-HANDOFF-EVIDENCE-2026-09-03.md). The controlled
 fixture is not installed, DSH, live-account or universal-challenge acceptance.
 
+Post-review repairs bind completion responses to the original session and show
+the lower configured deadline accurately. Driver startup/shutdown are paired
+through cancellation in both profile loading and handoff; actual native startup-
+cancellation checks pass. A broken/hung driver still lacks a strict total cleanup
+deadline. The test-driver incident and exact controlled cleanup are retained in
+the handoff evidence; no installed Gateway/DSH process was stopped.
+
 - Use the operator console's read-only GitHub App form for research.
 - Cookie-only imported research profiles live under the gateway runtime browser directory and are copied capabilities. Never point Crawl4AI at the mutable source profile.
 - Provider use requires a vendor name, encrypted connection, exact requested domains, attempt/estimated-spend limits and positive `request_cost_usd`. Installed defaults remain disabled. Estimates are reserved, not reconciled vendor charges; use vendor-side billing controls.

@@ -312,3 +312,83 @@ async def test_cancelled_import_keeps_profile_lock_until_copy_settles(handoff_ap
         release.set()
         await asyncio.gather(task, return_exceptions=True)
     assert not service.crawler._lock.locked()
+
+
+async def test_finished_response_cannot_describe_a_newly_started_session(handoff_app, monkeypatch):
+    app, _ = handoff_app
+    manager = app.state.halo_service.research_session
+
+    async def browser(url, profile, done, ready):
+        ready()
+        await done.wait()
+
+    monkeypatch.setattr(manager.crawler, "human_handoff", browser)
+    first = await manager.begin("https://example.org/first", "research")
+    original_gather = asyncio.gather
+
+    async def interleave(*tasks, **kwargs):
+        result = await original_gather(*tasks, **kwargs)
+        await manager.begin("https://example.org/second", "research")
+        return result
+
+    with monkeypatch.context() as race:
+        race.setattr(asyncio, "gather", interleave)
+        finished = await manager.finish(first["session_id"], cancel=True)
+    assert finished["session_id"] == first["session_id"], "completion returned another request's session"
+    assert finished["state"] == "cancelled"
+    assert manager.status()["session_id"] != first["session_id"]
+    assert manager.status()["state"] in {"opening", "waiting_for_operator"}
+
+
+async def test_handoff_status_reports_the_lower_configured_deadline(handoff_app, monkeypatch):
+    app, _ = handoff_app
+    manager = app.state.halo_service.research_session
+
+    async def browser(url, profile, done, ready):
+        ready()
+        await done.wait()
+
+    monkeypatch.setattr(manager.crawler, "human_handoff", browser)
+    manager.crawler.limits.job_timeout_seconds = 30
+    status = await manager.begin("https://example.org", "research")
+    assert status["timeout_seconds"] == 30
+
+
+@pytest.mark.parametrize("operation", ["profile", "handoff"])
+async def test_cancel_during_driver_start_still_closes_that_driver(tmp_path, monkeypatch, operation):
+    from playwright import async_api
+
+    provider = Crawl4AIProvider(str(tmp_path))
+    (tmp_path / "profiles" / "research").mkdir(parents=True)
+    entered, release, stopped = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+    class Driver:
+        async def __aenter__(self):
+            entered.set()
+            await release.wait()
+            return self
+
+        async def __aexit__(self, *args):
+            stopped.set()
+
+    async def validate(*args):
+        pass
+
+    async def cookies(*args):
+        return []
+
+    monkeypatch.setattr(async_api, "async_playwright", Driver)
+    monkeypatch.setattr(provider, "_validate_browser_request", validate)
+    if operation == "handoff":
+        monkeypatch.setattr(provider, "_profile_cookies", cookies)
+        work = provider.human_handoff("https://example.org", "research", asyncio.Event(), lambda: None)
+    else:
+        work = provider._profile_cookies("research")
+    task = asyncio.create_task(work)
+    await asyncio.wait_for(entered.wait(), 1)
+    task.cancel()
+    await asyncio.sleep(0)
+    release.set()
+    result = await asyncio.gather(task, return_exceptions=True)
+    assert isinstance(result[0], asyncio.CancelledError)
+    assert stopped.is_set(), "driver startup cancellation skipped its shutdown"

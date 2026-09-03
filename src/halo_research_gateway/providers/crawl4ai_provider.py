@@ -34,6 +34,33 @@ class CrawlSourceError(RuntimeError):
         super().__init__(code)
 
 
+async def _settle_driver_task(task):
+    cancelled = False
+    while not task.done():
+        try:
+            await asyncio.shield(task)
+        except asyncio.CancelledError:
+            cancelled = True
+    return task.result(), cancelled
+
+
+@contextlib.asynccontextmanager
+async def _playwright_session():
+    """Pair driver startup with shutdown even when opening is cancelled."""
+    from playwright.async_api import async_playwright
+
+    manager = async_playwright()
+    driver, cancelled = await _settle_driver_task(asyncio.create_task(manager.__aenter__()))
+    try:
+        if cancelled:
+            raise asyncio.CancelledError
+        yield driver
+    finally:
+        _, stopped_cancelled = await _settle_driver_task(asyncio.create_task(manager.__aexit__(None, None, None)))
+        if stopped_cancelled:
+            raise asyncio.CancelledError
+
+
 def is_challenge_page(html: str, headers=None) -> bool:
     """Recognize strong gate-page signals, not articles mentioning CAPTCHAs."""
     if any(
@@ -198,8 +225,6 @@ class Crawl4AIProvider:
         Does not claim that a challenge was solved. Callers must retry the read.
         No browser interaction primitives or cookies are returned to a model.
         """
-        from playwright.async_api import async_playwright
-
         validate_url(url)
         self._profile_directory(profile)
         cookies = None
@@ -207,7 +232,7 @@ class Crawl4AIProvider:
             async with self._lock:
                 await self._validate_browser_request(url, True)
                 seed = await self._profile_cookies(profile)
-                async with async_playwright() as playwright:
+                async with _playwright_session() as playwright:
                     browser = await playwright.chromium.launch(
                         channel="chrome",
                         headless=False,
@@ -561,15 +586,13 @@ class Crawl4AIProvider:
         return candidate
 
     async def _profile_cookies(self, profile: str) -> list[dict]:
-        from playwright.async_api import async_playwright
-
         directory = self._profile_directory(profile)
         if self._human_cookies is not None and self._human_cookies[0] == profile:
             return copy.deepcopy(self._human_cookies[1])
         args = ["--disable-background-networking", "--disable-sync", "--no-first-run"]
         if (directory / "Profile").is_dir():
             args.append("--profile-directory=Profile")
-        async with async_playwright() as playwright:
+        async with _playwright_session() as playwright:
             context = await playwright.chromium.launch_persistent_context(
                 str(directory),
                 channel="chrome",
