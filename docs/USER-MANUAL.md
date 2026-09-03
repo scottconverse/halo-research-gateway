@@ -194,6 +194,57 @@ For an imported session, installed Chrome reads the encrypted cookie copy and pa
 
 ## 7. Browser crawling
 
+`max_pages` now limits actual navigation attempts (1..25, or the lower configured
+ceiling), including failed pages. `max_depth` is link distance from the starting
+page (0..3, or the lower configured ceiling); depth 0 reads only that page even
+when `max_pages` is larger. Traversal is breadth-first, with fragment/canonical
+duplicate suppression. `same_site_only=true` means the exact starting hostname,
+not every subdomain of a registrable domain. It applies to discovered pages and
+top-level redirects. `false` allows other public hosts; local crawling still
+cannot leave its named target's exact host/port/path policy.
+
+`interaction="scroll"` requests at most five full-page scroll steps. It does not
+increase page count. `none` performs no requested interaction. Consent, load-more,
+pagination-button/site-search interactions, screenshot/PDF captures, stealth and
+undetected modes are **not yet implemented**; requesting them returns
+`CRAWL_INTERACTION_UNAVAILABLE`, `CRAWL_CAPTURE_UNAVAILABLE` or
+`CRAWL_MODE_UNAVAILABLE`. They remain research acceptance work, not removed scope.
+`auto` currently runs standard mode; returned metadata states both requested and
+actual modes. Automatic anti-bot escalation and human challenge handoff are open.
+
+`managed_profile` requires an existing Gateway-owned profile. Supplying a profile
+with another mode fails explicitly instead of silently browsing anonymously.
+Managed public-crawl results are not disk-cached. Named local targets retain
+their explicit `cache_authenticated` policy. Browsers close after each bounded
+crawl; in-context cookie changes are not preserved into later calls. Imported
+source/copy profiles are not erased. Recognized sensitive final citation URLs are
+redacted and excluded from disk cache; arbitrary sensitive prose or Markdown
+links are not universally detected/redacted.
+
+`wait_for` is a CSS selector, at most 1024 characters, without a `css:`/`js:`
+prefix. It applies to each visited page; use it only when that selector exists
+throughout the requested page set. Invalid CSS returns `CRAWL_SELECTOR_INVALID`.
+The configured whole-crawl deadline (120 seconds by default) covers validation,
+browser startup and collection after admission; per-page work defaults to 45
+seconds. Queue waiting and cleanup are separate. Completed evidence is retained
+with `CRAWL_TIMEOUT` or page-failure warnings; wholly empty/failed collection is
+`CRAWL_NO_EVIDENCE`, never an empty success.
+
+Returned content is bounded to 50,000 characters per page/400,000 per crawl, with
+titles capped at 1000 characters, at most 250 inspected link entries per page
+and 250 remembered frontier URLs. Warnings disclose truncation and limits. This
+does not impose hard browser RAM or subresource byte/request limits. Public
+top-level navigation shares the direct-fetch origin concurrency/pacing slot;
+redirect destinations and browser subresources do not yet share all those slots.
+
+Chromium response-stage interception checks redirect destinations before they
+are followed; ordinary Playwright request routing alone was insufficient. Real
+fixtures prove top-level cross-host and JavaScript multi-hop local-path redirects,
+alongside the existing HTTP/WebSocket checks. Cross-origin out-of-process iframe
+coverage and Chromium DNS pinning still need acceptance. A native cancellation
+fixture confirms that its owned Chrome/driver processes exit; this is not a
+complete browser crash/hang/long-running stress test. See [crawl evidence](CRAWL-TRAVERSAL-EVIDENCE-2026-09-02.md).
+
 `web_crawl` uses Crawl4AI and gateway-owned Chrome. The ordinary path is headless and text-oriented.
 
 Implemented boundaries:

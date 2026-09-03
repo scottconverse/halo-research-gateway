@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-03T01:52:11.1444534Z",
+  "generated_at": "2026-09-03T02:36:26.4037162Z",
   "project": "halo-research-gateway",
   "version": "0.2.0",
   "specification": "docs/RESEARCH-ONLY-SCOPE.md",
@@ -29,8 +29,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "2231a3235aee022123b6a644f1e841ec138b219b1270ab1913f3b7e67cbb4747",
-      "bytes": 5760
+      "sha256": "1a2b2d45eed95913be407962fbe07f46d2da14012b5b8f015086661d084e303c",
+      "bytes": 6422
     },
     {
       "path": "config/config.example.toml",
@@ -51,6 +51,11 @@
       "path": "docs/COORDINATOR-CANCELLATION-EVIDENCE-2026-09-02.md",
       "sha256": "ac76d841cf856031ab5b43e14954f141f4b380389a12b31e36675d0aa5a87046",
       "bytes": 17417
+    },
+    {
+      "path": "docs/CRAWL-TRAVERSAL-EVIDENCE-2026-09-02.md",
+      "sha256": "bbbabdd87a8a166dc1324f07b1a9a58e8aaa8551a70932ddabed9532b8be1b1f",
+      "bytes": 66284
     },
     {
       "path": "docs/DOCUMENT-DIAGNOSTIC-TRANSCRIPT-2026-09-02.md",
@@ -84,8 +89,8 @@
     },
     {
       "path": "docs/FINISH-PROGRESS-2026-09-02.md",
-      "sha256": "c4a10c92f135755a64502816c1f96421cc054365df73c20da9e77cd77a155030",
-      "bytes": 20610
+      "sha256": "b9c3758ff54acbf87d9710afa1a4e90725da47a556f2c1ecaa1345f9d7233147",
+      "bytes": 21118
     },
     {
       "path": "docs/HALO-RESEARCH-GATEWAY-SPEC-v1.4.md",
@@ -104,8 +109,8 @@
     },
     {
       "path": "docs/implementation-status.md",
-      "sha256": "da0e8d1e2ae858dc869d51bec0b9f7fe0bf89dcfa67f1b9075ba3fdb26a079e5",
-      "bytes": 5368
+      "sha256": "aa5177a65b0ace78add06676fca86a08df4e4b78f7f5670815bfdb99b68a1351",
+      "bytes": 6256
     },
     {
       "path": "docs/JOB-CONTROL-EVIDENCE-2026-09-02.md",
@@ -129,8 +134,8 @@
     },
     {
       "path": "docs/operations.md",
-      "sha256": "2de10030b288c19081e4e4aa8a1ef7733ec4617128f30eb83ea736408ecd208c",
-      "bytes": 3905
+      "sha256": "68d0edb198cb9771aeab3a11279125d6564a475decf81e1ea0c3878958606396",
+      "bytes": 4874
     },
     {
       "path": "docs/quality-gate.md",
@@ -149,8 +154,8 @@
     },
     {
       "path": "docs/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "8070fb584c7437805dc30c2ae7c32f6ddb077905f1c0ac90ff941aef1aaca6fc",
-      "bytes": 7576
+      "sha256": "e04d11827bf941da017d8141992e97fd6f671ec15374ad776b211c0a960b9699",
+      "bytes": 8151
     },
     {
       "path": "docs/security.md",
@@ -169,8 +174,8 @@
     },
     {
       "path": "docs/USER-MANUAL.md",
-      "sha256": "a1b9573e6cb8dd8163c0dc55ad376790ef1d017e35c5ddab5fb97e9ef18bc01f",
-      "bytes": 26141
+      "sha256": "def1d3f1786914bd0239858bac4dfc4da78c0b0480fb3188518a05142cb50937",
+      "bytes": 29657
     },
     {
       "path": "pyproject.toml",
@@ -179,8 +184,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "fe288f2ec2145d1d00172951b4f5ec8258ba66b345dd07047e49d5ffe9af2ce7",
-      "bytes": 10796
+      "sha256": "c4490ec723f0c8aeb399d1ab17eb2b2b24323891f6625fe499190394d750c4b1",
+      "bytes": 11320
     },
     {
       "path": "scripts/HaloLifecycle.ps1",
@@ -254,8 +259,8 @@
     },
     {
       "path": "skills/halo-research/references/RESEARCH-ONLY-SCOPE.md",
-      "sha256": "8070fb584c7437805dc30c2ae7c32f6ddb077905f1c0ac90ff941aef1aaca6fc",
-      "bytes": 7576
+      "sha256": "e04d11827bf941da017d8141992e97fd6f671ec15374ad776b211c0a960b9699",
+      "bytes": 8151
     },
     {
       "path": "skills/halo-research/references/source-selection.md",
@@ -279,8 +284,8 @@
     },
     {
       "path": "src/halo_research_gateway/app.py",
-      "sha256": "6b0daf32160f465d3db1976518a7d475439c08607e1a1e6906c084debd18fc26",
-      "bytes": 17956
+      "sha256": "8a8a30d14a4b3d78bdb5adf34bd19d0b48efb7085a17869f330ebf3d4849f31a",
+      "bytes": 18064
     },
     {
       "path": "src/halo_research_gateway/cache_errors.py",
@@ -394,8 +399,8 @@
     },
     {
       "path": "src/halo_research_gateway/providers/crawl4ai_provider.py",
-      "sha256": "6a4c146ed0617a44452f293b2191dd73e50d11c35a0bb788e923551623898c2b",
-      "bytes": 8052
+      "sha256": "51d1642b99ccdbc0498cb7d2b9f6e8b9c84e714daa7cde4e4192771746195a03",
+      "bytes": 18652
     },
     {
       "path": "src/halo_research_gateway/providers/deep.py",
@@ -464,8 +469,8 @@
     },
     {
       "path": "src/halo_research_gateway/service.py",
-      "sha256": "84cafc792a7351d2b7a1af35b2de51ff15b0c0030c193fe40eff177b6ec47140",
-      "bytes": 53067
+      "sha256": "34a485eb649f63879e57d4033a796a14bdd49c2e077a3c8b48addf9ea96c7ca2",
+      "bytes": 53877
     },
     {
       "path": "src/halo_research_gateway/tools/__init__.py",
@@ -538,6 +543,11 @@
       "bytes": 3009
     },
     {
+      "path": "tests/acceptance/test_crawl_traversal_native.py",
+      "sha256": "e8b7470eb0a5f175b53c6bb53d11bdaa5377b6099e5bd7a715f0e5b85b259a6c",
+      "bytes": 9802
+    },
+    {
       "path": "tests/acceptance/test_document_native.py",
       "sha256": "e5755c218a3cbc63fb6e9ac95ca593df59803e728da63fefeaa034f426e17c06",
       "bytes": 3369
@@ -576,6 +586,11 @@
       "path": "tests/unit/test_config.py",
       "sha256": "c8c1268f5b8d3c422d079ac808c2d6ff29a330fdf25f7a1f62f0f702cb58754d",
       "bytes": 5483
+    },
+    {
+      "path": "tests/unit/test_crawl_options.py",
+      "sha256": "64df12e496d2f391e71f9f0b5f9d1a972784e10a22da3782187211d03299e0d9",
+      "bytes": 18715
     },
     {
       "path": "tests/unit/test_cursor.py",

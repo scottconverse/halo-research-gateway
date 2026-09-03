@@ -282,9 +282,16 @@ def create_application(config: GatewayConfig | None = None):
         max_chars: Literal[2000, 4000, 6000] | None = None,
         cursor: str | None = None,
     ) -> dict:
-        del max_depth, interaction
         return await service.local_crawl(
-            target, path, max_pages, profile, max_chars, cursor, client=request_client(ctx)
+            target,
+            path,
+            max_pages,
+            profile,
+            max_chars,
+            cursor,
+            client=request_client(ctx),
+            max_depth=max_depth,
+            interaction=interaction,
         )
 
     @server.tool(description="Create or control a durable bounded research job owned by this profile.")

@@ -17,6 +17,13 @@ Current acceptance is partial. Local regression, disposable native background-la
 
 ## Why it exists
 
+Browser crawling now follows a bounded page/depth frontier, returns each source
+with its own citation, distinguishes scrolling from page traversal, and retains
+usable pages when another fails. Native Chrome fixtures cover redirect checks,
+exact local paths, scrolling, cookie reuse, WebSockets and cancellation cleanup.
+Advanced interactions/captures and automatic challenge escalation remain open;
+unimplemented options return explicit errors. See [crawl evidence and limits](docs/CRAWL-TRAVERSAL-EVIDENCE-2026-09-02.md).
+
 Agent hosts have inconsistent web access. Some can search but not crawl; others can fetch a URL but cannot discover it; separate instances can unknowingly spend the same anonymous quota or hammer Reddit. Halo centralizes that work without making DSH dependent on a cloud LLM.
 
 It supplies shared search, fetch, JavaScript crawling, Reddit, documents, GitHub-oriented discovery, transcripts, community research, durable jobs, exact local targets, encrypted connections, OAuth PKCE, cookie-only research-session import, and disabled-by-default budgeted CAPTCHA/proxy provider seams.

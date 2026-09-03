@@ -18,6 +18,18 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+Crawl page/depth/site controls now govern collection; local wrapper controls and
+option-specific cache keys are preserved. Scrolling is separate from navigation.
+Partial failures/timeouts retain useful evidence, public navigation shares the
+HTTP origin slot, managed public results bypass disk cache, and browser cleanup
+survives repeated cancellation. Native Chrome fixtures prove dynamic multi-page
+reading, path/scope and response-stage redirect checks, scroll/page limits and
+owned-process exit, with existing cookie/HTTP/WebSocket fixtures retained. See
+CRAWL-TRAVERSAL-EVIDENCE-2026-09-02.md for exact RED/GREEN and boundaries.
+Unimplemented advanced interactions/captures/modes now return explicit errors;
+their implementation remains open, alongside challenge escalation, DNS/OOPIF,
+subresource scheduling/bytes, hard native memory and broad lifecycle acceptance.
+
 Document table/OCR options now reach the provider and use distinct cache keys.
 Native PDF tables retain page citations. English OCR, mixed text/image pages,
 empty scans, process isolation, cancellation, input/output/raster/text limits,
@@ -25,8 +37,8 @@ page validation and verified local OCR-data setup have tests. Recognized sensiti
 PDF redirects are redacted and bypass disk cache. Exact commands, outputs and
 limits are in DOCUMENT-EXTRACTION-EVIDENCE-2026-09-02.md. The explicit native OCR
 fixture invokes the real MCP dispatcher but replaces the download with generated
-PDF bytes: it is not live-upstream, network-MCP or DSH acceptance. Crawl option
-fidelity and generic HTTP/non-PDF sensitive-redirect handling remain open.
+PDF bytes: it is not live-upstream, network-MCP or DSH acceptance. Advanced crawl
+interactions/captures and generic HTTP/non-PDF sensitive-redirect handling remain open.
 
 The background-launcher checkpoint passes 227 unit/fixture tests and two explicit
 native lifecycle tests (one per PowerShell version). It fixes process identity,

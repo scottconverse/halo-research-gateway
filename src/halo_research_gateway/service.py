@@ -74,7 +74,9 @@ class HaloService:
         )
         self.exa = ExaProvider(config.exa.url, self.clock)
         self.ddgs = DdgsSearchProvider(self.clock)
-        self.crawler = Crawl4AIProvider(config.crawl.base_directory, self.clock)
+        self.crawler = Crawl4AIProvider(
+            config.crawl.base_directory, self.clock, limits=config.crawl, origin_gate=self.http._origin_gate
+        )
         self.documents = DocumentProvider(self.http, self.clock)
         self.jobs = JobManager(config.storage.database, self.clock)
         self.import_reviews = ImportReviewStore(
@@ -405,16 +407,33 @@ class HaloService:
             return self._resume("web_crawl", cursor, max_chars)
         if not url:
             return self._error("web_crawl", "policy", ValueError("URL_REQUIRED"))
-        del max_depth, same_site_only, interaction, capture
-        key = "crawl:" + hashlib.sha256(json.dumps([url, max_pages, mode, profile, wait_for]).encode()).hexdigest()
+        key = (
+            "crawl:v2:"
+            + hashlib.sha256(
+                json.dumps(
+                    [url, max_pages, max_depth, same_site_only, mode, profile, interaction, capture, wait_for]
+                ).encode()
+            ).hexdigest()
+        )
         try:
             result = await self._cached_run(
                 "crawl",
                 client,
                 key,
                 3600,
-                lambda: self.crawler.crawl(url, max_pages=max_pages, mode=mode, wait_for=wait_for, profile=profile),
+                lambda: self.crawler.crawl(
+                    url,
+                    max_pages=max_pages,
+                    max_depth=max_depth,
+                    same_site_only=same_site_only,
+                    mode=mode,
+                    wait_for=wait_for,
+                    profile=profile,
+                    interaction=interaction,
+                    capture=capture,
+                ),
                 max_age_seconds=max_age_seconds,
+                cacheable=mode != "managed_profile" and not is_sensitive_url(url),
             )
             return self._envelope("web_crawl", result, max_chars, requested=max_pages)
         except Exception as exc:
@@ -976,6 +995,9 @@ class HaloService:
         max_chars=None,
         cursor=None,
         client="unidentified",
+        *,
+        max_depth=0,
+        interaction="none",
     ) -> dict:
         if cursor:
             return self._resume("local_crawl", cursor, max_chars)
@@ -997,7 +1019,12 @@ class HaloService:
         try:
             url = policy.build_url(path)
             cacheable = configured.cache_authenticated
-            key = "local-crawl:" + hashlib.sha256(json.dumps([target, path, max_pages, profile]).encode()).hexdigest()
+            key = (
+                "local-crawl:v2:"
+                + hashlib.sha256(
+                    json.dumps([target, path, max_pages, max_depth, profile, interaction]).encode()
+                ).hexdigest()
+            )
             result = await self._cached_run(
                 "crawl",
                 client,
@@ -1006,6 +1033,8 @@ class HaloService:
                 lambda: self.crawler.crawl(
                     url,
                     max_pages=max_pages,
+                    max_depth=max_depth,
+                    interaction=interaction,
                     mode="managed_profile" if profile else "standard",
                     profile=profile,
                     public=False,

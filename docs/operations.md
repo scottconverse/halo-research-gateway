@@ -43,6 +43,22 @@ See [manual](USER-MANUAL.md#pdf-text-tables-and-local-ocr) for exact bounds and
 [evidence](DOCUMENT-EXTRACTION-EVIDENCE-2026-09-02.md) for tested/unproved surfaces.
 Fixture installer wiring is not a clean-machine installation receipt.
 
+## Crawl lifecycle and evidence
+
+Each bounded crawl closes its owned browser, including after cancellation or
+timeout. Repeated cancellation must not abandon cleanup. A whole-crawl timeout
+retains completed pages with warnings; a failed or empty page is not evidence.
+Default collection/page deadlines are 120/45 seconds after admission. They do
+not constitute a hard limit on cleanup duration, browser memory or every
+subresource. Public navigation shares the direct HTTP origin gate; subresource
+and redirect-origin scheduling remain unfinished.
+
+No personal browser is attached or terminated. Gateway-owned imported session
+cookies are read for each managed call; session changes are not written back.
+Browser/crawl SDK verbose output is disabled. Explicit Chromium response-stage
+redirect interception is required in addition to ordinary request guards. See
+[manual](USER-MANUAL.md#7-browser-crawling) and [crawl evidence](CRAWL-TRAVERSAL-EVIDENCE-2026-09-02.md).
+
 ## Rollback
 
 1. Stop the gateway.

@@ -97,13 +97,20 @@ new dashboard, or general automation platform belongs in the finish list.
 
 Recorded implementation gaps still included in that list:
 
-- `web_crawl` discards depth/site-only/interaction/capture arguments;
-  `max_pages` currently enables full-page scrolling, not page traversal.
+- Public/local crawl depth and page limits now drive real bounded traversal;
+  site scope, partial evidence, explicit scrolling, response-stage redirects,
+  option-specific cache keys, profile cache policy and cleanup have regression/
+  native Chrome evidence. See CRAWL-TRAVERSAL-EVIDENCE-2026-09-02.md.
+- Consent/load-more/pagination-button/site-search interactions, capture artifacts,
+  stealth/undetected modes and automatic anti-bot escalation remain unfinished.
+  Their absent behavior is now explicit, not silently claimed successful.
+- Browser subresource/redirect-origin scheduling, response-byte/peak-memory bounds,
+  Chromium DNS pinning and cross-origin out-of-process iframe coverage remain open.
 - `document_extract` table/OCR forwarding, page-cited native tables, isolated
   cancellation/deadline, and local English OCR are fixed and fixture-tested.
   Arbitrary scanned layouts, hard native-parser RAM bounds, DSH use and complete
   clean-install acceptance are not proved. See DOCUMENT-EXTRACTION-EVIDENCE-2026-09-02.md.
-- Recognized sensitive final PDF redirect URLs are redacted and not disk-cached;
+- Recognized sensitive final PDF/browser citation URLs are redacted and not disk-cached;
   equivalent final-redirect checks for generic HTTP/non-PDF fallback remain open.
 - Memory snapshot retention is not bounded; local/GitHub retrieval needs
   response/shared-limit hardening, and arbitrary job fields need bounds.
