@@ -142,8 +142,8 @@ including DNS and body reading. Oversized responses fail with
 a non-object/non-array response is `GITHUB_RESPONSE_INVALID`. No partial response
 is presented as a successful source. This is per request, not the complete
 multi-request GitHub operation, and does not bound JSON object expansion,
-decompression internals or total process memory. Current installed code remains
-the earlier checkpoint until a verified reload. See [evidence](RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md).
+decompression internals or total process memory. Installed acceptance requires
+a separate verified reload receipt. See [evidence](RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md).
 
 ### Pagination
 
@@ -413,8 +413,22 @@ separate. Each decoded response uses `http.max_decompressed_bytes`.
 `LOCAL_RESPONSE_TOO_LARGE`, `LOCAL_REQUEST_TIMEOUT` and `LOCAL_REDIRECT_DENIED`
 return no successful partial source. Local reads remain uncached on disk and
 successful evidence still pages normally. These are not browser, compressed-wire,
-decompression-allocation or whole-process memory limits. The installed service
-has not yet been reloaded with this source checkpoint.
+decompression-allocation or whole-process memory limits. Check the latest operator
+delivery receipt for the exact revision loaded by the installed service.
+
+`local_fetch` performs a GET, so the named target must explicitly allow `GET`.
+A HEAD-only or empty methods list returns `LOCAL_METHOD_NOT_ALLOWED` before any
+source request. The tool does not silently switch methods or alter the target.
+
+When a source URL contains a recognized sensitive parameter (such as `token`,
+`api_key`, `session` or `X-Amz-Signature`), the original URL is used for that
+authorized request, but all query values in returned citation URLs are redacted.
+Continuation snapshots retain the redacted citation and complete source text;
+`SENSITIVE_URL_NOT_CACHED` explains the policy. Local results are never disk-cached.
+The returned redacted URL may not reopen the authenticated source by itself.
+This is not universal secret detection or a scrub of fetched prose, arbitrary
+embedded links, path secrets, unrecognized query names or historical data.
+See [local policy evidence](LOCAL-READER-POLICY-EVIDENCE-2026-09-03.md).
 
 ## 9. Durable research jobs
 

@@ -133,10 +133,16 @@ Recorded implementation gaps still included in that list:
   See CACHE-LIMITS-EVIDENCE-2026-09-02.md. Physical SQLite/WAL size, synchronous cache
   I/O and total process/native peak memory remain open. Local/GitHub per-response
   streaming caps and active request deadlines now pass source/native checks, and
-  local fetches share HTTP admission/origin pacing; the installed service has not
-  yet been reloaded. Whole GitHub-operation deadlines, wider shared-origin coverage,
+  local fetches share HTTP admission/origin pacing. Installed identity requires a
+  separate reload receipt. Whole GitHub-operation deadlines, wider shared-origin coverage,
   decompression/JSON allocation and arbitrary job-field bounds remain.
   See RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md.
+- Local GET permission and recognized sensitive-query citation redaction now
+  pass unit/native checks, including complete continuation and Gateway output
+  checks at ERROR/INFO/DEBUG levels. No original source request is altered and
+  local results remain off disk cache. Universal secret detection, source prose/
+  embedded links/path secrets and historical-data scrubbing are not included.
+  See LOCAL-READER-POLICY-EVIDENCE-2026-09-03.md.
 - Background creation-time/duplicate-owner safeguards are fixed and native-tested;
   foreground ownership, strict wall-clock startup bounds, logon, long-running
   and clean-install acceptance remain.

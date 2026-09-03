@@ -27,9 +27,17 @@ The source now streams local HTTP and GitHub API responses with the configured
 decoded-body limit and per-request deadline. Local reads also share HTTP admission
 and per-origin pacing. Oversize/timeout failures return no partial source as
 successful evidence. Native two-client local reads and unauthenticated GitHub
-checks pass. This source checkpoint is not yet loaded by the installed service;
-the published page still describes runtime `7cdfe72`. See
+checks pass. These response bounds were introduced in `a640549`; source/native
+evidence is separate from the later installed-service reload receipt. The
+published page remains a dated `7cdfe72` snapshot. See
 [response-bound evidence and limits](docs/RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md).
+
+Local GET reads now enforce the operator's allowed methods before contacting a
+source. Recognized session-query values are used only for the source request,
+then redacted from citation URLs and continuation snapshots. IPv6 citations keep
+their brackets. Native MCP checks preserve complete source text and verify no
+synthetic query secret in Gateway output at ERROR/INFO/DEBUG log levels. See
+[local policy evidence and limits](docs/LOCAL-READER-POLICY-EVIDENCE-2026-09-03.md).
 
 Recognized challenge pages no longer count as research evidence. Auto public
 crawling can use configured Bright Data retrieval with exact requested-domain

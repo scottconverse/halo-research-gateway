@@ -41,7 +41,7 @@ from .providers.reddit_rss import parse_atom, search_url, thread_rss_url
 from .providers.search import DdgsSearchProvider
 from .providers.transcripts import TranscriptProvider
 from .rate_limit import ProviderRateLimited, RateLedger
-from .security import ParsedTarget, UrlPolicyError, is_sensitive_url
+from .security import ParsedTarget, UrlPolicyError, is_sensitive_url, redact_url
 
 
 class HaloService:
@@ -1063,6 +1063,8 @@ class HaloService:
             configured.cache_authenticated,
         )
         try:
+            if "GET" not in policy.methods:
+                raise ValueError("LOCAL_METHOD_NOT_ALLOWED")
             url = policy.build_url(path)
             # Hash the exact named target and URL: queue diagnostics must not
             # expose private source paths, and different local policies cannot join.
@@ -1094,10 +1096,18 @@ class HaloService:
                         text = payload.decode(response.encoding or "utf-8", errors="replace")
         except (TimeoutError, httpx.TimeoutException):
             raise TimeoutError("LOCAL_REQUEST_TIMEOUT") from None
+        sensitive = is_sensitive_url(url)
         return ProviderResult(
             "local-http",
-            [EvidenceItem(url=url, retrieved_at=rfc3339(self.clock.utcnow()), source=policy.target_id, content=text)],
-            [],
+            [
+                EvidenceItem(
+                    url=redact_url(url) if sensitive else url,
+                    retrieved_at=rfc3339(self.clock.utcnow()),
+                    source=policy.target_id,
+                    content=text,
+                )
+            ],
+            ["SENSITIVE_URL_NOT_CACHED"] if sensitive else [],
             1,
         )
 

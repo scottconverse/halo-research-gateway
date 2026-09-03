@@ -29,7 +29,7 @@ If port 8765 is occupied, identify the owning PID and command line; do not kill 
 
 The registered task is `Halo Research Gateway`. The 2026-09-01 recovery drill performed an ownership-checked stop, invoked the task, restored `status=ok`, and recorded task result `0x00000000`. A future recovery claim must repeat the drill against the current source/installer identity rather than relying on that historical receipt.
 
-## Local and GitHub response bounds — source checkpoint, not yet installed
+## Local and GitHub response bounds
 
 The September 3 response-bound source uses the existing HTTP decoded-body and
 total-time settings for local fetches and each GitHub API request. Local reads
@@ -44,9 +44,17 @@ Do not equate this with a bound on decompressor/JSON allocations, wire bytes,
 all GitHub requests combined, or total process memory. Source and native proof:
 [response-bound evidence](RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md).
 
-Running Gateway and published site remain on the earlier runtime checkpoint.
-Use ownership-checked lifecycle scripts for a later reload; this work did not
-restart Gateway or DSH, change config, or touch credentials.
+Source verification is not installation. Use ownership-checked lifecycle scripts
+and record the exact source SHA, PID/creation identity, start time and post-reload
+canaries. Current installed identity is in the latest operator delivery receipt;
+the published Site is a dated snapshot, not live runtime monitoring.
+
+`local_fetch` now rejects targets that do not allow GET before admission/network
+I/O. Recognized sensitive query values are removed from returned citations and
+in-memory continuation snapshots, not from the original authorized request.
+Local results stay off disk cache. This does not purge historical state or scrub
+source prose/path secrets/unrecognized parameters. Native ERROR/INFO/DEBUG
+fixture checks and limitations: [local policy evidence](LOCAL-READER-POLICY-EVIDENCE-2026-09-03.md).
 
 ## Shared disk-cache limits
 

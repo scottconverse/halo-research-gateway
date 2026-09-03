@@ -18,13 +18,23 @@ The final gate passed `131 passed in 3.98s`. The live service exposes fourteen t
 
 ## Current checkpoints
 
+Local-reader policy followup: GET now requires operator permission before any
+network contact; recognized sensitive query values are redacted in citation and
+snapshot URLs; IPv6 brackets survive redaction. Native two-client MCP reads
+preserve all 3400 characters across 13 pages at ERROR/INFO/DEBUG log levels and
+do not expose the synthetic query secret in Gateway stdout/stderr. The previous
+response-limit/restart/cancellation native checks also pass. See
+LOCAL-READER-POLICY-EVIDENCE-2026-09-03.md. Installed identity is proved separately
+in the operator delivery record; no DSH/full-project completion is claimed.
+
 September 3 source-only response-bound checkpoint: local/GitHub HTTP streaming,
 per-response decoded-body caps and active request deadlines are implemented.
 Local reads now share HTTP admission/origin pacing and cancellation. Native
 disposable Gateway/two-MCP-client checks and a real unauthenticated GitHub API
 check pass. This is not installed-service, authenticated-account or DSH proof.
 See RESPONSE-BOUNDS-EVIDENCE-2026-09-03.md for exact runs and remaining limits.
-Installed runtime and published site remain at the prior checkpoint below.
+This earlier source-only receipt is historical; subsequent installed identity
+belongs to the latest operator reload/delivery record. Site v4 is still dated.
 
 The owner-only landing page was republished on September 3 as Sites version 4,
 source `b7bd4ff`, reflecting Gateway runtime `7cdfe72` and its 423-test CI proof.

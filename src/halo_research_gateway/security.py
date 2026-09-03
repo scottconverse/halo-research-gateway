@@ -147,6 +147,8 @@ def redact_url(url: str) -> str:
     try:
         parsed = urllib.parse.urlsplit(url)
         host = parsed.hostname or ""
+        if ":" in host:
+            host = f"[{host}]"
         port = f":{parsed.port}" if parsed.port else ""
         query = urllib.parse.urlencode(
             [(name, "[REDACTED]") for name, _ in urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)]
