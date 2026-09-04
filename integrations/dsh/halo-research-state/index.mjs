@@ -106,6 +106,164 @@ function parseGatewayEnvelope(event) {
   return undefined
 }
 
+function parseToolResultJson(event) {
+  if (event?.type !== 'tool/result') return undefined
+  const blocks = event.data?.message?.content
+  if (!Array.isArray(blocks)) return undefined
+  for (const block of blocks) {
+    if (block?.type !== 'tool-result' || block.isError === true || !Array.isArray(block.content)) continue
+    for (const inner of block.content) {
+      if (inner?.type !== 'text' || typeof inner.text !== 'string') continue
+      try {
+        const value = JSON.parse(inner.text)
+        if (value && typeof value === 'object') return value
+      } catch {
+        // Non-JSON tool output cannot contribute to a verified receipt.
+      }
+    }
+  }
+  return undefined
+}
+
+function callArguments(event) {
+  const value = event?.data?.arguments
+  if (value && typeof value === 'object') return value
+  if (typeof value !== 'string') return {}
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+function researchResultRecords(events, requestSeq) {
+  const calls = researchCallsAfter(events, requestSeq)
+  const byId = new Map(calls.map(event => [event.data.callId, event]))
+  const records = []
+  for (const event of events) {
+    if (event?.seq <= requestSeq || event.type !== 'tool/result') continue
+    const callId = event.data?.message?.source?.callId
+    const call = byId.get(callId)
+    if (!call) continue
+    const payload = parseToolResultJson(event)
+    if (!payload) continue
+    records.push({ event, call, arguments: callArguments(call), payload })
+  }
+  return records
+}
+
+function checkpointSummary(value) {
+  if (!value || typeof value !== 'object') return null
+  const fields = ['attempted', 'completed_sources', 'remaining_sources', 'elapsed_seconds', 'search_complete']
+  const summary = {}
+  for (const field of fields) {
+    if (typeof value[field] === 'number' || typeof value[field] === 'boolean') summary[field] = value[field]
+  }
+  if (Array.isArray(value.warnings)) {
+    summary.warnings = [...new Set(value.warnings.filter(item => typeof item === 'string'))].sort()
+  }
+  return Object.keys(summary).length > 0 ? summary : null
+}
+
+function projectedJob(payload) {
+  if (typeof payload?.job_id === 'string') return payload
+  if (payload?.tool === 'research_job' && Array.isArray(payload.items)) {
+    return payload.items.find(item => typeof item?.job_id === 'string')
+  }
+  return undefined
+}
+
+export function buildVerifiedJobReceipt(events, requestSeq) {
+  if (!Array.isArray(events)) return null
+  const startSeq = Number.isSafeInteger(requestSeq) ? requestSeq : latestRequest(events)?.event?.seq
+  if (!Number.isSafeInteger(startSeq)) return null
+  const records = researchResultRecords(events, startSeq)
+  const operations = []
+  for (const record of records) {
+    if (record.call.data?.name !== `${TOOL_PREFIX}research_job`) continue
+    const job = projectedJob(record.payload)
+    if (!job) continue
+    const progress = job.progress && typeof job.progress === 'object' ? job.progress : {}
+    const warningCodes = Array.isArray(progress.result?.warnings)
+      ? [...new Set(progress.result.warnings.filter(value => typeof value === 'string'))]
+      : []
+    operations.push({
+      seq: record.event.seq,
+      job_id: job.job_id,
+      operation: typeof record.arguments.operation === 'string' ? record.arguments.operation : 'unknown',
+      state: typeof job.state === 'string' ? job.state : null,
+      error_code: typeof job.error_code === 'string' ? job.error_code : null,
+      checkpoint: checkpointSummary(progress.checkpoint),
+      partial: typeof progress.partial === 'boolean' ? progress.partial : null,
+      warning_codes: warningCodes,
+    })
+  }
+  if (operations.length === 0) return null
+  const grouped = new Map()
+  for (const operation of operations) {
+    const list = grouped.get(operation.job_id) ?? []
+    const { seq, job_id: _jobId, ...snapshot } = operation
+    list.push({ seq, snapshot })
+    grouped.set(operation.job_id, list)
+  }
+  const continuationCalls = researchCallsAfter(events, startSeq)
+    .filter(event => event.data?.name === `${TOOL_PREFIX}deep_research`).length
+  const jobs = [...grouped.entries()].map(([jobId, entries]) => ({
+    job_id: jobId,
+    operations: entries.map((entry, index) => ({ ordinal: index + 1, ...entry.snapshot })),
+  }))
+  const receipt = { schema: 'halo-job-receipt/v1', jobs, continuation_calls_total: continuationCalls }
+  const canonical = JSON.stringify(receipt).replaceAll('<', '\\u003c').replaceAll('>', '\\u003e')
+  return { ...receipt, canonical, text: `VERIFIED_JOB_RECEIPT: ${canonical}`, latestResultSeq: operations.at(-1).seq }
+}
+
+function jobNarrativeContradictions(final, receipt) {
+  if (receipt.jobs.length !== 1) return []
+  const operations = receipt.jobs[0].operations
+  const pause = operations.find(operation => operation.operation === 'pause')
+  const resume = operations.find(operation => operation.operation === 'resume')
+  const terminal = operations.findLast(operation => ['complete', 'failed', 'cancelled'].includes(operation.state))
+  const violations = []
+  let section = null
+  for (const line of final.replace(receipt.canonical, '').split(/\r?\n/)) {
+    const attemptedPhrase = line.match(/\b(\d+)(?:\/\d+)?\s+(?:pages?\s+)?attempted\b/i)
+    if (attemptedPhrase && terminal?.checkpoint?.attempted !== undefined
+      && Number(attemptedPhrase[1]) !== terminal.checkpoint.attempted) {
+      violations.push(`terminal attempted is reported as ${attemptedPhrase[1]}, but the verified terminal snapshot is ${terminal.checkpoint.attempted}.`)
+    }
+    if (/^#{1,6}\s+.*(?:terminal|final state)/i.test(line)) section = 'terminal'
+    else if (/^#{1,6}\s+.*pause/i.test(line)) section = 'pause'
+    else if (/^#{1,6}\s+/i.test(line)) section = null
+    let expected
+    let label
+    if (/\bpause(?:d)?\b/i.test(line)) {
+      expected = pause
+      label = 'pause'
+    } else if (/\bresume(?:d)?\b/i.test(line)) {
+      expected = resume
+      label = 'resume'
+    } else if (/\bterminal\b|\bfinal state\b/i.test(line) || (section === 'terminal' && /^\s*[-*]/.test(line))) {
+      expected = terminal
+      label = 'terminal'
+    } else if (section === 'pause' && /^\s*[-*]/.test(line)) {
+      expected = pause
+      label = 'pause'
+    }
+    if (!expected) continue
+    const values = { ...expected.checkpoint, state: expected.state, error_code: expected.error_code, partial: expected.partial }
+    for (const [field, actual] of Object.entries(values)) {
+      if (actual === undefined || actual === null) continue
+      const match = line.match(new RegExp(`\\b${field}\\b[\\s*\`]*[:=][\\s*\`]*([a-z]+|-?\\d+(?:\\.\\d+)?)`, 'i'))
+      if (!match) continue
+      const observed = typeof actual === 'number' ? Number(match[1]) : match[1].toLowerCase()
+      const wanted = typeof actual === 'string' ? actual.toLowerCase() : actual
+      if (observed !== wanted) violations.push(`${label} ${field} is reported as ${match[1]}, but the verified ${label} snapshot is ${actual}.`)
+    }
+  }
+  return violations
+}
+
 function requestTerms(text) {
   const question = text.split(/\n\s*\n/, 1)[0]
   const separated = question.replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -236,6 +394,11 @@ function renderState(state) {
   }
   if (state.outputContract.paraphrasesOnly) lines.push('FINAL-ANSWER WORDING FROM USER REQUEST: Paraphrase; do not quote source wording.')
   lines.push(`Successful Gateway results: ${state.successfulResults}. Discovered canonical URLs: ${state.discoveredUrls.length}. Fetched source URLs: ${state.sources.length}.`)
+  if (state.jobReceipt !== null) {
+    lines.push('JOB LIFECYCLE AUTHORITY: The receipt below is generated from each recorded research_job result in order. Keep pause, status, resume, and terminal checkpoints distinct. Never replace an earlier checkpoint with later counters.')
+    lines.push(state.jobReceipt.text)
+    lines.push('JOB REPORT RULE: When the user asks for exact job values, copy VERIFIED_JOB_RECEIPT verbatim. Do not restate lifecycle counters elsewhere in prose; summarize the outcome without inventing or recomputing counts.')
+  }
   for (const source of state.sources) {
     lines.push(JSON.stringify({
       url: source.url,
@@ -269,6 +432,7 @@ export function buildVerifiedResearchState(events) {
     if (envelope) results.push({ event, envelope })
   }
   const lastResearchTime = calls.at(-1)?.time ?? request.event.time
+  const jobReceipt = buildVerifiedJobReceipt(events, request.event.seq)
   const state = {
     requestSeq: request.event.seq,
     requestTime: request.event.time,
@@ -279,6 +443,7 @@ export function buildVerifiedResearchState(events) {
     outputContract: parseOutputContract(request.text),
     discoveredUrls: discoveryState(results),
     sources: sourceState(results, requestTerms(request.text)),
+    jobReceipt,
   }
   state.text = renderState(state)
   return state
@@ -361,6 +526,12 @@ export function finalAnswerViolations(events) {
     violations.push('The request requires paraphrases, but the draft contains quoted source wording.')
   }
   const lower = final.toLowerCase()
+  const exactJobReportRequested = /copy[\s\S]{0,160}(?:actual|exact)|do not infer counts|exact continuation-call count/i.test(request.text)
+  if (exactJobReportRequested && state.jobReceipt !== null) {
+    if (!final.includes(state.jobReceipt.canonical)) {
+      violations.push('The exact VERIFIED_JOB_RECEIPT JSON is missing. Copy its canonical JSON verbatim from the verified ledger so lifecycle snapshots cannot be conflated.')
+    } else violations.push(...jobNarrativeContradictions(final, state.jobReceipt))
+  }
   if (/taskgroup[\s\S]{0,120}sibling|sibling[\s\S]{0,120}taskgroup/i.test(request.text)
     && !(/(?:remaining|sibling)\w*[\s\S]{0,100}cancel/.test(lower)
       || /cancel\w*[\s\S]{0,100}(?:remaining|sibling)/.test(lower))) {
@@ -391,6 +562,7 @@ function shouldInject(events, state) {
     && event.data.source.form === 'verified-research-state')
   const triggerSeq = Math.max(
     latestCompaction?.seq ?? -1,
+    state.jobReceipt?.latestResultSeq ?? -1,
     state.budget.maxCalls !== undefined && state.researchCalls >= state.budget.maxCalls
       ? latestResearchCall?.seq ?? -1
       : -1,
@@ -411,7 +583,7 @@ function revisionMessage(violations) {
   return {
     role: 'user',
     id: randomUUID(),
-    content: [{ type: 'text', text: `Your draft cannot end this turn because it violates the user's final-answer contract:\n- ${violations.join('\n- ')}\n\nRevise from the existing verified research ledger. Do not make more research calls. Return only the corrected final answer, with no planning or preamble. Preserve only claims supported by retrieved evidence and honestly disclose unread continuations.` }],
+    content: [{ type: 'text', text: `Your draft cannot end this turn because it violates the user's final-answer contract:\n- ${violations.join('\n- ')}\n\nRevise from the existing verified research and job ledger. Do not make more research calls. Return only the corrected final answer, with no planning or preamble. Copy any required VERIFIED_JOB_RECEIPT verbatim, preserve only claims supported by retrieved evidence, and honestly disclose unread continuations.` }],
     source: { kind: 'plugin', plugin: PLUGIN, form: 'final-answer-revision', summary: 'research final-answer contract revision' },
   }
 }

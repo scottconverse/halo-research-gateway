@@ -131,8 +131,11 @@ export default function Home() {
             <p className="mt-5 max-w-2xl text-sm leading-6 text-amber-200">
               Current status: the complete bounded DSH workflow passed across
               eight successful Gateway calls, continuation and two automatic
-              compactions. Other registered clients use the same MCP contract;
-              their model-selected live calls remain separately tracked.{' '}
+              compactions. Installed DSH job acceptance also passed active
+              pause/resume, cancellation, Gateway restart recovery and honest
+              partial-failure reporting. Other registered clients use the same
+              MCP contract; their model-selected live calls remain separately
+              tracked.{' '}
               <a className="underline underline-offset-4" href="#proof">
                 See the evidence and remaining work.
               </a>
@@ -378,13 +381,16 @@ export default function Home() {
             </h2>
             <p className="section-copy">
               Version 0.3.0 release-candidate evidence includes a complete DSH
-              workflow: eight successful Gateway calls, three distinct required
-              sources, continuation, two automatic compactions and a supported
-              final answer. The exact merged revision must still be bound to
-              green Windows CI before release; the tag requires owner approval.
+              workflow plus installed durable-job lifecycle checks: active
+              pause with frozen checkpoints, same-job resume, active cancel,
+              Gateway restart recovery, retained continuation and an exact
+              canonical receipt for partial failure. The exact merged revision
+              must still be bound to green Windows CI before release; the tag
+              requires owner approval.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <span className="proof-pill">DSH workflow verifier passed</span>
+              <span className="proof-pill">DSH job lifecycle passed</span>
               <a className="proof-pill underline underline-offset-4" href="https://github.com/scottconverse/halo-research-gateway/actions">
                 Windows CI · current runs
               </a>
@@ -392,8 +398,9 @@ export default function Home() {
               <span className="proof-pill">DB schema 3</span>
             </div>
             <p className="mt-6 text-sm leading-6 text-amber-200">
-              The DSH workflow is green. Real research login and app-bound
-              cookies, broader stress and clean-OS/logon acceptance remain open.
+              The DSH workflow and installed job lifecycle are green. Real
+              research login and app-bound cookies, broader stress and clean-OS/
+              logon acceptance remain open.
               CapSolver and Bright Data were tested with local fake vendors, not
               paid APIs. Registered clients are not called live-proven until
               their model selects and completes a Gateway tool.
@@ -423,7 +430,7 @@ export default function Home() {
               'Disposable authenticated MCP — GitHub discussions, replies and commit-pinned files',
               'Native documents and captions — PDF tables, local OCR and retained timing',
               'Chrome fixtures — cookie-only sessions, local paths, WebSockets and cleanup',
-              'Jobs and cache — pause/resume, process restart and shared-client limits',
+              'Jobs and cache — installed DSH pause/resume, cancel and restart recovery',
               'Challenge fallback — native Chrome plus a local fake vendor, no paid call',
               'Installed challenge check — explicit failure instead of false evidence',
             ].map((line) => (

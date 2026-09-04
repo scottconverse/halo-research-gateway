@@ -4,6 +4,7 @@ import test from 'node:test'
 import {
   apply,
   buildVerifiedResearchState,
+  buildVerifiedJobReceipt,
   finalAnswerViolations,
   parseResearchBudget,
   researchBudgetDecision,
@@ -82,6 +83,75 @@ function researchEvents() {
     { type: 'compaction/end', seq: 18, time: 1_018, data: { compactionId: 'c1', turn: 1 } },
   ]
 }
+
+function jobEvents(finalText = '') {
+  const prompt = `Create one research_job, pause it, call status twice, resume it, and wait for a terminal state.
+In the final report copy the actual final state, error_code, attempted, completed_sources, remaining_sources,
+partial flag, warning codes, and exact continuation-call count from tool results; do not infer counts.`
+  const rows = [
+    ['create', { job_id: 'job-1', state: 'queued', progress: {}, error_code: null }],
+    ['pause', { job_id: 'job-1', state: 'paused', progress: { checkpoint: { attempted: 16, completed_sources: 15, remaining_sources: 35, elapsed_seconds: 15.4, search_complete: true }, partial: true }, error_code: null }],
+    ['status', { job_id: 'job-1', state: 'paused', progress: { checkpoint: { attempted: 16, completed_sources: 15, remaining_sources: 35, elapsed_seconds: 16.4, search_complete: true }, partial: true }, error_code: null }],
+    ['status', { job_id: 'job-1', state: 'paused', progress: { checkpoint: { attempted: 16, completed_sources: 15, remaining_sources: 35, elapsed_seconds: 16.4, search_complete: true }, partial: true }, error_code: null }],
+    ['resume', { job_id: 'job-1', state: 'queued', progress: { checkpoint: { attempted: 16, completed_sources: 15, remaining_sources: 35, elapsed_seconds: 16.4, search_complete: true, warnings: ['JOB_RECOVERED_AFTER_INTERRUPTION'] }, partial: true }, error_code: null }],
+    ['status', { job_id: 'job-1', state: 'complete', progress: { checkpoint: { attempted: 25, completed_sources: 24, remaining_sources: 26, elapsed_seconds: 25.2, search_complete: true }, partial: true, result: { warnings: ['RESULT_TRUNCATED', 'SOURCE_LIMIT_REACHED'] } }, error_code: null }],
+  ]
+  const events = [user(1, prompt)]
+  let seq = 2
+  for (const [operation, payload] of rows) {
+    const callId = `job-${seq}`
+    events.push(call(seq++, callId, 'mcp__halo_research__research_job', { operation, ...(operation === 'create' ? {} : { job_id: 'job-1' }) }))
+    events.push(result(seq++, callId, payload))
+  }
+  for (let page = 1; page <= 2; page += 1) {
+    const callId = `page-${page}`
+    events.push(call(seq++, callId, 'mcp__halo_research__deep_research', { cursor: `cursor-${page}` }))
+    events.push(result(seq++, callId, {
+      schema_version: '1.5', ok: true, tool: 'deep_research', provider: 'halo-deep',
+      coverage: { complete: false }, page: { number: page, next_cursor: `cursor-${page + 1}` },
+      items: [], warnings: ['RESULT_TRUNCATED'],
+    }))
+  }
+  if (finalText !== '') events.push({
+    type: 'assistant/message', seq: seq++, time: 1_000 + seq,
+    data: { message: { role: 'assistant', id: 'job-final', source: { kind: 'model' }, content: [{ type: 'text', text: finalText }] } },
+  })
+  return events
+}
+
+test('builds an exact job-operation receipt from projected DSH tool results', () => {
+  const events = jobEvents()
+  const receipt = buildVerifiedJobReceipt(events, 1)
+  assert.ok(receipt)
+  assert.equal(receipt.jobs.length, 1)
+  assert.equal(receipt.jobs[0].operations[1].operation, 'pause')
+  assert.deepEqual(receipt.jobs[0].operations[1].checkpoint, {
+    attempted: 16, completed_sources: 15, remaining_sources: 35,
+    elapsed_seconds: 15.4, search_complete: true,
+  })
+  assert.equal(receipt.jobs[0].operations.at(-1).checkpoint.attempted, 25)
+  assert.deepEqual(receipt.jobs[0].operations[4].checkpoint.warnings, ['JOB_RECOVERED_AFTER_INTERRUPTION'])
+  assert.equal(receipt.continuation_calls_total, 2)
+  assert.deepEqual(receipt.jobs[0].operations.at(-1).warning_codes, ['RESULT_TRUNCATED', 'SOURCE_LIMIT_REACHED'])
+  assert.match(receipt.text, /^VERIFIED_JOB_RECEIPT: /)
+  assert.equal(JSON.parse(receipt.canonical).jobs[0].job_id, 'job-1')
+})
+
+test('job acceptance finals must include the exact receipt and cannot restate lifecycle counters', () => {
+  const events = jobEvents('Pause succeeded at attempted=25 and completed_sources=24; final state complete.')
+  const violations = finalAnswerViolations(events)
+  assert.ok(violations.some(value => /verified_job_receipt/i.test(value)))
+
+  const receipt = buildVerifiedJobReceipt(events, 1)
+  events.at(-1).data.message.content[0].text = `### VERIFIED_JOB_RECEIPT\n\n\`\`\`json\n${receipt.canonical}\n\`\`\`\n\nThe job paused, stayed frozen, resumed, and completed with partial retained evidence.`
+  assert.deepEqual(finalAnswerViolations(events), [])
+
+  events.at(-1).data.message.content[0].text += '\nPause attempted=25.'
+  assert.ok(finalAnswerViolations(events).some(value => /verified pause snapshot is 16/i.test(value)))
+
+  events.at(-1).data.message.content[0].text = `${receipt.canonical}\nThe job stopped after 24/50 pages attempted.`
+  assert.ok(finalAnswerViolations(events).some(value => /verified terminal snapshot is 25/i.test(value)))
+})
 
 test('parses explicit word-number research budgets without inventing defaults', () => {
   assert.deepEqual(parseResearchBudget(request), { maxCalls: 12, maxDurationMs: 360_000 })
@@ -191,7 +261,7 @@ test('the Halo orchestrator composes the verified research state beside compacti
   const ledger = config.indexOf("id: halo-research-state")
   assert.ok(compaction >= 0)
   assert.ok(ledger > compaction, 'verified research state must be registered after compaction-basic')
-  assert.match(config, /halo-research-state\/index\.mjs\?v=2/)
+  assert.match(config, /halo-research-state\/index\.mjs\?v=7/)
 })
 
 test('turn stopping requests a bounded evidence-only revision when the final contract is violated', async () => {

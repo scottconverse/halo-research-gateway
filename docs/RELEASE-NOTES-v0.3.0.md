@@ -7,6 +7,9 @@ source version is set; the Git tag remains pending Scott's approval.
 
 - DSH's complete bounded research workflow is verified across continuation and
   two automatic compactions.
+- Installed DSH durable jobs are verified for active pause/frozen status/resume,
+  active cancellation, Gateway restart recovery, retained evidence and exact
+  partial-failure reporting with a canonical job receipt.
 - The reusable DSH client integration and exact upstream repairs are packaged in
   the Gateway repository under `integrations/dsh`.
 - The Gateway contract is explicitly client-neutral standard MCP. DSH is the

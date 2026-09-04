@@ -2,24 +2,64 @@
 
 ## Result and scope
 
-The two live DSH jobs found public evidence and followed exact retained cursors,
-but both completed before their pause requests arrived. Neither is a DSH
-pause/frozen-checkpoint/resume pass. A completed model turn is not acceptance.
+Installed DSH durable-job acceptance now passes the requested lifecycle:
+active pause and frozen progress, same-job resume to completion, active cancel
+with stable cleanup, interruption/restart recovery, retained evidence, and
+honest reporting of a non-empty terminal partial failure. The optional DSH
+state adapter now generates a canonical `halo-job-receipt/v1` receipt directly
+from durable tool results and rejects missing or contradictory lifecycle counts.
 
-Those runs exposed generic MCP job errors. The source repair translates only
-six established control failures into the existing error envelope:
-JOB_NOT_FOUND, JOB_NOT_OWNED, JOB_STATE_CONFLICT, INVALID_JOB_LIMITS,
-JOB_CAPACITY_REACHED and INVALID_ARGUMENT. Replies contain ok=false, empty
-items and a safe code; unknown exceptions still use SDK sanitization.
-No job state machine, ownership mapping, model, preset, permission, connection,
-browser profile, dependency, schema or tool-count change was made.
+The earlier jobs that completed before pause, invalid model summaries, flaky
+zero-evidence discovery attempts, and a recovery job that completed before a
+manual restart remain recorded below. They are not retroactively counted as
+passes. The final accepted runs used the unchanged local
+`lmstudio / halo/qwen3.6-35b-a3b` route, the installed 0.3.0 Gateway, public
+sources, no account or paid provider, and no model/permission change.
 
-Base/source and installed revision during DSH observations:
-`3a01a996c786800bf879d2f26c56ba3140502421`, product 0.2.0.
-The new error behavior is source/native proof here; installation needs a
-separate reload receipt. Final 0.3.0 is not released or tagged by this record.
+Known control failures still use the bounded safe envelope:
+`JOB_NOT_FOUND`, `JOB_NOT_OWNED`, `JOB_STATE_CONFLICT`,
+`INVALID_JOB_LIMITS`, `JOB_CAPACITY_REACHED` and `INVALID_ARGUMENT`.
+Unknown exceptions remain SDK-sanitized. This work changes only the optional
+DSH evidence ledger/final-report guard; it does not change the Gateway job state
+machine, MCP schema, ownership, model, preset permissions, connections, browser
+profiles, dependencies or fourteen-tool surface. Version remains 0.3.0 and the
+Git tag still requires owner approval.
 
-## Real DSH observations
+## Accepted installed DSH lifecycle evidence
+
+| Scenario | DSH session | Job | Authoritative result |
+| --- | --- | --- | --- |
+| Pause, freeze, resume | `session-2d216831-1669-4333-8cdb-5d3a986aaeca` | `8ac4f188-b1fd-477c-b97b-530da436c750` | Pause captured active progress at attempted 17 / completed 16 / remaining 34. Two paused statuses kept the same counters. Resume preserved 17/16 and the same job completed at 25/24/26 with `partial=true`; one retained continuation was read. |
+| Active cancel and cleanup | `session-689612fd-fabc-4df0-aee4-bb6c3013996f` | `854770bb-0e3c-43c2-be93-381d16071c44` | Cancel returned `cancelled` at 17/16/34. Two later DSH statuses stayed cancelled with identical counters. Gateway health then reported zero queued, running and paused jobs; 139 pre-existing DSH sessions were retained. |
+| Installed restart recovery | `session-44c32c40-3984-4d4f-b63f-4b1bb9bbd52f` | `df2831ac-aab1-4c0e-afa6-e4728302e9db` | DSH created the job; sub-second observation caught it running at 16/15/65 and immediately ran the official Gateway stop/start scripts. `started_at` changed from `2026-09-04T01:15:29.131368Z` to `2026-09-04T01:18:52.094275Z`. The original DSH session recovered it as `paused_recoverable` at 17/16/64 with `JOB_RECOVERED_AFTER_INTERRUPTION`, resumed the same ID, observed 33/31/49 running, then completed at 41/40/40 with `partial=true` and one continuation. |
+| Honest non-empty failure | `session-468caff9-7a3c-4e66-8375-3bd2fb2037b2` | `5ab54fdf-9a79-45a3-8569-b146f2443d76` | The job advanced through 17/16/64 and failed at 23/22/58 with `JOB_CHECKPOINT_TOO_LARGE`, `partial=true`, retained warnings/evidence and one continuation. Its final prose and canonical receipt agree under the current verifier replay. It is explicitly reported as partial failure, not success. |
+
+The restart harness cancelled only the DSH model turn after the owned create,
+polled that exact DSH-created job to close the model-latency race, and restarted
+only the recorded Gateway through `Stop-HaloResearch.ps1` and
+`Start-HaloResearch.ps1`. The pre-restart direct checkpoint is identified as
+direct orchestration evidence; recovery status/resume/terminal reporting all
+ran through the original DSH session. No job or session owned by another run
+was cancelled or removed.
+
+The failure report was replayed through the final receipt verifier after the
+redundant per-job continuation count was removed; the single authoritative
+root `continuation_calls_total` was present and `finalAnswerViolations` returned
+an empty list. This replay is deterministic validation of the recorded live DSH
+history, not a new model call.
+
+Raw local evidence:
+
+- `C:\Users\scott\Documents\Codex\2026-09-01\is-this-tool-plugin-real-https\outputs\dsh-job-receipt-v3`
+- `C:\Users\scott\Documents\Codex\2026-09-01\is-this-tool-plugin-real-https\outputs\dsh-job-cancel`
+- `C:\Users\scott\Documents\Codex\2026-09-01\is-this-tool-plugin-real-https\outputs\dsh-job-recovery-3`
+- `C:\Users\scott\Documents\Codex\2026-09-01\is-this-tool-plugin-real-https\outputs\dsh-job-failure-v6`
+
+The first two historical observations below are preserved because their races
+and inaccurate prose motivated the deterministic job receipt. They are not the
+accepted runs above.
+
+## Historical pre-acceptance DSH observations
 
 Both used halo-orchestrator and the unchanged
 `lmstudio / halo/qwen3.6-35b-a3b`, actual installed MCP, public Python sources,
@@ -65,7 +105,7 @@ Raw local evidence is in those scripts' sibling folders `dsh-job` and
 Preserve them, including the failures. No production timing change or increasingly
 inflated workload is justified to manufacture a pause pass.
 
-## Verification
+## Historical safe-error verification
 
 Files read: Gateway AGENTS/scope, app tool wrapper and neighbors, service
 error/job/status paths, job manager, existing job lifecycle/continuation tests,
@@ -530,11 +570,65 @@ zero jobs created, synthetic job ID absent from replies/captured process output,
 exact owned process terminated. Unit falsification additionally covers another
 owner, terminal resume, capacity and unknown-error sanitization.
 
+## Current receipt and lifecycle verification
+
+Focused job suite:
+
+```powershell
+uv run --locked python -m pytest -q tests/unit/test_job_lifecycle.py tests/unit/test_job_continuation.py tests/unit/test_job_errors.py tests/unit/test_job_bounds.py
+```
+
+```text
+43 passed in 7.37s
+```
+
+Full repository gate after synchronizing the bundled scope copy:
+
+```powershell
+pwsh -NoProfile -File scripts/Invoke-QualityGate.ps1 -Scope Full
+```
+
+```text
+597 passed in 121.04s
+12 DSH adapter tests passed
+halo-research skill package valid
+[GATE] PASS (Full)
+```
+
+Landing-page source:
+
+```powershell
+cd website
+npm run lint
+npm run build
+```
+
+Both commands passed; vinext built all five environments and the `/` route.
+
+The final v6 failure history was replayed through the v7 code by mapping its
+durable event wrappers to DSH events, building the current job receipt and
+running `finalAnswerViolations`. Result:
+
+```json
+{
+  "canonical_present": true,
+  "continuation_calls_total": 1,
+  "violations": []
+}
+```
+
+The first full-gate attempt had 597 Python and 12 DSH tests green but failed the
+skill-package check because the governing scope had changed without its bundled
+copy. The copy was synchronized byte-for-byte and the complete gate above was
+rerun; the initial failure is not reported as a pass.
+
 ## Security and unfinished work
 
-Final documentation gate initially failed because the repository-bundled scope
-copy had not been synchronized with the amended finish list. Both repository
-copies now match. This did not touch the three denied installed host references.
+Historical safe-error documentation gate: its first run failed because the
+repository-bundled scope copy had not been synchronized with the then-amended
+finish list. Both repository copies were corrected. This did not touch the
+three denied installed host references. The current 597-test gate is recorded
+above and supersedes this older count.
 
 ```powershell
 pwsh -NoProfile -File scripts/Invoke-QualityGate.ps1 -Scope Commit
@@ -557,8 +651,8 @@ Line |
      | skill package failed with exit code 1
 ```
 
-The subsequent commit/reload receipt records the corrected final gate and exact
-commit; this source report does not claim a pending run passed.
+The subsequent historical commit/reload receipt recorded that corrected older
+gate and exact commit. It is not evidence for the current pending source commit.
 
 - Trust-boundary input: existing MCP schema and service validation retained;
   only exact known string codes leave the exception boundary.
@@ -568,7 +662,9 @@ commit; this source report does not claim a pending run passed.
   personal source was used. This is not universal source/log secret detection.
 - Rendering/eval/deserialization: no new rendering, eval or unsafe decoding.
 - Dependencies: none added or changed; new-dependency vulnerability review N/A.
-- Scope: safe expected job errors are implemented; complete project acceptance
-  is not. DSH pause/resume, long-running/provider cancellation and strict final
-  answer compliance remain open. Arbitrary job field/status-output bounds are
-  not repaired by this change. See RESEARCH-ONLY-SCOPE.md for the full finish list.
+- Scope: safe expected job errors and the installed DSH lifecycle scenarios
+  above are implemented and verified; complete project acceptance is not.
+  Broader long-running/provider stress, forced cancellation of an already-
+  running synchronous DDGS request, and unrelated clean-OS/logon acceptance
+  remain open. Arbitrary job field/status-output bounds are not expanded by
+  this change. See RESEARCH-ONLY-SCOPE.md for the full finish list.

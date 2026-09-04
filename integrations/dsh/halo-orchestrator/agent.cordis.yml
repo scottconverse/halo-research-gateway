@@ -12,4 +12,4 @@
     # Must follow compaction so the durable Gateway ledger is re-injected after
     # an automatic fold. The query version intentionally busts module caches.
     - id: halo-research-state
-      name: 'file:///C:/absolute/path/to/halo-research-state/index.mjs?v=2'
+      name: 'file:///C:/absolute/path/to/halo-research-state/index.mjs?v=7'
