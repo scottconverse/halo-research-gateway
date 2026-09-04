@@ -108,9 +108,10 @@ was proven at adapter level. These do not complete the following work:
    DSH acceptance and wider provider/source limits remain; these are not proved
    by the disposable test. Keep intermittent upstream throttling visible.
 6. **Finish delivery.** Version 0.3.0 source, manual, landing-page source,
-   integration package and release metadata are aligned. CI and merge evidence
-   must bind to the final revision. The release tag remains intentionally pending
-   owner approval; source version 0.3.0 is not itself proof of a deployed runtime.
+   integration package and release metadata are aligned. Green CI, the merged
+   final revision, owner-only landing-page publication and the owner-approved
+   `v0.3.0` tag are recorded in the release evidence. Source version 0.3.0 is
+   not itself proof of a deployed runtime.
 
 Optional fallback-host integrations do not justify expanding the core product.
 No Gmail, publishing, shopping, account management, broad personal-data migration,
@@ -183,8 +184,9 @@ Recorded implementation gaps still included in that list:
   strict wall-clock startup bounds, actual logon, long-running stress and clean-OS
   prerequisites remain separate. See INSTALLER-EVIDENCE-2026-09-03.md.
 - HTTP identity, package metadata, contributing guidance and licensing are
-  aligned to 0.3.0. Remaining release work is CI/merge/deployment evidence and
-  the owner-approved tag.
+  aligned to 0.3.0. Release CI, merge, owner-only publication and the
+  owner-approved tag are complete; broader provider and client acceptance
+  remains separately scoped.
 
 ## Change rule
 

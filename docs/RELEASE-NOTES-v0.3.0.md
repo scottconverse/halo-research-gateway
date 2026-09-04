@@ -1,7 +1,7 @@
 # Halo Research Gateway 0.3.0 release notes
 
-Version 0.3.0 is the research-only, Windows-native multi-client release. The
-source version is set; the Git tag remains pending Scott's approval.
+Version 0.3.0 is the research-only, Windows-native multi-client release.
+Git tag `v0.3.0` identifies the merged, green release revision.
 
 ## What changed
 
