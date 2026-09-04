@@ -13,8 +13,11 @@ roles, or verified-coder policy.
 ## Contents
 
 - `halo-research-state/` reconstructs an authoritative research ledger from
-  successful `mcp__halo_research__*` calls and results, enforces explicit
-  research budgets, and checks the requested final-answer contract.
+  successful `mcp__halo_research__*` calls and results, emits a canonical
+  `VERIFIED_JOB_RECEIPT` from projected DSH job results, enforces explicit
+  research budgets, and checks the requested final-answer contract. The job
+  receipt keeps every pause/status/resume/terminal snapshot distinct and uses
+  one root `continuation_calls_total` counter.
 - `halo-orchestrator/agent.cordis.yml` is the minimal client composition fragment
   that loads the verified state immediately after compaction.
 - `patches/compaction-request-retention.patch` preserves the active user request
@@ -51,8 +54,10 @@ node integrations/dsh/halo-research-state/verify-history.mjs <saved-dsh-history.
 ```
 
 The Node tests cover durable-envelope reconstruction, exact cursor/coverage
-state, compaction injection, explicit call/time budgets, hostile page markup,
-bounded answer revision, citations, and honest incomplete-coverage disclosure.
+state, ordered job-operation receipts, checkpoint warnings, counter-
+contradiction rejection, compaction injection, explicit call/time budgets,
+hostile page markup, bounded answer revision, citations, and honest incomplete-
+coverage disclosure.
 The saved-history verifier is the release acceptance fixture, not a universal
 truth checker; it deliberately returns `manualEvidenceReviewRequired: true`.
 

@@ -580,9 +580,12 @@ empty `items`, and an explicit `error.code`: `JOB_NOT_FOUND`, `JOB_NOT_OWNED`,
 `JOB_STATE_CONFLICT`, `INVALID_JOB_LIMITS`, `JOB_CAPACITY_REACHED` or
 `INVALID_ARGUMENT`. Unknown exceptions remain sanitized. A terminal job cannot
 be paused/resumed: inspect its status rather than assuming a failed control call
-changed the job. September 3 DSH trials created jobs and read retained evidence,
-but both completed before pause arrived; DSH pause/resume is not yet proved.
-See [DSH job evidence](DSH-JOB-EVIDENCE-2026-09-03.md).
+changed the job. Installed DSH acceptance now proves active pause, two frozen
+status checkpoints, same-job resume, active cancel, Gateway restart recovery,
+retained continuation and an honest non-empty terminal failure. DSH adds a
+canonical `VERIFIED_JOB_RECEIPT` generated from durable tool results; use it as
+the authority when prose and lifecycle counters disagree. See
+[DSH job evidence](DSH-JOB-EVIDENCE-2026-09-03.md).
 
 `research_job` operations:
 
@@ -633,7 +636,7 @@ Status returns checkpoint counts and a bounded evidence page instead of the whol
 
 Checkpoint size is bounded by `storage.entry_max_bytes`; overflow reports `JOB_CHECKPOINT_TOO_LARGE` and retains the previous checkpoint. Sources and extracted links with recognized sensitive query parameters are excluded from durable jobs with `SENSITIVE_SOURCE_NOT_PERSISTED`. This is pattern-based protection, not a guarantee that arbitrary page prose contains no sensitive information. Use jobs for public research.
 
-A disposable native Windows process-crash/restart fixture passed, including preserved evidence, no completed-source re-fetch, and cumulative attempts. Full DSH/live-provider job acceptance remains separate. DDGS performs synchronous work in a thread: cancellation stops the async research worker, but cannot forcibly terminate an already-running synchronous provider call. Broader provider cancellation/stress remains open. Background and foreground launcher ownership have the separate native acceptance described in section 3; forced console closure/logon/clean-OS acceptance remains open.
+A disposable native Windows process-crash/restart fixture passed, including preserved evidence, no completed-source re-fetch, and cumulative attempts. Installed DSH also recovered the same job after a deliberate Gateway restart: the first post-lease status was `paused_recoverable`, the counters did not reset, `JOB_RECOVERED_AFTER_INTERRUPTION` was retained, resume completed the same job, and retained evidence remained pageable. DDGS performs synchronous work in a thread: cancellation stops the async research worker, but cannot forcibly terminate an already-running synchronous provider call. Broader provider cancellation/stress remains open. Background and foreground launcher ownership have the separate native acceptance described in section 3; forced console closure/logon/clean-OS acceptance remains open.
 
 ## 10. Research-only product boundary
 

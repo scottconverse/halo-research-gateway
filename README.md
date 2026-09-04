@@ -42,10 +42,14 @@ previews are marked; stored questions and evidence stay intact. Three concurrent
 native MCP clients recovered identical evidence at all supported output sizes.
 See [job bounds and limitations](docs/JOB-BOUNDS-EVIDENCE-2026-09-03.md).
 
-Research-job control failures now report specific safe codes instead of generic
-tool errors. Two real DSH jobs returned partial evidence and exact continuation
-pages, but completed before pause; DSH pause/resume remains unproved. See
-[job-control repair and actual DSH outcomes](docs/DSH-JOB-EVIDENCE-2026-09-03.md).
+Research-job control failures report specific safe codes instead of generic
+tool errors. Installed DSH acceptance now proves active pause with frozen
+checkpoints, same-job resume to completion, active cancellation with stable
+cleanup, Gateway restart recovery without counter reset, retained continuation,
+and exact reporting of a non-empty `JOB_CHECKPOINT_TOO_LARGE` partial failure.
+DSH's deterministic ledger emits a canonical job receipt so pause, resume and
+terminal counters cannot silently replace one another. See
+[job-control and installed DSH evidence](docs/DSH-JOB-EVIDENCE-2026-09-03.md).
 
 Pagination now normally returns a 51-character authenticated reference so local
 models have less text to copy. Evidence identity, expiry and same-tool/output
