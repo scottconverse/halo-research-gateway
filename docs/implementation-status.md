@@ -17,7 +17,9 @@ history verification and manual evidence review passed. See
 [DSH verified workflow evidence](DSH-VERIFIED-WORKFLOW-EVIDENCE-2026-09-03.md).
 Other hosts share the same MCP contract; their registration state and remaining
 model-selected live-call proof are recorded in [host integration](host-integration.md).
-The 0.3.0 Git tag is pending owner approval.
+Release delivery is complete: GitHub PR #2 was merged after green Windows CI,
+the owner-only landing page was published from the merged source, and the
+approved `v0.3.0` tag identifies that release revision.
 
 ## Current code
 
@@ -101,7 +103,8 @@ source reading and one exact-cursor continuation now dispatch. The broad six-min
 run still failed to finish, with four miscopied cursor rejections and seven
 compactions. A stricter result-based acceptance checker has five new regression
 tests; it does not turn that failed run green. See
-DSH-RESOLUTION-EVIDENCE-2026-09-03.md. Final target is `0.3.0`, not yet released.
+DSH-RESOLUTION-EVIDENCE-2026-09-03.md. That checkpoint's final target was
+`0.3.0`; the later merged and tagged release evidence is recorded above.
 
 Handoff followup before push: completion responses now retain their original
 session identity across a concurrent new start, and the exposed deadline uses

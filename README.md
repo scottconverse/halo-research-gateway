@@ -6,9 +6,9 @@ Halo Research Gateway is a persistent, Windows-only, localhost MCP service that 
 
 **Landing page:** https://halo-research-gateway.sconverse.chatgpt.site (owner-only Sites publication)
 
-The landing-page source is aligned with the 0.3.0 release candidate. Its public
-Sites publication is a dated page, not a live health dashboard. The Git tag is
-intentionally pending owner approval.
+The landing-page source is aligned with the released 0.3.0 source and its
+owner-only Sites publication. The page is a dated release page, not a live
+health dashboard. Git tag `v0.3.0` identifies the merged release revision.
 
 - MCP: `http://127.0.0.1:8765/mcp`
 - health: `http://127.0.0.1:8765/health`
