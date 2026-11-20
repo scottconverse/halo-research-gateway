@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halo Research Gateway</title>
+<meta name="description" content="A Windows-native, localhost MCP service that gives local AI clients one shared set of fourteen research tools: search, fetch, crawl, documents, transcripts and citations.">
+<meta name="theme-color" content="#07111a">
+<meta property="og:title" content="Halo Research Gateway">
+<meta property="og:description" content="One research plane. Every agent. Fourteen research tools over standard MCP, on your Windows machine.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://scottconverse.github.io/halo-research-gateway/">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<style>
+:root {
+  --bg: #07111a;
+  --bg-2: #0b1824;
+  --panel: #0e1e2c;
+  --line: rgba(255,255,255,.10);
+  --line-soft: rgba(255,255,255,.06);
+  --text: #e7f0f6;
+  --muted: #9db0bf;
+  --faint: #6f8496;
+  --cyan: #8fe9e6;
+  --cyan-dim: rgba(143,233,230,.12);
+  --green: #7be0b0;
+  --amber: #f0cf7a;
+  --radius: 14px;
+  --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: var(--sans); line-height: 1.6; -webkit-text-size-adjust: 100%;
+}
+a { color: var(--cyan); text-underline-offset: 3px; }
+a:hover { color: #fff; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; border-radius: 4px; }
+code, pre { font-family: var(--mono); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--cyan); color: #04202a; padding: 8px 12px; border-radius: 8px; z-index: 100; }
+.skip:focus { left: 8px; }
+
+/* nav */
+header.nav { position: sticky; top: 0; z-index: 50; background: rgba(7,17,26,.88); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line-soft); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); font-weight: 650; text-decoration: none; letter-spacing: -.01em; white-space: nowrap; }
+.brand svg { width: 26px; height: 26px; flex: none; }
+.brand .ver { font: 500 11px var(--mono); color: var(--green); border: 1px solid rgba(123,224,176,.3); padding: 1px 7px; border-radius: 99px; }
+.links { display: flex; gap: 22px; font-size: 14px; }
+.links a { color: var(--muted); text-decoration: none; }
+.links a:hover { color: #fff; }
+.links .gh { color: var(--text); border: 1px solid var(--line); padding: 4px 12px; border-radius: 8px; }
+@media (max-width: 760px) {
+  .nav .wrap { flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
+  .links { width: 100%; overflow-x: auto; gap: 18px; padding-bottom: 4px; white-space: nowrap; }
+  html { scroll-padding-top: 108px; }
+}
+
+/* hero */
+.hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line-soft); }
+.hero::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background-image: linear-gradient(var(--line-soft) 1px, transparent 1px), linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at 70% 30%, #000 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 70% 30%, #000 0%, transparent 70%);
+}
+.hero::after { content: ""; position: absolute; right: -180px; top: -60px; width: 560px; height: 560px; border-radius: 50%; background: radial-gradient(circle, rgba(143,233,230,.16), transparent 65%); pointer-events: none; }
+.hero .wrap { position: relative; z-index: 1; display: grid; gap: 48px; grid-template-columns: 1.1fr .9fr; padding-top: 84px; padding-bottom: 88px; align-items: start; }
+@media (max-width: 900px) { .hero .wrap { grid-template-columns: 1fr; padding-top: 48px; padding-bottom: 56px; gap: 36px; } }
+.pill { display: inline-flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font: 500 12px var(--mono); color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(143,233,230,.22); border-radius: 99px; padding: 6px 14px; margin-bottom: 22px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); }
+h1 { margin: 0; font-size: clamp(40px, 7vw, 76px); line-height: 1; letter-spacing: -.045em; font-weight: 650; text-wrap: balance; }
+h1 span { color: var(--cyan); }
+.lede { margin: 24px 0 0; max-width: 40em; font-size: clamp(17px, 2.2vw, 20px); color: #c4d3de; text-wrap: pretty; }
+.status { margin: 18px 0 0; max-width: 40em; font-size: 14.5px; color: var(--amber); }
+.status a { color: var(--amber); }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 15px; text-decoration: none; border: 1px solid var(--line); color: var(--text); background: rgba(255,255,255,.04); }
+.btn:hover { background: rgba(255,255,255,.09); color: #fff; }
+.btn.primary { background: var(--cyan); color: #04202a; border-color: var(--cyan); }
+.btn.primary:hover { background: #c4fbf8; color: #04202a; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 30px 0 0; padding: 0; list-style: none; font-size: 14px; color: var(--muted); }
+.facts li::before { content: "\2713\00a0"; color: var(--green); }
+
+/* terminal card */
+.card { background: linear-gradient(180deg, #0c1d2b, #08141f); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 30px 80px rgba(0,30,40,.5); overflow: hidden; min-width: 0; }
+.card .bar { display: flex; align-items: center; gap: 7px; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); font: 12px var(--mono); color: var(--faint); }
+.card .bar i { width: 10px; height: 10px; border-radius: 50%; background: #3a4b59; }
+.card .bar span { margin-left: 8px; }
+.flow { padding: 18px; display: grid; gap: 12px; }
+.step { border: 1px solid var(--line-soft); border-radius: 12px; padding: 12px 14px; background: rgba(255,255,255,.025); }
+.step .k { font: 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--cyan); margin-bottom: 4px; }
+.step p { margin: 0; font-size: 14px; color: #cfdce6; }
+.step code { font-size: 13px; color: var(--green); overflow-wrap: anywhere; }
+
+/* sections */
+section { padding: 88px 0; border-bottom: 1px solid var(--line-soft); }
+@media (max-width: 760px) { section { padding: 60px 0; } }
+.eyebrow { font: 600 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cyan); margin: 0 0 12px; }
+h2 { margin: 0; font-size: clamp(28px, 4.2vw, 44px); line-height: 1.08; letter-spacing: -.035em; font-weight: 650; text-wrap: balance; max-width: 22em; }
+.sub { margin: 16px 0 0; max-width: 46em; color: var(--muted); font-size: 17px; text-wrap: pretty; }
+h3 { margin: 0 0 8px; font-size: 18px; letter-spacing: -.01em; }
+.alt { background: var(--bg-2); }
+.split { display: grid; grid-template-columns: .9fr 1.1fr; gap: 56px; align-items: start; }
+@media (max-width: 900px) { .split { grid-template-columns: 1fr; gap: 32px; } }
+
+/* architecture */
+.arch { display: grid; grid-template-columns: 1fr auto 1.2fr; gap: 20px; align-items: center; }
+@media (max-width: 640px) { .arch { grid-template-columns: 1fr; } .arch .arrow { transform: rotate(90deg); justify-self: center; } }
+.clients { display: grid; gap: 8px; }
+.client { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 14px; color: #cfdce6; background: rgba(255,255,255,.03); }
+.client.first { border-color: rgba(143,233,230,.35); background: var(--cyan-dim); color: #fff; }
+.client small { font: 11px var(--mono); color: var(--cyan); margin-left: 8px; }
+.arrow { color: var(--cyan); font: 600 12px var(--mono); text-align: center; }
+.gate { border: 1px solid rgba(143,233,230,.3); border-radius: 16px; padding: 18px; background: linear-gradient(180deg, rgba(143,233,230,.08), rgba(143,233,230,.02)); min-width: 0; }
+.gate strong { display: block; font-size: 17px; }
+.gate .ep { font: 13px var(--mono); color: var(--cyan); overflow-wrap: anywhere; }
+.gate ul { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+.gate li { font-size: 13.5px; color: #c4d3de; border: 1px solid var(--line-soft); border-radius: 8px; padding: 7px 10px; background: rgba(0,0,0,.18); }
+
+/* grids */
+.grid { display: grid; gap: 16px; margin-top: 40px; grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 960px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+.tile { border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; background: var(--panel); min-width: 0; }
+.tile p { margin: 0; color: var(--muted); font-size: 15px; }
+.tile .tag { display: inline-block; font: 600 11px var(--mono); color: var(--amber); border: 1px solid rgba(240,207,122,.3); border-radius: 99px; padding: 1px 9px; margin-bottom: 10px; }
+
+/* tools */
+.tools { margin-top: 40px; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.trow { display: grid; grid-template-columns: 190px 1fr 1.2fr; gap: 16px; padding: 16px 20px; border-top: 1px solid var(--line-soft); align-items: baseline; }
+.trow:first-child { border-top: 0; }
+.trow:nth-child(odd) { background: rgba(255,255,255,.02); }
+.trow b { font-weight: 600; }
+.trow code { font-size: 13px; color: var(--green); overflow-wrap: anywhere; }
+.trow span { color: var(--muted); font-size: 14.5px; }
+@media (max-width: 760px) { .trow { grid-template-columns: 1fr; gap: 4px; } }
+
+/* boundary */
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 40px; }
+@media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+.list { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.list li { position: relative; padding-left: 26px; color: #c4d3de; font-size: 15px; }
+.list li::before { position: absolute; left: 0; top: 0; font-weight: 700; }
+.yes li::before { content: "\2713"; color: var(--green); }
+.no li::before { content: "\00d7"; color: #f08a8a; font-size: 18px; line-height: 1.3; }
+.open li::before { content: "\25cb"; color: var(--amber); }
+
+/* hosts table */
+.tablewrap { margin-top: 36px; overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14.5px; }
+th, td { text-align: left; padding: 13px 18px; border-top: 1px solid var(--line-soft); vertical-align: top; }
+thead th { border-top: 0; font: 600 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); background: rgba(255,255,255,.03); }
+td:first-child { font-weight: 600; white-space: nowrap; }
+td { color: var(--muted); }
+
+/* quickstart */
+pre { margin: 0; padding: 18px 20px; background: #050d14; border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; font-size: 14px; line-height: 1.7; color: #d6e6ef; }
+pre .c { color: var(--faint); }
+.steps { counter-reset: s; list-style: none; padding: 0; margin: 36px 0 0; display: grid; gap: 22px; }
+.steps > li { counter-increment: s; display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 16px; }
+.steps > li::before { content: counter(s); width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(143,233,230,.4); color: var(--cyan); display: grid; place-items: center; font: 600 14px var(--mono); }
+.steps p { margin: 0 0 10px; color: var(--muted); }
+.steps p b { color: var(--text); }
+
+/* docs links */
+.docs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 36px; }
+@media (max-width: 900px) { .docs { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .docs { grid-template-columns: 1fr; } }
+.docs a { display: block; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; text-decoration: none; background: var(--panel); color: var(--text); }
+.docs a:hover { border-color: rgba(143,233,230,.45); }
+.docs a b { display: block; font-weight: 600; }
+.docs a span { color: var(--muted); font-size: 14px; }
+
+footer { padding: 44px 0 56px; color: var(--muted); font-size: 14px; }
+footer .wrap { display: grid; gap: 14px; }
+footer .row { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+footer a { color: var(--muted); }
+footer a:hover { color: #fff; }
+footer p { margin: 0; max-width: 56em; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Halo Research Gateway, top of page">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="16" cy="16" r="11" stroke="#8fe9e6" stroke-width="2.2"/><circle cx="16" cy="16" r="3.6" fill="#8fe9e6"/><path d="M16 2v6M16 24v6M2 16h6M24 16h6" stroke="#8fe9e6" stroke-width="2" stroke-linecap="round" opacity=".55"/></svg>
+      Halo Research Gateway <span class="ver">v0.3.0</span>
+    </a>
+    <nav class="links" aria-label="Page sections">
+      <a href="#architecture">Architecture</a>
+      <a href="#tools">Tools</a>
+      <a href="#boundary">Scope</a>
+      <a href="#proof">Evidence</a>
+      <a href="#start">Quick start</a>
+      <a class="gh" href="https://github.com/scottconverse/halo-research-gateway">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+<div class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <div class="pill"><span class="dot"></span> Windows only <span>/</span> standard MCP <span>/</span> source-backed</div>
+      <h1>One research plane.<br><span>Every agent.</span></h1>
+      <p class="lede">Halo Research Gateway is a persistent service on your Windows machine that gives every compatible local AI client the same fourteen tools to find web sources, read pages and documents, and return cited evidence. DSH is the first client, not a dependency. The Gateway does not send email, post to GitHub, buy things or manage accounts.</p>
+      <p class="status">Status: version 0.3.0. A complete bounded DSH workflow and the installed DSH job lifecycle have passed. Other registered clients share the same MCP contract; their model-selected live calls are tracked separately. <a href="#proof">See the evidence and what is still open.</a></p>
+      <div class="cta">
+        <a class="btn primary" href="#start">Read the install steps</a>
+        <a class="btn" href="https://github.com/scottconverse/halo-research-gateway">View the repository</a>
+      </div>
+      <ul class="facts">
+        <li>14 research tools</li>
+        <li>Binds to 127.0.0.1 only</li>
+        <li>Secrets encrypted with Windows DPAPI</li>
+      </ul>
+    </div>
+
+    <div class="card" role="img" aria-label="Illustrative example of a research request flowing through the Gateway. Not a live session.">
+      <div class="bar"><i></i><i></i><i></i><span>Example flow, not a live session</span></div>
+      <div class="flow" aria-hidden="true">
+        <div class="step"><div class="k">Client</div><p>Research current browser interception patterns. Prefer official sources, then compare community findings.</p></div>
+        <div class="step"><div class="k">Discover</div><p><code>web_search</code> returns candidate sources, with Exa and DDGS fallback.</p></div>
+        <div class="step"><div class="k">Read</div><p><code>web_fetch</code> / <code>web_crawl</code> read pages; a signed cursor continues long evidence.</p></div>
+        <div class="step"><div class="k">Return</div><p>Cited, source-backed packet with warnings for anything missing or partial.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section id="why">
+  <div class="wrap split">
+    <div>
+      <p class="eyebrow">Why it exists</p>
+      <h2>Agent hosts have inconsistent web access.</h2>
+    </div>
+    <div>
+      <p class="sub" style="margin-top:0">Some hosts can search but not crawl. Others can fetch a URL but cannot discover it. Separate instances can unknowingly spend the same anonymous search quota or hammer Reddit. Halo centralizes that work in one local process without making DSH dependent on a cloud LLM.</p>
+      <p class="sub">One process owns the cache, rate limits, singleflight coordination, durable jobs and browser concurrency. SQLite holds structured state. The service and its browser descendants run inside a dedicated Windows Job Object, so stopping the Gateway cannot orphan its Chromium tree.</p>
+    </div>
+  </div>
+</section>
+
+<section id="architecture" class="alt">
+  <div class="wrap">
+    <p class="eyebrow">Architecture</p>
+    <h2>The shared layer local agents were missing.</h2>
+    <p class="sub">Clients connect over standard Streamable HTTP MCP at one loopback endpoint. The Gateway does not change a client's models, presets, permissions or conversation history.</p>
+    <div class="arch" style="margin-top:40px">
+      <div class="clients">
+        <div class="client first">DSH <small>first client</small></div>
+        <div class="client">Codex Desktop / CLI</div>
+        <div class="client">Cowork / Claude Desktop or Code</div>
+        <div class="client">OpenCode Desktop</div>
+        <div class="client">LM Studio Bionic</div>
+      </div>
+      <div class="arrow" aria-hidden="true">MCP &rarr;</div>
+      <div class="gate">
+        <strong>Halo Gateway</strong>
+        <span class="ep">http://127.0.0.1:8765/mcp</span>
+        <ul>
+          <li>Exa + DDGS search, deep research, Crawl4AI with Gateway-owned Chrome</li>
+          <li>GitHub (read-only), transcripts, communities, Reddit RSS, documents</li>
+          <li>Cache, queues, budgets, signed cursors</li>
+          <li>DPAPI-encrypted connection vault, OAuth PKCE</li>
+          <li>Durable research jobs, reviewed cookie-session import</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tools">
+  <div class="wrap">
+    <p class="eyebrow">Tool contract</p>
+    <h2>Fourteen tools. Find, read, cite.</h2>
+    <p class="sub">Fetched content is evidence, never instructions. Successful results preserve source URLs, retrieval metadata and warnings, plus a signed cursor when another independently citable page is available.</p>
+    <div class="tools" role="table" aria-label="The fourteen research tools">
+      <div class="trow" role="row"><b role="cell">Public web</b><code role="cell">web_search · web_fetch · web_crawl</code><span role="cell">Discover sources, retrieve a known page, or render JavaScript content.</span></div>
+      <div class="trow" role="row"><b role="cell">Reddit</b><code role="cell">reddit_search · reddit_thread</code><span role="cell">Search Reddit and read a post plus available RSS comments through one paced queue.</span></div>
+      <div class="trow" role="row"><b role="cell">Documents</b><code role="cell">document_extract</code><span role="cell">Bounded, citable text from public PDFs and documents, with local English OCR.</span></div>
+      <div class="trow" role="row"><b role="cell">Research</b><code role="cell">deep_research · github_research · transcript_fetch</code><span role="cell">Build evidence packets, retrieve read-only GitHub evidence, or public transcript material.</span></div>
+      <div class="trow" role="row"><b role="cell">Communities</b><code role="cell">community_search · community_thread</code><span role="cell">Search and read technical discussions outside Reddit.</span></div>
+      <div class="trow" role="row"><b role="cell">Local targets</b><code role="cell">local_fetch · local_crawl</code><span role="cell">Read or render an exact operator-defined private or local target.</span></div>
+      <div class="trow" role="row"><b role="cell">Durable work</b><code role="cell">research_job</code><span role="cell">Create, inspect, pause, resume or cancel a finite research job.</span></div>
+    </div>
+
+    <div class="grid">
+      <div class="tile"><h3>Evidence that survives the turn</h3><p>Continuation binds immutable evidence and retains collected text across bounded output pages. Cache limits, durable-job checkpoints and restart tests preserve usable evidence; evicted or unavailable results are disclosed.</p></div>
+      <div class="tile"><h3>Fetch and real browser crawl</h3><p>Read ordinary pages directly, or follow a bounded page and depth frontier with Gateway-owned Chrome. Each source keeps its own citation, and usable pages are retained when another fails.</p></div>
+      <div class="tile"><h3>Operator-owned identity</h3><p>Encrypted research connections, OAuth Authorization Code with PKCE, a read-only GitHub App, and reviewed cookie-only session import. Models receive opaque connection IDs only.</p></div>
+      <div class="tile"><h3>Network policy in code</h3><p>Public tools reject loopback, private, link-local and cloud-metadata destinations after DNS resolution, and revalidate redirects. Local access uses separately named exact-target tools.</p></div>
+      <div class="tile"><h3>Bounded, resumable jobs</h3><p>Research jobs have finite limits and are operator-visible. The installed DSH lifecycle check covered active pause, resume, cancel and restart recovery.</p></div>
+      <div class="tile"><h3>Explicit limits</h3><p>Recognized challenge pages are not counted as research evidence. Paid CAPTCHA and proxy providers are disabled by default; no real paid call is claimed.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="boundary" class="alt">
+  <div class="wrap">
+    <p class="eyebrow">Scope boundary</p>
+    <h2>Research only. By design, not by backlog.</h2>
+    <p class="sub">Since 2026-09-02 the governing scope is research-only. The removed features are not a future backlog.</p>
+    <div class="cols">
+      <div class="tile">
+        <h3>The Gateway does</h3>
+        <ul class="list yes">
+          <li>Search, fall back across providers, and read pages, documents, transcripts and discussions.</li>
+          <li>Return citations with warnings for missing or partial results.</li>
+          <li>Run bounded multi-step research and durable jobs.</li>
+          <li>Use research login sessions, copied as cookies only, to read restricted sources.</li>
+        </ul>
+      </div>
+      <div class="tile">
+        <h3>The Gateway does not</h3>
+        <ul class="list no">
+          <li>Send or draft email, or compose through Gmail.</li>
+          <li>Create or edit GitHub issues or comments.</li>
+          <li>Submit general forms, post, message, buy things or change accounts.</li>
+          <li>Import a whole Chrome profile, saved passwords, autofill, history or bookmarks.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="proof">
+  <div class="wrap">
+    <p class="eyebrow">Evidence, not adjectives</p>
+    <h2>What is verified, and what is still open.</h2>
+    <p class="sub">The repository keeps dated evidence files for each claim. This page repeats only what those files record.</p>
+    <div>
+      <div class="cols">
+        <div class="tile">
+          <h3>Verified in the repo</h3>
+          <ul class="list yes">
+            <li>A complete model-driven DSH workflow: eight successful Gateway calls, three distinct required sources, continuation, two automatic compactions, and a cited answer within six minutes and 250 words.</li>
+            <li>Installed DSH job lifecycle: active pause with frozen checkpoints, same-job resume, active cancel, Gateway restart recovery, and exact partial-failure reporting.</li>
+            <li>Native Chrome fixtures for cookie-only sessions, exact local paths, WebSockets and cancellation cleanup.</li>
+            <li>Native Exa-to-DDGS quota fallback, and authenticated public GitHub discussion and commit-pinned document pagination in disposable instances.</li>
+          </ul>
+        </div>
+        <div class="tile">
+          <h3>Still open</h3>
+          <ul class="list open">
+            <li>Real research-login and app-bound cookie acceptance.</li>
+            <li>Broader stress testing and clean-OS and logon acceptance.</li>
+            <li>CapSolver and Bright Data were tested against local fake vendors, not paid APIs.</li>
+            <li>Registered clients other than DSH are not called live-proven until their model selects and completes a Gateway tool.</li>
+            <li>Browser-level DNS pinning inside Chromium is not yet proven.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:28px">Evidence index: <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/docs/DSH-VERIFIED-WORKFLOW-EVIDENCE-2026-09-03.md">DSH workflow</a>, <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/docs/DSH-JOB-EVIDENCE-2026-09-03.md">DSH jobs</a>, <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/docs/implementation-status.md">implementation status</a>, <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/docs/RESEARCH-ONLY-SCOPE.md">research-only scope and finish list</a>.</p>
+  </div>
+</section>
+
+<section id="hosts" class="alt">
+  <div class="wrap">
+    <p class="eyebrow">Client support</p>
+    <h2>One endpoint, several hosts.</h2>
+    <p class="sub">Registration state as recorded in the host integration matrix dated 2026-09-03. Clients must be able to reach workstation loopback.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Client</th><th>Registration</th><th>Evidence recorded</th></tr></thead>
+        <tbody>
+          <tr><td>DSH</td><td>Maps the server to <code>mcp__halo_research__*</code></td><td>Full bounded workflow passed</td></tr>
+          <tr><td>Cowork / Claude Desktop or Code</td><td>User MCP <code>halo-research</code></td><td>Registered where configured; live model-selected call is separate acceptance</td></tr>
+          <tr><td>Codex Desktop / CLI</td><td><code>[mcp_servers.halo_research]</code></td><td>Installed for a new process; live model-selected call is separate acceptance</td></tr>
+          <tr><td>OpenCode Desktop</td><td>MCP <code>halo-research</code></td><td>Registered where configured; live model-selected call is separate acceptance</td></tr>
+          <tr><td>LM Studio Bionic</td><td><code>halo-research.url</code> in its MCP config</td><td>Registered; Bionic UI and model selection is separate acceptance</td></tr>
+          <tr><td>Cloud-only clients</td><td>Cannot reach loopback</td><td>Out of scope without a separate secure transport</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <p class="eyebrow">Quick start</p>
+    <h2>Install the local Gateway, then verify it.</h2>
+    <p class="sub">Prerequisites: Windows 11, PowerShell, <a href="https://docs.astral.sh/uv/">uv</a> with the locked Python 3.12 environment, Node.js 22 for the install quality gate, Google Chrome for Crawl4AI, and at least one supported MCP host.</p>
+    <ol class="steps">
+      <li><div><p><b>Install</b> from the repository root. The installer runs the quality gate, installs the canonical skill, merges supported MCP registrations, optionally registers the at-logon task, and starts the service. It does not rewrite DSH model, context, reasoning, slot or permission settings.</p>
+<pre><code>.\scripts\Install-HaloResearch.ps1 -RegisterTask -RegisterHosts -Start</code></pre></div></li>
+      <li><div><p><b>Verify</b> the installation, including the browser path.</p>
+<pre><code>.\scripts\Test-HaloResearch.ps1 -Browser</code></pre></div></li>
+      <li><div><p><b>Open the operator console</b> at <code>http://127.0.0.1:8765/operator</code>. A healthy installation reports <code>status: ok</code>, result schema <code>1.5</code> and database schema <code>3</code>. Create credentials as connections there, never in TOML, arguments, prompts or Git.</p>
+<pre><code>.\scripts\Start-HaloResearch.ps1   <span class="c"># start</span>
+.\scripts\Stop-HaloResearch.ps1    <span class="c"># stop</span></code></pre></div></li>
+    </ol>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/scottconverse/halo-research-gateway/blob/main/docs/USER-MANUAL.md">Read the user manual</a>
+      <a class="btn" href="https://github.com/scottconverse/halo-research-gateway">Open the repository</a>
+    </div>
+  </div>
+</section>
+
+<section id="docs" class="alt">
+  <div class="wrap">
+    <p class="eyebrow">Documentation</p>
+    <h2>Read the source of truth.</h2>
+    <div class="docs">
+      <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/docs/USER-MANUAL.md"><b>User manual</b><span>The operator handbook.</span></a>
+      <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/docs/security.md"><b>Security and authority</b><span>Code invariants and the browser boundary.</span></a>
+      <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/docs/operations.md"><b>Operations</b><span>Running and maintaining the service.</span></a>
+      <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/docs/host-integration.md"><b>Host integration</b><span>Per-client registration and evidence.</span></a>
+      <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/docs/quality-gate.md"><b>Quality gate</b><span>What CI does and does not prove.</span></a>
+      <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/docs/RELEASE-NOTES-v0.3.0.md"><b>Release notes 0.3.0</b><span>What changed in this release.</span></a>
+      <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/CHANGELOG.md"><b>Changelog</b><span>Product release history.</span></a>
+      <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/CONTRIBUTING.md"><b>Contributing</b><span>Windows development and release workflow.</span></a>
+      <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/config/config.example.toml"><b>Example configuration</b><span>Operator-controlled limits and providers.</span></a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="row">
+      <a href="https://github.com/scottconverse/halo-research-gateway">Repository</a>
+      <a href="https://github.com/scottconverse/halo-research-gateway/issues">Issues</a>
+      <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/scottconverse/halo-research-gateway/blob/main/LICENSE">License</a>
+    </div>
+    <p>Halo Research Gateway 0.3.0. Copyright (c) 2026 Scott Converse. All rights reserved. The source is proprietary, and the license file grants no permission to use, copy, modify or distribute it.</p>
+    <p>This page is a dated snapshot of the repository, not a live health dashboard.</p>
+  </div>
+</footer>
+</body>
+</html>
